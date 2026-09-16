@@ -1,0 +1,5 @@
+# Excluded from `vercel` CLI uploads (deploys stay small and secret-free).
+graphify-out/
+.next/
+data/*.json
+.env*.local

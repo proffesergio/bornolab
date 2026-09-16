@@ -1,49 +1,9 @@
+/** Server-only: reads/writes data/site-config.json. Never import from Client Components. */
 import { readJson, writeJson } from "./store";
+import { DEFAULT_CONFIG, type SiteConfig } from "./site-config-shared";
 
-export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software";
-
-export interface AdSlotConfig {
-  enabled: boolean;
-  network: string; // e.g. AdSense, Media.net, custom
-  code: string; // raw HTML/JS snippet
-}
-
-export interface SiteConfig {
-  brand: { name: string; tagline: string };
-  announcement: { enabled: boolean; text: string };
-  tools: Record<ToolKey, boolean>;
-  fontOverrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>;
-  softwareOverrides: Record<string, { priceBDT?: number; enabled?: boolean }>;
-  ads: Record<"header" | "inFeed" | "footer", AdSlotConfig>;
-  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string };
-  payments: { bkash: string; nagad: string; bank: string; binance: string };
-}
-
-export const DEFAULT_CONFIG: SiteConfig = {
-  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite" },
-  announcement: { enabled: false, text: "নতুন: প্রিমিয়াম ফন্ট এখন বিকাশ/নগদে কিনুন!" },
-  tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true },
-  fontOverrides: {},
-  softwareOverrides: {},
-  ads: {
-    header: { enabled: false, network: "AdSense", code: "" },
-    inFeed: { enabled: false, network: "AdSense", code: "" },
-    footer: { enabled: false, network: "AdSense", code: "" },
-  },
-  seo: {
-    title: "BornoLab — বাংলা Font & Document Suite",
-    description: "Unicode⇆Bijoy converter, Bangla font directory, text styler, PDF⇆DOCX translator, PDF splitter. n8n-ready.",
-    keywords: "bijoy converter, unicode to bijoy, bangla fonts, sutonnymj, pdf to docx, bangla styler",
-    gaId: "",
-    adsenseClient: "",
-  },
-  payments: {
-    bkash: "01XXXXXXXXX",
-    nagad: "01XXXXXXXXX",
-    bank: "Bank Name • A/C 000-000-000 • Branch",
-    binance: "Binance Pay ID / UID",
-  },
-};
+export type { SiteConfig, ToolKey, AdSlotConfig } from "./site-config-shared";
+export { DEFAULT_CONFIG } from "./site-config-shared";
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
 
@@ -60,8 +20,23 @@ function deepMerge<T>(base: T, patch: DeepPartial<T>): T {
 }
 
 export async function getSiteConfig(): Promise<SiteConfig> {
+  // Precedence: code defaults < SITE_CONFIG_JSON env seed < dashboard file edits.
+  // The env seed is the durable layer on serverless hosts (Vercel), where
+  // filesystem writes are ephemeral — see docs/admin.md.
   const overrides = await readJson<DeepPartial<SiteConfig>>("site-config.json", {});
-  return deepMerge(DEFAULT_CONFIG, overrides);
+  return deepMerge(deepMerge(DEFAULT_CONFIG, envSeed()), overrides);
+}
+
+/** Optional durable seed via env: SITE_CONFIG_JSON='{"seo":{"gaId":"G-…"},…}'. */
+function envSeed(): DeepPartial<SiteConfig> {
+  try {
+    const raw = process.env.SITE_CONFIG_JSON;
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as DeepPartial<SiteConfig>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 export async function updateSiteConfig(patch: DeepPartial<SiteConfig>): Promise<SiteConfig> {

@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/ui";
 import { AdSlot, useSiteConfig } from "@/components/site-widgets";
-import type { ToolKey } from "@/lib/site-config";
+import type { ToolKey } from "@/lib/site-config-shared";
 
 const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
   { key: "convert", href: "/convert", icon: Languages, title: "Unicode ⇆ Bijoy", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },

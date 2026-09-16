@@ -33,8 +33,14 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# runtime data (local analytics, dashboard edits) — never commit
+data/*.json
+
 # vercel
 .vercel
+
+# graphify knowledge-graph cache — local only, excluded from deploys too
+graphify-out/
 
 # typescript
 *.tsbuildinfo

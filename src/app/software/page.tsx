@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, ShoppingCart, MonitorDown, BadgeCheck } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { SOFTWARE, applySoftwareOverrides } from "@/lib/software-data";
-import { DEFAULT_CONFIG } from "@/lib/site-config";
+import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { downloadBlob } from "@/lib/doc-utils";
 import { cn } from "@/lib/cn";

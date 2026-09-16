@@ -6,7 +6,7 @@ import {
   Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { DEFAULT_CONFIG, type SiteConfig, type ToolKey } from "@/lib/site-config";
+import { DEFAULT_CONFIG, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { FONTS } from "@/lib/fonts-data";
 import { SOFTWARE } from "@/lib/software-data";
 import { cn } from "@/lib/cn";

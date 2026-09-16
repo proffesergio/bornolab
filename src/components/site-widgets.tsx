@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { DEFAULT_CONFIG, type SiteConfig } from "@/lib/site-config";
+import { DEFAULT_CONFIG, type SiteConfig } from "@/lib/site-config-shared";
 
 /** Public site config (admin-editable). Falls back to defaults offline. */
 export function useSiteConfig(): { config: SiteConfig; loading: boolean } {

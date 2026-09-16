@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Loader2, Copy } from "lucide-react";
 import { PAY_METHODS, methodAccount, type PayMethod } from "@/lib/payments";
-import type { SiteConfig } from "@/lib/site-config";
-import { DEFAULT_CONFIG } from "@/lib/site-config";
+import type { SiteConfig } from "@/lib/site-config-shared";
+import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 
 interface Props {
   open: boolean;

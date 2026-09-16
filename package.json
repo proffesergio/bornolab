@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "vercel:preview": "vercel",
+    "vercel:deploy": "vercel --prod",
+    "vercel:env": "vercel env pull .env.local"
   },
   "dependencies": {
     "@types/file-saver": "^2.0.7",

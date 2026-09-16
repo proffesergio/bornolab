@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme";
 import { Navbar } from "@/components/navbar";
@@ -19,20 +20,38 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#070b16" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let adsense = "";
   try {
-    adsense = (await getSiteConfig()).seo.adsenseClient.trim();
+    adsense = ((await getSiteConfig()).seo.adsenseClient ?? "").trim();
   } catch { /* defaults */ }
 
   return (
     <html lang="bn" className="h-full dark" suppressHydrationWarning>
-      <head>
-        {adsense && (
-          <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsense)}`} crossOrigin="anonymous" />
-        )}
-      </head>
       <body className="flex min-h-full flex-col bg-white text-slate-900 antialiased dark:bg-[#070b16] dark:text-slate-100 dark:bg-[radial-gradient(60rem_30rem_at_20%_-10%,rgba(34,211,238,.15),transparent),radial-gradient(50rem_28rem_at_90%_0%,rgba(168,85,247,.18),transparent)]">
+        <Script
+          id="bornolab-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("bornolab-theme")||"dark";var d=t==="dark";document.documentElement.classList.toggle("dark",d);}catch(e){}`,
+          }}
+        />
+        {adsense ? (
+          <Script
+            id="bornolab-adsense"
+            strategy="afterInteractive"
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsense)}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
         <ThemeProvider>
           <Tracker />
           <AnnouncementBar />

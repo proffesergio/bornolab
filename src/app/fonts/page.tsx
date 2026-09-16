@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Download, Copy, Check, Search, Crown, ShoppingCart } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { FONTS, DEFAULT_PREVIEW_TEXT, previewFamily, applyFontOverrides, type FontType, type FontCategory } from "@/lib/fonts-data";
-import { DEFAULT_CONFIG } from "@/lib/site-config";
+import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { downloadBlob } from "@/lib/doc-utils";
 import { cn } from "@/lib/cn";
