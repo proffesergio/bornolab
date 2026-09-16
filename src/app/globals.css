@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.dark {
+  --background: #070b16;
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), "Noto Sans Bengali", "SolaimanLipi", Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* Glassmorphism utilities — light-first, dark override */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(15, 23, 42, 0.09);
+}
+.dark .glass {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+.light-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+/* Working hover/focus glows (plain classes — Tailwind can't variant custom classes) */
+.hover-glow { transition: box-shadow 0.25s ease, transform 0.25s ease; }
+.hover-glow:hover {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.45), 0 0 24px rgba(34, 211, 238, 0.28);
+}
+.focus-glow { transition: box-shadow 0.2s ease; }
+.focus-glow:focus {
+  outline: none;
+  box-shadow: 0 0 0 1.5px rgba(34, 211, 238, 0.7), 0 0 24px rgba(34, 211, 238, 0.3);
+}
+
+/* Theme toggler: clear lift + ring highlight in both modes */
+.theme-toggle-btn { transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease; }
+.theme-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1.5px rgba(168, 85, 247, 0.55), 0 0 22px rgba(168, 85, 247, 0.35);
+  background-color: rgba(168, 85, 247, 0.08);
+}
+.dark .theme-toggle-btn:hover { background-color: rgba(168, 85, 247, 0.14); }
+.theme-toggle-btn:active { transform: translateY(0) scale(0.97); }
+
+.glow-border {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 0 24px rgba(34, 211, 238, 0.25);
+}
+.glow-border-active-bijoy {
+  box-shadow: 0 0 0 1.5px rgba(168, 85, 247, 0.7), 0 0 32px rgba(168, 85, 247, 0.35);
+}
+.glow-border-active-unicode {
+  box-shadow: 0 0 0 1.5px rgba(34, 211, 238, 0.8), 0 0 32px rgba(34, 211, 238, 0.4);
+}
+
+.text-glow {
+  text-shadow: 0 0 18px rgba(34, 211, 238, 0.6);
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.2);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes ripple {
+  0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.5); }
+  100% { box-shadow: 0 0 0 18px rgba(34, 211, 238, 0); }
+}
+.typing-ripple {
+  animation: ripple 0.6s ease-out;
+}
+
+/* Neon scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #22d3ee, #a855f7);
+  border-radius: 8px;
+}
+
+/* Bangla font helpers (system fallbacks; custom fonts load via FontFace in fonts page) */
+@font-face {
+  font-family: "Hind Siliguri";
+  src: url("/fonts/hindsiliguri/HindSiliguri-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: "Hind Siliguri";
+  src: url("/fonts/hindsiliguri/HindSiliguri-Bold.ttf") format("truetype");
+  font-weight: 700; font-display: swap;
+}
+@font-face {
+  font-family: "Tiro Bangla";
+  src: url("/fonts/tirobangla/TiroBangla-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: "Tiro Bangla";
+  src: url("/fonts/tirobangla/TiroBangla-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Baloo Da 2";
+  src: url("/fonts/balooda2/BalooDa2.ttf") format("truetype");
+  font-weight: 400 800; font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans Bengali";
+  src: url("/fonts/notosansbengali/NotoSansBengali.ttf") format("truetype");
+  font-weight: 100 900; font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter/Inter.ttf") format("truetype");
+  font-weight: 100 900; font-display: swap;
+}
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair/PlayfairDisplay.ttf") format("truetype");
+  font-weight: 400 900; font-display: swap;
+}
+.font-nikosh { font-family: "Nikosh", "Noto Sans Bengali", sans-serif; }
+.font-solaiman { font-family: "SolaimanLipi", "Noto Sans Bengali", sans-serif; }
+.font-kalpurush { font-family: "Kalpurush", "Noto Sans Bengali", sans-serif; }
+.font-sutonny { font-family: "SutonnyMJ", monospace; }
