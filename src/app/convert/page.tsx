@@ -33,7 +33,6 @@ export default function ConvertPage() {
   const [dir, setDir] = useState<Dir>("u2b");
   const [active, setActive] = useState<"left" | "right" | null>(null);
   const [copied, setCopied] = useState<"left" | "right" | null>(null);
-  const [ripple, setRipple] = useState(0);
   const [showGhost, setShowGhost] = useState(true);
   const bijoyFont = useBijoyFontAvailable();
 
@@ -42,22 +41,22 @@ export default function ConvertPage() {
   const ghostPreview = useMemo(() => (right ? bijoyToUnicode(right) : ""), [right]);
 
   const onLeft = (v: string) => {
-    setLeft(v); setActive("left"); setRipple((r) => r + 1);
+    setLeft(v); setActive("left");
     if (dir === "u2b") setRight(unicodeToBijoy(v));
   };
   const onRight = (v: string) => {
-    setRight(v); setActive("right"); setRipple((r) => r + 1);
+    setRight(v); setActive("right");
     if (dir === "b2u") setLeft(bijoyToUnicode(v));
   };
   const toBijoy = () => {
     setDir("u2b");
     setRight(unicodeToBijoy(left));
-    setActive("right"); setRipple((r) => r + 1);
+    setActive("right");
   };
   const toUnicode = () => {
     setDir("b2u");
     setLeft(bijoyToUnicode(right || left));
-    setActive("left"); setRipple((r) => r + 1);
+    setActive("left");
   };
   const copy = async (which: "left" | "right") => {
     await navigator.clipboard.writeText(which === "left" ? left : right);
@@ -65,8 +64,8 @@ export default function ConvertPage() {
     setTimeout(() => setCopied(null), 1400);
   };
 
-  // init right once
-  useMemo(() => { if (!right && left) setRight(unicodeToBijoy(left)); }, []); // eslint-disable-line
+  // init right once (effect — never setState inside useMemo)
+  useEffect(() => { if (!right && left) setRight(unicodeToBijoy(left)); }, []); // eslint-disable-line
 
   const cornerBtn = "hover-glow rounded-full bg-white/80 p-2 text-slate-700 shadow-md backdrop-blur dark:bg-black/50 dark:text-slate-200";
 
@@ -108,13 +107,12 @@ export default function ConvertPage() {
           </div>
           <div className="relative">
             <motion.textarea
-              key={`L${ripple}`}
               value={left}
               onChange={(e) => onLeft(e.target.value)}
-              rows={11}
+              rows={10}
               spellCheck={false}
               placeholder="এখানে ইউনিকোড লিখুন…"
-              className="typing-ripple focus-glow w-full resize-y rounded-xl bg-slate-100 p-4 pr-12 text-[17px] leading-8 outline-none dark:bg-black/30"
+              className="focus-glow min-h-[280px] w-full resize-y rounded-xl bg-slate-100 p-4 pr-12 text-[16px] leading-8 outline-none dark:bg-black/30"
               style={{ fontFamily: '"Noto Sans Bengali","Hind Siliguri",sans-serif' }}
             />
             <button onClick={() => copy("left")} aria-label="Copy Unicode text"
@@ -147,10 +145,10 @@ export default function ConvertPage() {
             <motion.textarea
               value={right}
               onChange={(e) => onRight(e.target.value)}
-              rows={bijoyFont === false && showGhost ? 7 : 11}
+              rows={10}
               spellCheck={false}
               placeholder="Avwg m¤bvi evsjv…"
-              className="focus-glow w-full resize-y rounded-xl bg-slate-100 p-4 pr-12 font-mono text-[15px] leading-7 outline-none dark:bg-black/30"
+              className="focus-glow min-h-[280px] w-full resize-y rounded-xl bg-slate-100 p-4 pr-12 font-mono text-[16px] leading-8 outline-none dark:bg-black/30"
               style={{ fontFamily: '"SutonnyMJ","Boishakhi",ui-monospace,monospace' }}
             />
             <button onClick={() => copy("right")} aria-label="Copy Bijoy text"

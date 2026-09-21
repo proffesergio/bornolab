@@ -6,11 +6,12 @@ import {
   ShieldCheck, Newspaper, BookOpen, PenLine, GraduationCap, Check, HelpCircle,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui";
+import { HeroRotator } from "@/components/hero-rotator";
 import { AdSlot, useSiteConfig } from "@/components/site-widgets";
 import type { ToolKey } from "@/lib/site-config-shared";
 
 const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
-  { key: "convert", href: "/convert", icon: Languages, title: "Unicode ⇆ Bijoy", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },
+  { key: "convert", href: "/bijoy-unicode-converter", icon: Languages, title: "Bijoy <> Unicode", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },
   { key: "fonts", href: "/fonts", icon: Type, title: "Font Directory", desc: "Free + premium Bangla faces.", points: ["Live preview with size slider", "Bangla / English / Premium filters", "Buy with bKash, Nagad, Bank, Binance"], grad: "from-violet-500 to-purple-600" },
   { key: "styler", href: "/styler", icon: Sparkles, title: "Decorator & Styler", desc: "Facebook-ready fancy text.", points: ["Neon, outline, gradient, glitch", "Bracket frames & symbol wings", "One-click copy per style"], grad: "from-fuchsia-500 to-pink-600" },
   { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Tables & flow preserved", "Scanned PDFs via n8n OCR"], grad: "from-emerald-500 to-teal-600" },
@@ -48,12 +49,14 @@ export default function Home() {
             Document Suite
           </span>
         </h1>
+        <HeroRotator />
         <p className="relative mx-auto mt-4 max-w-2xl text-sm text-slate-600 dark:text-slate-300 sm:text-base">
-          Converter, premium fonts, fancy styler, PDF⇆DOCX translator, splitter and software store —
-          fast in your browser, with <span className="font-semibold text-cyan-700 dark:text-cyan-200">n8n workflows</span> for heavy print jobs.
+          Bijoy to Unicode converter, premium Bangla fonts, fancy text styler, PDF to DOCX translator,
+          PDF splitter and merger, software store — fast in your browser, with{" "}
+          <span className="font-semibold text-cyan-700 dark:text-cyan-200">n8n workflows</span> for heavy print jobs.
         </p>
         <div className="relative mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/convert" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(34,211,238,.35)] hover:brightness-110">Start Converting</Link>
+          <Link href="/bijoy-unicode-converter" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(34,211,238,.35)] hover:brightness-110">Start Converting</Link>
           <Link href="/fonts" className="glass hover-glow rounded-full px-6 py-3 text-sm font-bold text-slate-800 dark:text-slate-100">Browse Fonts</Link>
           <Link href="/software" className="glass hover-glow rounded-full px-6 py-3 text-sm font-bold text-slate-800 dark:text-slate-100">Software Store</Link>
         </div>
@@ -138,6 +141,20 @@ export default function Home() {
       <AdSlot slot="inFeed" className="mt-4" />
 
       {/* FAQ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQS.map((f) => ({
+              "@type": "Question",
+              name: f.q,
+              acceptedAnswer: { "@type": "Answer", text: f.a },
+            })),
+          }),
+        }}
+      />
       <h2 className="mb-3 mt-8 flex items-center gap-1.5 text-lg font-black"><HelpCircle size={19} /> FAQ</h2>
       <div className="grid gap-3">
         {FAQS.map((f) => (

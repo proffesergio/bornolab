@@ -3,19 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, Wrench, Type, Package, Receipt, Megaphone, Search,
-  Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check,
+  Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check, FileText,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { DEFAULT_CONFIG, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
+import { DEFAULT_CONFIG, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { FONTS } from "@/lib/fonts-data";
 import { SOFTWARE } from "@/lib/software-data";
 import { cn } from "@/lib/cn";
 
-type Tab = "overview" | "tools" | "fonts" | "software" | "orders" | "ads" | "seo" | "aiseo" | "payments" | "settings";
+type Tab = "overview" | "tools" | "pdftools" | "fonts" | "software" | "orders" | "ads" | "seo" | "aiseo" | "payments" | "settings";
 
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "tools", label: "Tools", icon: Wrench },
+  { id: "pdftools", label: "PDF Tools", icon: FileText },
   { id: "fonts", label: "Fonts", icon: Type },
   { id: "software", label: "Software", icon: Package },
   { id: "orders", label: "Orders", icon: Receipt },
@@ -34,6 +35,22 @@ const TOOL_LABELS: Record<ToolKey, string> = {
   split: "PDF Splitter",
   software: "Software Store",
 };
+
+const PDF_TOOL_LABELS: Record<PdfToolKey, string> = {
+  merge: "Merge PDF",
+  split: "Split PDF",
+  translate: "PDF to DOCX",
+  compress: "Compress PDF",
+};
+
+interface PdfStats {
+  total: number;
+  failures: number;
+  failureRate: number;
+  avgMs: number;
+  perTool: Record<string, { jobs: number; files: number; pages: number; failures: number }>;
+  recent: PdfOp[];
+}
 
 /* ---------- AI SEO helpers (client-side, no API key) ---------- */
 const STOP = new Set(("the,a,an,and,or,of,to,in,on,for,with,from,by,as,at,is,are,was,were,be,been,this,that,these,those,it,its,you,your,we,our,they,their,he,she,his,her,not,but,all,can,will,has,have,had,more,most,than,then,there,what,which,who,when,where,how,একটি,এক,এবং,বা,এর,কে,তে,থেকে,দিয়ে,জন্য,সাথে,যে,যা,এই,সেই,টি,টা,গুলো,গুলি,হয়,হচ্ছে,করে,করা,করুন,আছে,ছিল,নয়,না,আর,ও,কি,কী,কেন,কীভাবে,যেমন,তাই,তবে,যদি,সব,অনেক,বেশি,কম,মধ্যে,উপর,নিচে,পরে,আগে,প্রতি".split(",")));
@@ -67,6 +84,7 @@ export default function AdminPage() {
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
   const [analytics, setAnalytics] = useState<{ totalViews: number; weekViews: number; days: { date: string; views: number }[]; topPages: { path: string; views: number }[] } | null>(null);
   const [orders, setOrders] = useState<Array<{ id: string; at: number; itemName: string; amountBDT: number; method: string; sender: string; txn: string; status: string }>>([]);
+  const [pdfStats, setPdfStats] = useState<PdfStats | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
 
@@ -84,6 +102,7 @@ export default function AdminPage() {
     fetch("/api/admin/config").then((r) => r.json()).then((c) => setConfig({ ...DEFAULT_CONFIG, ...c })).catch(() => {});
     fetch("/api/admin/analytics").then((r) => r.json()).then(setAnalytics).catch(() => {});
     fetch("/api/admin/orders").then((r) => r.json()).then((j) => setOrders(j.orders ?? [])).catch(() => {});
+    fetch("/api/admin/pdf-stats").then((r) => r.json()).then(setPdfStats).catch(() => {});
   }, [router]);
 
   const save = async (patch: Partial<SiteConfig>) => {
@@ -178,6 +197,62 @@ export default function AdminPage() {
           </div>
           {saving ? <p className="mt-2 text-xs text-slate-500"><Loader2 size={12} className="inline animate-spin" /> Saving…</p> : savedTick ? <p className="mt-2 text-xs text-emerald-500"><Check size={12} className="inline" /> Saved</p> : null}
         </GlassCard>
+      )}
+
+      {tab === "pdftools" && (
+        <div className="grid gap-4">
+          <GlassCard>
+            <h3 className="text-sm font-bold">PDF tool availability & caps</h3>
+            <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Toggles apply live to the nav, PDF Tools page and tool pages. Caps are enforced in-browser before processing.</p>
+            <div className="mt-3 grid gap-2">
+              {(Object.keys(PDF_TOOL_LABELS) as PdfToolKey[]).map((k) => {
+                const caps = config.pdfTools[k];
+                return (
+                  <div key={k} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto] dark:bg-white/5">
+                    <span><b>{PDF_TOOL_LABELS[k]}</b></span>
+                    <label className="flex items-center gap-1.5">Enabled <input type="checkbox" checked={caps.enabled} onChange={() => save({ pdfTools: { ...config.pdfTools, [k]: { ...caps, enabled: !caps.enabled } } })} className="h-4 w-4 accent-cyan-500" aria-label={`Enable ${PDF_TOOL_LABELS[k]}`} /></label>
+                    <label className="flex items-center gap-1.5">Max MB <input type="number" min={1} max={200} value={caps.maxMB} onChange={(e) => save({ pdfTools: { ...config.pdfTools, [k]: { ...caps, maxMB: Math.max(1, Number(e.target.value) || 1) } } })} className={cn(field, "w-20")} aria-label={`Max MB for ${PDF_TOOL_LABELS[k]}`} /></label>
+                    <label className="flex items-center gap-1.5">Max files <input type="number" min={1} max={100} value={caps.maxFiles} onChange={(e) => save({ pdfTools: { ...config.pdfTools, [k]: { ...caps, maxFiles: Math.max(1, Number(e.target.value) || 1) } } })} className={cn(field, "w-20")} aria-label={`Max files for ${PDF_TOOL_LABELS[k]}`} /></label>
+                  </div>
+                );
+              })}
+            </div>
+            {saving ? <p className="mt-2 text-xs text-slate-500"><Loader2 size={12} className="inline animate-spin" /> Saving…</p> : savedTick ? <p className="mt-2 text-xs text-emerald-500"><Check size={12} className="inline" /> Saved</p> : null}
+          </GlassCard>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">PDF jobs</p><p className="mt-1 text-3xl font-black">{pdfStats?.total ?? "…"}</p></GlassCard>
+            <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Failure rate</p><p className="mt-1 text-3xl font-black">{pdfStats ? `${pdfStats.failureRate}% (${pdfStats.failures})` : "…"}</p></GlassCard>
+            <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Avg job time</p><p className="mt-1 text-3xl font-black">{pdfStats ? `${pdfStats.avgMs} ms` : "…"}</p></GlassCard>
+          </div>
+
+          <GlassCard>
+            <h3 className="text-sm font-bold">Per-tool usage</h3>
+            <div className="mt-2 space-y-1.5 text-[13px]">
+              {pdfStats && Object.keys(pdfStats.perTool).length === 0 && <p className="text-slate-500">No jobs logged yet — merge a PDF to record the first op.</p>}
+              {pdfStats && Object.entries(pdfStats.perTool).map(([tool, s]) => (
+                <p key={tool} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-900/[.04] px-3 py-2 dark:bg-white/5">
+                  <b>{PDF_TOOL_LABELS[tool as PdfToolKey] ?? tool}</b>
+                  <span>{s.jobs} jobs • {s.files} files • {s.pages} pages • {s.failures} failed</span>
+                </p>
+              ))}
+              {!pdfStats && <p className="text-slate-500">Loading…</p>}
+            </div>
+          </GlassCard>
+
+          <GlassCard>
+            <h3 className="text-sm font-bold">Recent operations</h3>
+            <div className="mt-2 space-y-1.5 font-mono text-[12px] text-slate-600 dark:text-slate-400">
+              {pdfStats?.recent.map((o, i) => (
+                <p key={`${o.at}-${i}`} className="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-900/[.04] px-3 py-1.5 dark:bg-white/5">
+                  <span>{new Date(o.at).toLocaleString()} • {PDF_TOOL_LABELS[o.tool as PdfToolKey] ?? o.tool} • {o.files}f/{o.pages}p • {o.ms}ms</span>
+                  <span className={o.ok ? "text-emerald-500" : "text-red-500"}>{o.ok ? "ok" : `fail: ${o.err ?? "?"}`}</span>
+                </p>
+              ))}
+              {(!pdfStats || pdfStats.recent.length === 0) && <p>— idle —</p>}
+            </div>
+          </GlassCard>
+        </div>
       )}
 
       {tab === "fonts" && (
