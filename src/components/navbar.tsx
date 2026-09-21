@@ -4,10 +4,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home,
-  FileText, Scissors, Combine, Minimize2, LayoutGrid, ChevronDown,
+  FileText, Scissors, Combine, Minimize2, Image as ImageIcon, LayoutGrid, ChevronDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "./theme";
+import { UserMenu } from "./user-menu";
 import { useSiteConfig } from "./site-widgets";
 import { cn } from "@/lib/cn";
 import type { PdfToolKey, ToolKey } from "@/lib/site-config-shared";
@@ -25,10 +26,11 @@ const PDF_TOOLS: { href: string; label: string; icon: typeof FileText; tool?: To
   { href: "/merge", label: "Merge PDF", icon: Combine, pdfTool: "merge" },
   { href: "/translate", label: "PDF to DOCX", icon: FileText, tool: "translate" },
   { href: "/split", label: "Split PDF", icon: Scissors, tool: "split" },
-  { href: "/pdf-tools#compress", label: "Compress PDF", icon: Minimize2, badge: "Soon" },
+  { href: "/compress", label: "Compress PDF", icon: Minimize2, pdfTool: "compress" },
+  { href: "/images-to-pdf", label: "Images to PDF", icon: ImageIcon, pdfTool: "images" },
 ];
 
-const PDF_ROUTES = ["/pdf-tools", "/translate", "/split", "/merge"];
+const PDF_ROUTES = ["/pdf-tools", "/translate", "/split", "/merge", "/compress", "/images-to-pdf"];
 
 export function Navbar() {
   const path = usePathname();
@@ -143,15 +145,18 @@ export function Navbar() {
             );
           })}
         </nav>
-        <button
-          onClick={toggle}
-          aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-          title={dark ? "Switch to light mode" : "Switch to dark mode"}
-          className="theme-toggle-btn glass flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-semibold text-slate-700 dark:text-slate-200"
-        >
-          {dark ? <Sun size={16} /> : <Moon size={16} />}
-          <span className="hidden sm:inline">{dark ? "Light" : "Dark"}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <UserMenu />
+          <button
+            onClick={toggle}
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            className="theme-toggle-btn glass flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-semibold text-slate-700 dark:text-slate-200"
+          >
+            {dark ? <Sun size={16} /> : <Moon size={16} />}
+            <span className="hidden sm:inline">{dark ? "Light" : "Dark"}</span>
+          </button>
+        </div>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-4 pb-2.5 lg:hidden" aria-label="Mobile">
         {visibleLinks.map(({ href, label }) => (

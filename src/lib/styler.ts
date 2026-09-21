@@ -14,7 +14,7 @@ function buildMathMaps() {
     ITALIC_MAP[String.fromCharCode(A + i)] = String.fromCodePoint(italicUA + i);
     ITALIC_MAP[String.fromCharCode(a + i)] = String.fromCodePoint(italicA + i);
     MONO_MAP[String.fromCharCode(A + i)] = String.fromCodePoint(0x1d670 + i);
-    MONO_MAP[String.fromCharCode(a + i)] = String.fromCodePoint(0x1d670 + i);
+    MONO_MAP[String.fromCharCode(a + i)] = String.fromCodePoint(0x1d68a + i);
   }
   for (let i = 0; i < 10; i++) {
     BOLD_MAP[String(i)] = String.fromCodePoint(0x1d7ce + i);
@@ -41,6 +41,19 @@ export interface StyleVariant {
 
 const mapThrough = (s: string, m: Record<string, string>) =>
   Array.from(s).map((c) => m[c] ?? c).join("");
+
+const cssPropToKebab = (k: string) => k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+
+/** HTML snippet for a styled row — preserves CSS looks when pasted into rich editors. */
+export function toHtmlSnippet(v: StyleVariant, text: string): string {
+  const out = v.transform(text);
+  const esc = out.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  if (!v.css) return esc;
+  const style = Object.entries(v.css)
+    .map(([k, val]) => `${cssPropToKebab(k)}: ${val}`)
+    .join("; ");
+  return `<span style="${style}">${esc}</span>`;
+}
 
 export function getVariants(): StyleVariant[] {
   return [

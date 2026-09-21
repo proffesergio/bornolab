@@ -19,12 +19,12 @@ interface Tool {
   anchor?: string;
 }
 
-const TOOLS: (Tool & { pdfTool?: "merge" | "split" | "translate" })[] = [
+const TOOLS: (Tool & { pdfTool?: "merge" | "split" | "translate" | "compress" | "images" })[] = [
   { href: "/merge", icon: Combine, title: "Merge PDF", desc: "Combine many PDFs into one file in your custom sequence — drag order, then merge.", grad: "from-orange-500 to-red-500", status: "live", pdfTool: "merge" },
   { href: "/translate", icon: FileText, title: "PDF to DOCX", desc: "Text nodes become editable paragraphs — never textbox soup. Tables and reading order preserved.", grad: "from-emerald-500 to-teal-600", status: "live", pdfTool: "translate" },
   { href: "/split", icon: Scissors, title: "Split PDF", desc: "Visual thumbnails, ranges like 1-3, 5, 7-12. Export PDF, JPG/PNG zip, or DOCX.", grad: "from-amber-500 to-orange-600", status: "live", pdfTool: "split" },
-  { href: "/pdf-tools", anchor: "compress", icon: Minimize2, title: "Compress PDF", desc: "Shrink file size while keeping visual fidelity. Quality slider included at launch.", grad: "from-lime-500 to-green-600", status: "soon" },
-  { href: "/pdf-tools", icon: ImageIcon, title: "Images to PDF", desc: "JPG/PNG to PDF with margin and orientation controls.", grad: "from-yellow-500 to-amber-600", status: "soon" },
+  { href: "/compress", icon: Minimize2, title: "Compress PDF", desc: "Shrink file size with Extreme / Recommended / Custom quality levels. Before/after sizes included.", grad: "from-lime-500 to-green-600", status: "live", pdfTool: "compress" },
+  { href: "/images-to-pdf", icon: ImageIcon, title: "Images to PDF", desc: "JPG/PNG photos to one PDF — reorder, page size, orientation and margin controls.", grad: "from-yellow-500 to-amber-600", status: "live", pdfTool: "images" },
   { href: "/pdf-tools", icon: Globe, title: "HTML to PDF", desc: "Paste a URL, get a snapshot PDF of the page.", grad: "from-sky-500 to-blue-600", status: "soon" },
   { href: "/pdf-tools", icon: ShieldCheck, title: "Protect PDF", desc: "Password-protect and encrypt documents against unauthorized access.", grad: "from-blue-500 to-indigo-600", status: "soon" },
   { href: "/pdf-tools", icon: Unlock, title: "Unlock PDF", desc: "Remove password restrictions you own the rights to.", grad: "from-slate-500 to-slate-700", status: "soon" },
@@ -39,14 +39,12 @@ export default function PdfToolsPage() {
     <div>
       <SectionTitle
         kicker="PDF Suite"
-        title="PDF Tools — merge, split, convert & secure"
-        desc="Free in-browser PDF utilities: convert PDF to editable Word documents, split out the pages you need, and soon merge, compress, protect and summarize. Your files never leave your browser."
+        title="PDF Tools — merge, split, compress & convert"
+        desc="Free in-browser PDF utilities: merge PDFs, split out the pages you need, compress for sharing, turn photos into PDFs, and convert PDF to editable Word — plus protect, unlock and AI tools on the way. Your files never leave your browser."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {TOOLS.filter((t) => {
-          if (t.pdfTool) return config.pdfTools[t.pdfTool].enabled;
-          if (t.href === "/translate") return config.tools.translate;
-          if (t.href === "/split") return config.tools.split;
+          if (t.pdfTool) return config.pdfTools[t.pdfTool]?.enabled ?? true;
           return true;
         }).map(({ href, anchor, icon: Icon, title, desc, grad, status }, i) => {
           const inner = (

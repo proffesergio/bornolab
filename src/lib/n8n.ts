@@ -6,6 +6,8 @@ export const N8N_JOBS = {
   splitPdf: "/api/n8n/split",
 } as const;
 
+export type N8nJob = keyof typeof N8N_JOBS;
+
 export async function callN8nProxy(path: string, payload: Record<string, unknown>) {
   const res = await fetch(path, {
     method: "POST",
@@ -16,10 +18,16 @@ export async function callN8nProxy(path: string, payload: Record<string, unknown
   return res.json();
 }
 
-export function n8nEnvStatus() {
-  return {
-    format: Boolean(process.env.NEXT_PUBLIC_N8N_FORMAT_URL),
-    translate: Boolean(process.env.NEXT_PUBLIC_N8N_TRANSLATE_URL),
-    split: Boolean(process.env.NEXT_PUBLIC_N8N_SPLIT_URL),
-  };
+/**
+ * Liveness per job — asks our own proxy (server env is invisible to the
+ * browser, so NEXT_PUBLIC_* checks could never work; this replaces them).
+ */
+export async function n8nJobStatus(job: N8nJob): Promise<boolean> {
+  try {
+    const res = await fetch(N8N_JOBS[job], { method: "GET" });
+    if (!res.ok) return false;
+    return Boolean((await res.json()).configured);
+  } catch {
+    return false;
+  }
 }

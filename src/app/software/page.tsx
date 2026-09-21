@@ -25,9 +25,25 @@ export default function SoftwarePage() {
   );
   const shown = items.filter((s) => tab === "All" || s.license === tab);
 
-  const getFree = (id: string, name: string) => {
-    const txt = `${name}\nBornoLab Software • v2026\n\nThanks for downloading!\nThe full installer link will be sent to you after the official release.\nSupport: via BornoLab contact page.\n`;
-    downloadBlob(new Blob([txt], { type: "text/plain" }), `${id}-readme.txt`);
+  const getFree = (id: string, name: string, version: string, platform: string) => {
+    const txt = [
+      `${name} — Free Starter Kit (v${version}, ${platform})`,
+      "BornoLab Software Store",
+      "",
+      "Thanks for downloading! This kit contains your license + install guide.",
+      "",
+      "INSTALL",
+      "1. Paid builds: the installer link is delivered after checkout (Admin verifies",
+      "   your bKash/Nagad/Bank/Binance payment, then marks the order delivered).",
+      "2. Free builds: watch the Software page — the installer appears here on release day.",
+      "",
+      "LICENSE: free for personal + commercial use. Redistribution is not allowed.",
+      "SUPPORT: use the Contact page — mention your order ID for paid items.",
+      "",
+      `Issued: ${new Date().toLocaleString()} • Item: ${id}`,
+      "",
+    ].join("\n");
+    downloadBlob(new Blob([txt], { type: "text/plain" }), `${id}-starter-kit.txt`);
   };
 
   return (
@@ -59,7 +75,7 @@ export default function SoftwarePage() {
                 <ShoppingCart size={15} /> Buy ৳{s.priceBDT}
               </button>
             ) : (
-              <button onClick={() => getFree(s.id, s.name)}
+              <button onClick={() => getFree(s.id, s.name, s.version, s.platform)}
                 className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
                 <Download size={15} /> Download Free
               </button>

@@ -14,7 +14,7 @@ const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; ti
   { key: "convert", href: "/bijoy-unicode-converter", icon: Languages, title: "Bijoy <> Unicode", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },
   { key: "fonts", href: "/fonts", icon: Type, title: "Font Directory", desc: "Free + premium Bangla faces.", points: ["Live preview with size slider", "Bangla / English / Premium filters", "Buy with bKash, Nagad, Bank, Binance"], grad: "from-violet-500 to-purple-600" },
   { key: "styler", href: "/styler", icon: Sparkles, title: "Decorator & Styler", desc: "Facebook-ready fancy text.", points: ["Neon, outline, gradient, glitch", "Bracket frames & symbol wings", "One-click copy per style"], grad: "from-fuchsia-500 to-pink-600" },
-  { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Tables & flow preserved", "Scanned PDFs via n8n OCR"], grad: "from-emerald-500 to-teal-600" },
+  { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Direct PDF download + print flow", "Scanned pages flagged with n8n OCR path"], grad: "from-emerald-500 to-teal-600" },
   { key: "split", href: "/split", icon: Scissors, title: "PDF Splitter", desc: "Slice & export anywhere.", points: ["Visual thumbnails + checkboxes", "Ranges like 1-3, 5, 7-12", "Export PDF, JPG/PNG zip, DOCX"], grad: "from-amber-500 to-orange-600" },
   { key: "software", href: "/software", icon: MonitorDown, title: "Software Store", desc: "Desktop tools for DTP pros.", points: ["Free OCR, font manager, templates", "Paid pro tools with license", "Local payment methods"], grad: "from-slate-500 to-slate-700" },
 ];
@@ -169,7 +169,7 @@ export default function Home() {
       <GlassCard className="mt-8 border-cyan-500/30 text-center">
         <h2 className="text-xl font-black">Print-ready books & journals, on autopilot</h2>
         <p className="mx-auto mt-1.5 max-w-xl text-[13.5px] text-slate-600 dark:text-slate-400">
-          Messy .docx in → formatted Journal/Book out (separate EN/BN font pipelines, reference templates, smart tables) via n8n. Roadmap in <code>docs/plans.md</code>.
+          Messy .docx in → formatted Journal/Book out (separate EN/BN font pipelines, reference templates, smart tables) via n8n. Try the <Link href="/format" className="font-bold text-cyan-700 underline dark:text-cyan-300">live formatter</Link> — spec in <code>docs/plans.md</code>.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link href="/translate" className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 text-sm font-bold text-white hover:brightness-110">Try DOCX Tools</Link>

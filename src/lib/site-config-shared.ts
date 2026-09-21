@@ -1,9 +1,16 @@
 /** Client-safe: types + defaults only. No fs — importable from Client Components. */
+import {
+  DEFAULT_AUTH_CONFIG,
+  type AdUnit,
+  type AuthProviderConfig,
+} from "./members-shared";
+
+export type { AdUnit, AuthProviderConfig };
 
 export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software";
 
 /** Per-tool caps + ops telemetry for the PDF Tools suite (Admin CRM managed). */
-export type PdfToolKey = "merge" | "split" | "translate" | "compress";
+export type PdfToolKey = "merge" | "split" | "translate" | "compress" | "images";
 
 export interface PdfToolCaps {
   enabled: boolean;
@@ -27,6 +34,12 @@ export interface AdSlotConfig {
   code: string; // raw HTML/JS snippet
 }
 
+export type PaymentMethod = "bkash" | "nagad" | "bank" | "binance" | "card";
+
+export interface ProcessorState {
+  enabled: boolean;
+}
+
 export interface SiteConfig {
   brand: { name: string; tagline: string };
   announcement: { enabled: boolean; text: string };
@@ -34,20 +47,23 @@ export interface SiteConfig {
   pdfTools: Record<PdfToolKey, PdfToolCaps>;
   fontOverrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>;
   softwareOverrides: Record<string, { priceBDT?: number; enabled?: boolean }>;
-  ads: Record<"header" | "inFeed" | "footer", AdSlotConfig>;
+  ads: Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
   seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string };
-  payments: { bkash: string; nagad: string; bank: string; binance: string };
+  payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
+    processors: Record<PaymentMethod, ProcessorState>;
+  };
+  auth: AuthProviderConfig;
 }
 
-export const DEFAULT_CONFIG: SiteConfig = {
-  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite" },
+export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite" },
   announcement: { enabled: false, text: "নতুন: প্রিমিয়াম ফন্ট এখন বিকাশ/নগদে কিনুন!" },
   tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true },
   pdfTools: {
     merge: { enabled: true, maxMB: 25, maxFiles: 20 },
     split: { enabled: true, maxMB: 25, maxFiles: 1 },
     translate: { enabled: true, maxMB: 25, maxFiles: 1 },
-    compress: { enabled: false, maxMB: 25, maxFiles: 5 },
+    compress: { enabled: true, maxMB: 25, maxFiles: 5 },
+    images: { enabled: true, maxMB: 15, maxFiles: 30 },
   },
   fontOverrides: {},
   softwareOverrides: {},
@@ -55,6 +71,7 @@ export const DEFAULT_CONFIG: SiteConfig = {
     header: { enabled: false, network: "AdSense", code: "" },
     inFeed: { enabled: false, network: "AdSense", code: "" },
     footer: { enabled: false, network: "AdSense", code: "" },
+    units: [],
   },
   seo: {
     title: "BornoLab — বাংলা Font & Document Suite",
@@ -68,5 +85,19 @@ export const DEFAULT_CONFIG: SiteConfig = {
     nagad: "01XXXXXXXXX",
     bank: "Bank Name • A/C 000-000-000 • Branch",
     binance: "Binance Pay ID / UID",
+    cardKey: "",
+    processors: {
+      bkash: { enabled: true },
+      nagad: { enabled: true },
+      bank: { enabled: true },
+      binance: { enabled: true },
+      card: { enabled: false },
+    },
   },
+  auth: DEFAULT_AUTH_CONFIG,
 };
+
+/** Crash-safe caps lookup — tolerates stored configs missing newer tool keys. */
+export function pdfCaps(config: SiteConfig, key: PdfToolKey): PdfToolCaps {
+  return { ...DEFAULT_CONFIG.pdfTools[key], ...(config.pdfTools?.[key] ?? {}) };
+}

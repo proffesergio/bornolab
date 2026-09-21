@@ -23,6 +23,7 @@ export default function FontsPage() {
   const [lang, setLang] = useState<Lang>("All");
   const [copied, setCopied] = useState<string | null>(null);
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
+  const [dlError, setDlError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>>({});
 
   useEffect(() => {
@@ -49,23 +50,33 @@ export default function FontsPage() {
   const freeGeneral = list.filter((f) => !f.premium && !f.bangla);
 
   const download = async (f: Font) => {
+    setDlError(null);
     if (f.premium) { setBuy({ id: f.id, name: f.name, price: f.priceBDT ?? 0 }); return; }
-    if (!f.fileUrl || f.fileUrl === "#") {
-      if (f.fallbackUrl && f.fallbackUrl !== "#") window.open(f.fallbackUrl, "_blank", "noopener");
+    const hasFile = Boolean(f.fileUrl && f.fileUrl !== "#");
+    const hasFallback = Boolean(f.fallbackUrl && f.fallbackUrl !== "#");
+    if (!hasFile) {
+      if (hasFallback) window.open(f.fallbackUrl, "_blank", "noopener");
+      else setDlError(`“${f.name}” has no download file yet — check back soon.`);
       return;
     }
     try {
       const res = await fetch(f.fileUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      downloadBlob(await res.blob(), `${f.name}.ttf`);
+      const blob = await res.blob();
+      if (!blob.size) throw new Error("empty file");
+      downloadBlob(blob, `${f.name}.ttf`);
     } catch {
-      const a = document.createElement("a");
-      a.href = `/api/fonts?url=${encodeURIComponent(f.fileUrl)}&name=${encodeURIComponent(f.name)}`;
-      a.download = `${f.name}.ttf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      if (f.fallbackUrl && f.fallbackUrl !== "#") setTimeout(() => window.open(f.fallbackUrl, "_blank", "noopener"), 2500);
+      // Same-origin proxy fallback (verifies success before saving).
+      try {
+        const res = await fetch(`/api/fonts?url=${encodeURIComponent(f.fileUrl)}&name=${encodeURIComponent(f.name)}`);
+        if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob.size) throw new Error("empty file");
+        downloadBlob(blob, `${f.name}.ttf`);
+      } catch {
+        if (hasFallback) window.open(f.fallbackUrl, "_blank", "noopener");
+        setDlError(`Could not download “${f.name}” from this site${hasFallback ? " — opened the foundry page instead" : ""}.`);
+      }
     }
   };
 
@@ -135,6 +146,12 @@ export default function FontsPage() {
           ))}
         </div>
       </GlassCard>
+
+      {dlError && (
+        <p role="alert" className="mb-4 rounded-2xl bg-red-500/10 p-3 text-[13px] font-semibold text-red-600 dark:text-red-300">
+          {dlError} <button onClick={() => setDlError(null)} className="ml-2 underline">Dismiss</button>
+        </p>
+      )}
 
       {premium.length > 0 && (
         <>

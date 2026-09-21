@@ -28,7 +28,7 @@ test("merge page supports multi-pick, reorder, remove, download", () => {
 
 test("merge page enforces admin caps + beacons the ops log", () => {
   const src = read("src/app/merge/page.tsx");
-  assert.ok(src.includes("pdfTools"), "merge must read caps from site config (pdfTools).");
+  assert.ok(src.includes("pdfTools") || src.includes("pdfCaps"), "merge must read caps from site config (pdfTools).");
   assert.ok(/maxMB|maxFiles/.test(src), "merge must enforce maxMB / maxFiles caps.");
   assert.ok(src.includes("/api/pdf/log"), "merge must POST each job to /api/pdf/log.");
 });

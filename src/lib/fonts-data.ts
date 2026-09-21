@@ -17,8 +17,10 @@ export interface BanglaFont {
   priceBDT?: number; // 0 / undefined = free
 }
 
-// Mock catalog — runs out-of-box. Replace fileUrl with real CDN/R2 in production.
-// Local /public/fonts/*.ttf can be dropped in; UI gracefully falls back to Noto Sans Bengali.
+// Catalog: entries with /fonts/*.ttf ship in this repo (noto, baloo, hind,
+// tiro, inter, playfair). Vendor-only entries (kalpurush, solaimanlipi,
+// nikosh, boishakhi, lekhni) fall back to the foundry page until the licensed
+// file is dropped into /public/fonts/. Premium entries route to checkout.
 export const FONTS: BanglaFont[] = [
   { id: "kalpurush", name: "Kalpurush", designer: "Bengali OpenType", license: "Free", type: "Unicode", category: "Sans-Serif", bangla: true, fileUrl: "/fonts/Kalpurush.ttf", fallbackUrl: "https://www.omicronlab.com/bangla-fonts.html" },
   { id: "solaimanlipi", name: "SolaimanLipi", designer: "Solaiman Karim", license: "Free", type: "Unicode", category: "Serif", bangla: true, fileUrl: "/fonts/SolaimanLipi.ttf", fallbackUrl: "https://www.omicronlab.com/bangla-fonts.html" },
@@ -31,7 +33,7 @@ export const FONTS: BanglaFont[] = [
   { id: "bornopro-sans", name: "BornoPro Sans", designer: "BornoLab Studio", license: "Paid", type: "Dual", category: "Sans-Serif", bangla: true, fileUrl: "#", fallbackUrl: "#", premium: true, priceBDT: 799 },
   { id: "shurjo-lipi", name: "Shurjo Lipi", designer: "BornoLab Studio", license: "Paid", type: "Unicode", category: "Display", bangla: true, fileUrl: "#", fallbackUrl: "#", premium: true, priceBDT: 599 },
   { id: "boishakhi", name: "Boishakhi", designer: "Legacy DTP", license: "Free", type: "ANSI", category: "Serif", bangla: true, fileUrl: "/fonts/Boishakhi.ttf", fallbackUrl: "https://www.omicronlab.com" },
-  { id: "lekhnilipi", name: "Lekhani Stylish", designer: "BornoLab Studio", license: "Free", type: "Dual", category: "Stylized", bangla: true, fileUrl: "/fonts/Lekhani.ttf", fallbackUrl: "#" },
+  { id: "lekhnilipi", name: "Lekhani Stylish", designer: "BornoLab Studio", license: "Free", type: "Dual", category: "Stylized", bangla: true, fileUrl: "/fonts/Lekhani.ttf", fallbackUrl: "https://www.omicronlab.com/bangla-fonts.html" },
   { id: "inter", name: "Inter", designer: "Rasmus Andersson", license: "Free", type: "Unicode", category: "Sans-Serif", bangla: false, fileUrl: "/fonts/inter/Inter.ttf", fallbackUrl: "https://fonts.google.com/specimen/Inter" },
   { id: "playfair", name: "Playfair Display", designer: "Claus Eggers", license: "Free", type: "Unicode", category: "Display", bangla: false, fileUrl: "/fonts/playfair/PlayfairDisplay.ttf", fallbackUrl: "https://fonts.google.com/specimen/Playfair+Display" },
 ];

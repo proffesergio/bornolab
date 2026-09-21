@@ -4,6 +4,7 @@ import { FileUp, Download, Loader2, ArrowUp, ArrowDown, X } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { downloadBlob } from "@/lib/doc-utils";
 import { useSiteConfig } from "@/components/site-widgets";
+import { pdfCaps } from "@/lib/site-config-shared";
 import { PDFDocument } from "pdf-lib";
 
 interface MergeFile {
@@ -27,10 +28,12 @@ async function logOp(op: { tool: string; files: number; pages: number; ms: numbe
 
 export default function MergePage() {
   const { config } = useSiteConfig();
-  const caps = config.pdfTools.merge;
+  const caps = pdfCaps(config, "merge");
   const [items, setItems] = useState<MergeFile[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [dragId, setDragId] = useState<number | null>(null);
   const idRef = useRef(0);
 
   const totalPages = items.reduce((s, i) => s + i.pages, 0);
@@ -45,9 +48,11 @@ export default function MergePage() {
     setBusy("Reading PDFs…");
     try {
       const next: MergeFile[] = [];
+      const errs: string[] = [];
       for (const f of incoming) {
         if (f.size > caps.maxMB * 1024 * 1024) {
-          setError(`“${f.name}” exceeds the ${caps.maxMB} MB per-file cap.`);
+          errs.push(`“${f.name}” exceeds the ${caps.maxMB} MB per-file cap.`);
+          void logOp({ tool: "merge", files: 1, pages: 0, ms: 0, ok: false, err: "maxMB exceeded" });
           continue;
         }
         try {
@@ -55,10 +60,12 @@ export default function MergePage() {
           const doc = await PDFDocument.load(bytes.slice(0), { ignoreEncryption: true });
           next.push({ id: ++idRef.current, file: f, bytes, pages: doc.getPageCount() });
         } catch (e) {
-          setError(`Could not read “${f.name}”: ${(e as Error).message}`);
-          void logOp({ tool: "merge", files: 1, pages: 0, ms: 0, ok: false, err: String((e as Error).message) });
+          const msg = (e as Error).message;
+          errs.push(`Could not read “${f.name}”: ${msg}`);
+          void logOp({ tool: "merge", files: 1, pages: 0, ms: 0, ok: false, err: String(msg) });
         }
       }
+      if (errs.length) setError(errs.join(" • "));
       setItems((prev) => [...prev, ...next]);
     } finally {
       setBusy(null);
@@ -78,6 +85,23 @@ export default function MergePage() {
 
   const remove = (id: number) => setItems((prev) => prev.filter((x) => x.id !== id));
 
+  /** Drag-reorder: drop a row onto another to reposition it. */
+  const dropReorder = (targetId: number) => {
+    setDragId((from) => {
+      if (from == null || from === targetId) return null;
+      setItems((prev) => {
+        const i = prev.findIndex((x) => x.id === from);
+        const j = prev.findIndex((x) => x.id === targetId);
+        if (i < 0 || j < 0) return prev;
+        const copy = [...prev];
+        const [moved] = copy.splice(i, 1);
+        copy.splice(j, 0, moved);
+        return copy;
+      });
+      return null;
+    });
+  };
+
   const doMerge = async () => {
     if (items.length < 2) {
       setError("Add at least 2 PDFs to merge.");
@@ -89,12 +113,13 @@ export default function MergePage() {
     try {
       const dst = await PDFDocument.create();
       for (const item of items) {
-        const src = await PDFDocument.load(item.bytes.slice(0));
+        // ignoreEncryption matches addFiles preview so listed files always merge
+        const src = await PDFDocument.load(item.bytes.slice(0), { ignoreEncryption: true });
         const copied = await dst.copyPages(src, src.getPages().map((_, p) => p));
         copied.forEach((p) => dst.addPage(p));
       }
       const bytes = await dst.save();
-      downloadBlob(new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" }), `bornolab-merged-${totalPages}p.pdf`);
+      downloadBlob(new Blob([bytes.slice()], { type: "application/pdf" }), `bornolab-merged-${totalPages}p.pdf`);
       void logOp({ tool: "merge", files: items.length, pages: totalPages, ms: Date.now() - started, ok: true });
     } catch (e) {
       const msg = (e as Error).message;
@@ -124,10 +149,15 @@ export default function MergePage() {
       <SectionTitle
         kicker="PDF Suite"
         title="Merge PDF"
-        desc={`Combine PDFs in the order you want — reorder with arrows, then merge. Free, in-browser. Caps: ${caps.maxFiles} files • ${caps.maxMB} MB each.`}
+        desc={`Combine PDFs in the order you want — drag or arrow-reorder, then merge. Free, in-browser. Caps: ${caps.maxFiles} files • ${caps.maxMB} MB each.`}
       />
       <GlassCard>
-        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-orange-500/50 p-8 text-center hover:bg-orange-500/5">
+        <label
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-8 text-center transition ${dragActive ? "border-orange-500 bg-orange-500/10" : "border-orange-500/50 hover:bg-orange-500/5"}`}
+          onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files); }}
+        >
           <FileUp className="text-orange-600 dark:text-orange-300" />
           <span className="text-sm">Drop PDFs here or click to browse (multiple allowed)</span>
           <input
@@ -157,7 +187,16 @@ export default function MergePage() {
           </div>
           <ol className="mt-4 space-y-2">
             {items.map((item, i) => (
-              <li key={item.id} className="glass flex items-center gap-2 rounded-2xl p-3">
+              <li
+                key={item.id}
+                draggable
+                onDragStart={() => setDragId(item.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => dropReorder(item.id)}
+                onDragEnd={() => setDragId(null)}
+                className={`glass flex items-center gap-2 rounded-2xl p-3 ${dragId === item.id ? "opacity-50" : ""}`}
+                title="Drag to reorder, or use arrows"
+              >
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-[12px] font-black text-white">
                   {i + 1}
                 </span>

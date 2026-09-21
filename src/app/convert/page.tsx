@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowLeft, Copy, Eraser, Check, Download, Eye } from "lucide-react";
+import { ArrowRight, ArrowLeft, ArrowLeftRight, Copy, Eraser, Check, Download, Eye, Upload, FileDown } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { unicodeToBijoy, bijoyToUnicode, detectScript } from "@/lib/bijoy";
 import { cn } from "@/lib/cn";
@@ -54,9 +54,79 @@ export default function ConvertPage() {
     setActive("right");
   };
   const toUnicode = () => {
+    if (!right) return;
     setDir("b2u");
-    setLeft(bijoyToUnicode(right || left));
+    setLeft(bijoyToUnicode(right));
     setActive("left");
+  };
+  /** Swap direction, keeping content: the output pane becomes the new source. */
+  const swap = () => {
+    if (dir === "u2b") {
+      setDir("b2u");
+      if (right) setLeft(bijoyToUnicode(right));
+    } else {
+      setDir("u2b");
+      if (left) setRight(unicodeToBijoy(left));
+    }
+  };
+  const downloadTxt = (which: "left" | "right") => {
+    const text = which === "left" ? left : right;
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = which === "left" ? "bornolab-unicode.txt" : "bornolab-bijoy.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  };
+  const uploadTxt = async (f: File | undefined) => {
+    if (!f) return;
+    const text = await f.text();
+    if (dir === "u2b") onLeft(text);
+    else onRight(text);
+  };
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchMsg, setBatchMsg] = useState<string | null>(null);
+  /** Batch: convert whole .docx files (paragraph-preserving) and download one combined .docx. */
+  const batchDocx = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setBatchBusy(true);
+    setBatchMsg(null);
+    try {
+      const { Document, Packer, Paragraph, HeadingLevel, TextRun } = await import("docx");
+      const mammoth = (await import("mammoth")).default as unknown as {
+        extractRawText: (opts: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }>;
+      };
+      const children: import("docx").Paragraph[] = [];
+      for (const f of [...files].filter((x) => x.name.toLowerCase().endsWith(".docx"))) {
+        const { value } = await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() });
+        children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(f.name)] }));
+        for (const line of value.split("\n")) {
+          const t = line.trim();
+          const out = dir === "u2b" ? unicodeToBijoy(t) : bijoyToUnicode(t);
+          children.push(new Paragraph({ children: [new TextRun({ text: out || " ", size: 24 })] }));
+        }
+        children.push(new Paragraph({ text: "" }));
+      }
+      if (!children.length) { setBatchMsg("No .docx files found in the selection."); return; }
+      const blob = await Packer.toBlob(new Document({ sections: [{ children }] }));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = dir === "u2b" ? "bornolab-batch-unicode-to-bijoy.docx" : "bornolab-batch-bijoy-to-unicode.docx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setBatchMsg(`Converted ${[...files].length} file(s) — formatting is simplified to paragraphs; run-level fonts are not preserved.`);
+    } catch (e) {
+      setBatchMsg(`Batch failed: ${(e as Error).message}`);
+    } finally {
+      setBatchBusy(false);
+    }
   };
   const copy = async (which: "left" | "right") => {
     await navigator.clipboard.writeText(which === "left" ? left : right);
@@ -95,6 +165,14 @@ export default function ConvertPage() {
           </motion.span>
           Bijoy to Unicode
         </motion.button>
+        <motion.button
+          onClick={swap} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+          aria-label="Swap direction"
+          title="Swap direction (output becomes the new source)"
+          className="glass hover-glow flex items-center justify-center gap-2 self-center rounded-full px-4 py-3 text-[13px] font-black text-slate-700 dark:text-slate-200"
+        >
+          <ArrowLeftRight size={16} /> Swap
+        </motion.button>
         <span className="self-center whitespace-nowrap text-[11px] text-slate-500">L: {leftScript} • R: {rightScript}</span>
       </div>
 
@@ -121,6 +199,13 @@ export default function ConvertPage() {
             </button>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">{left.length} chars • কার, য-ফলা, রেফ preserved</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <label className="glass hover-glow flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold">
+              <Upload size={13} /> Open .txt
+              <input type="file" accept=".txt,text/plain" className="hidden" onChange={(e) => { void uploadTxt(e.target.files?.[0]); e.target.value = ""; }} />
+            </label>
+            <button onClick={() => downloadTxt("left")} disabled={!left} className="glass hover-glow flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold disabled:opacity-40"><FileDown size={13} /> Save .txt</button>
+          </div>
         </GlassCard>
 
         {/* Bijoy pane */}
@@ -173,8 +258,24 @@ export default function ConvertPage() {
             </button>
           )}
           <p className="mt-2 text-[11px] text-slate-500">{right.length} chars • paste into Word + set SutonnyMJ to print</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button onClick={() => downloadTxt("right")} disabled={!right} className="glass hover-glow flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-bold disabled:opacity-40"><FileDown size={13} /> Save .txt</button>
+          </div>
         </GlassCard>
       </div>
+
+      <GlassCard className="mt-4">
+        <h3 className="text-sm font-bold">Batch convert .docx files</h3>
+        <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+          Converts every paragraph in the current direction ({dir === "u2b" ? "Unicode → Bijoy" : "Bijoy → Unicode"}) and downloads one combined .docx.
+        </p>
+        <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-purple-500/50 p-4 text-sm hover:bg-purple-500/5">
+          <Upload size={16} className="text-purple-600 dark:text-purple-300" />
+          <span>{batchBusy ? "Converting…" : "Drop / click to choose .docx files (multiple allowed)"}</span>
+          <input type="file" accept=".docx" multiple className="hidden" onChange={(e) => { void batchDocx(e.target.files); e.target.value = ""; }} />
+        </label>
+        {batchMsg && <p role="status" className="mt-2 text-[12.5px] text-slate-600 dark:text-slate-400">{batchMsg}</p>}
+      </GlassCard>
 
       <GlassCard className="mt-4">
         <h3 className="text-sm font-bold text-cyan-700 dark:text-cyan-200">Engine notes</h3>

@@ -1,8 +1,8 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Code2 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { getVariants } from "@/lib/styler";
+import { getVariants, toHtmlSnippet } from "@/lib/styler";
 
 export default function StylerPage() {
   const [text, setText] = useState("ভালোবাসা BornoLab ১২৩");
@@ -38,9 +38,14 @@ export default function StylerPage() {
               <span className="hidden w-28 shrink-0 rounded-full bg-slate-900/5 px-2.5 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:bg-white/5 dark:text-slate-400 sm:block">{v.label}</span>
               <p className={needsDark ? "min-w-0 flex-1 break-words rounded-xl bg-slate-900 px-3 py-2 text-[17px] dark:bg-transparent dark:p-0" : "min-w-0 flex-1 break-words text-[17px] text-slate-900 dark:text-slate-100"} style={v.css}>{out}</p>
               <span className="hidden rounded bg-cyan-500/15 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700 md:inline dark:text-cyan-200">{v.badge}</span>
-              <button onClick={() => copy(v.id, out)} aria-label={`Copy ${v.label}`} className="glass hover-glow shrink-0 rounded-full p-2.5">
+              <button onClick={() => copy(v.id, out)} aria-label={`Copy ${v.label}`} title="Copy plain text" className="glass hover-glow shrink-0 rounded-full p-2.5">
                 {copied === v.id ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
               </button>
+              {v.css && (
+                <button onClick={() => copy(`${v.id}-html`, toHtmlSnippet(v, text || "…"))} aria-label={`Copy ${v.label} as HTML`} title="Copy as HTML (keeps the look in blogs/Word)" className="glass hover-glow shrink-0 rounded-full p-2.5">
+                  {copied === `${v.id}-html` ? <Check size={15} className="text-emerald-500" /> : <Code2 size={15} />}
+                </button>
+              )}
             </div>
           );
         })}
