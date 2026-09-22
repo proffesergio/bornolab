@@ -87,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsense)}`}
             crossOrigin="anonymous"
           />
+          
         ) : null}
         <ThemeProvider>
           <Tracker />
@@ -111,6 +112,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <p className="mt-1">Made for Bangladeshi creators, authors & DTP studios. See <code>docs/plans.md</code> for the print-automation roadmap.</p>
           </footer>
         </ThemeProvider>
+        <meta name="google-site-verification" content="1K6AxjUFKTfzqFLOWn1Ugtlc7Ctbr3dwrLrGmvDl6K4" />
         <GoogleTagManager gtmId="G-1WVRY0063T" />      
       </body>
     </html>
