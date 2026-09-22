@@ -13,6 +13,7 @@
     "vercel:env": "vercel env pull .env.local"
   },
   "dependencies": {
+    "@next/third-parties": "^16.3.5",
     "@types/file-saver": "^2.0.7",
     "clsx": "^2.1.1",
     "docx": "^9.7.1",
@@ -21,7 +22,7 @@
     "jszip": "^3.10.2",
     "lucide-react": "^1.46.0",
     "mammoth": "^1.12.3",
-    "next": "16.3.5",
+    "next": "^16.3.5",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289",
     "react": "19.2.8",

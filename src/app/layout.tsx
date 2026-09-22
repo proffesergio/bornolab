@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { AnnouncementBar, Tracker } from "@/components/site-widgets";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/site-url";
+import { GoogleTagManager } from '@next/third-parties/google'
 
 const SITE_URL = getSiteUrl();
 
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="bn" className="h-full dark" suppressHydrationWarning>
+    
       <body className="flex min-h-full flex-col bg-white text-slate-900 antialiased dark:bg-[#070b16] dark:text-slate-100 dark:bg-[radial-gradient(60rem_30rem_at_20%_-10%,rgba(34,211,238,.15),transparent),radial-gradient(50rem_28rem_at_90%_0%,rgba(168,85,247,.18),transparent)]">
         <Script
           id="bornolab-theme-init"
@@ -109,6 +111,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <p className="mt-1">Made for Bangladeshi creators, authors & DTP studios. See <code>docs/plans.md</code> for the print-automation roadmap.</p>
           </footer>
         </ThemeProvider>
+        <GoogleTagManager gtmId="G-1WVRY0063T" />      
       </body>
     </html>
   );
