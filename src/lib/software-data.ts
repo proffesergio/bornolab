@@ -23,6 +23,14 @@ export const SOFTWARE: Software[] = [
   { id: "nikosh-office-pack", name: "Nikosh Office Pack", tagline: "Govt-standard Nikosh templates for Word + Excel", license: "Free", priceBDT: 0, platform: "Word / Excel", version: "2026.1", size: "18 MB", downloads: "29k+", fileUrl: "#", fallbackUrl: "#" },
 ];
 
+/** Full storefront catalog: built-in entries + admin-uploaded custom apps, with overrides. */
+export function buildSoftwareCatalog(
+  overrides: Record<string, { priceBDT?: number; enabled?: boolean }>,
+  custom: Software[] = []
+): (Software & { enabled: boolean })[] {
+  return applySoftwareOverrides([...SOFTWARE, ...custom], overrides);
+}
+
 /** Merge admin store overrides (price / visibility). priceBDT 0 = Free. */
 export function applySoftwareOverrides(
   items: Software[],

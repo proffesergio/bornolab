@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Copy, Check, Search, Crown, ShoppingCart } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { FONTS, DEFAULT_PREVIEW_TEXT, previewFamily, applyFontOverrides, type FontType, type FontCategory } from "@/lib/fonts-data";
+import { DEFAULT_PREVIEW_TEXT, previewFamily, buildFontCatalog, type BanglaFont, type FontType, type FontCategory } from "@/lib/fonts-data";
 import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { downloadBlob } from "@/lib/doc-utils";
@@ -13,7 +13,14 @@ const CATS: ("All" | FontCategory)[] = ["All", "Serif", "Sans-Serif", "Display",
 const LANGS = ["All", "Bangla", "English"] as const;
 type Lang = (typeof LANGS)[number];
 
-type Font = ReturnType<typeof applyFontOverrides>[number];
+type Font = ReturnType<typeof buildFontCatalog>[number];
+
+/** Save filename that keeps the real extension (.ttf/.otf/.woff2/.zip …). */
+function downloadName(f: Font): string {
+  const clean = f.name.replace(/["\r\n/\\]/g, "").trim().slice(0, 80) || "font";
+  const m = f.fileUrl.split("?")[0].match(/\.([a-z0-9]{2,5})$/i);
+  return `${clean}.${(m?.[1] ?? "ttf").toLowerCase()}`;
+}
 
 export default function FontsPage() {
   const [q, setQ] = useState(DEFAULT_PREVIEW_TEXT);
@@ -25,16 +32,18 @@ export default function FontsPage() {
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
   const [dlError, setDlError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>>({});
+  const [custom, setCustom] = useState<BanglaFont[]>([]);
 
   useEffect(() => {
     fetch("/api/site-config").then((r) => r.json()).then((c) => {
       setOverrides(c?.fontOverrides ?? {});
+      setCustom(c?.customFonts ?? []);
     }).catch(() => {});
   }, []);
 
   const catalog = useMemo(
-    () => applyFontOverrides(FONTS, overrides ?? DEFAULT_CONFIG.fontOverrides).filter((f) => f.enabled),
-    [overrides]
+    () => buildFontCatalog(overrides ?? DEFAULT_CONFIG.fontOverrides, custom).filter((f) => f.enabled),
+    [overrides, custom]
   );
 
   const list = useMemo(
@@ -64,7 +73,7 @@ export default function FontsPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       if (!blob.size) throw new Error("empty file");
-      downloadBlob(blob, `${f.name}.ttf`);
+      downloadBlob(blob, downloadName(f));
     } catch {
       // Same-origin proxy fallback (verifies success before saving).
       try {
@@ -72,7 +81,7 @@ export default function FontsPage() {
         if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
         const blob = await res.blob();
         if (!blob.size) throw new Error("empty file");
-        downloadBlob(blob, `${f.name}.ttf`);
+        downloadBlob(blob, downloadName(f));
       } catch {
         if (hasFallback) window.open(f.fallbackUrl, "_blank", "noopener");
         setDlError(`Could not download “${f.name}” from this site${hasFallback ? " — opened the foundry page instead" : ""}.`);

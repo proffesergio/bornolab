@@ -56,6 +56,14 @@ export function applyFontOverrides(
   });
 }
 
+/** Full storefront catalog: built-in entries + admin-uploaded custom fonts, with overrides. */
+export function buildFontCatalog(
+  overrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>,
+  custom: BanglaFont[] = []
+): (BanglaFont & { enabled: boolean })[] {
+  return applyFontOverrides([...FONTS, ...custom], overrides);
+}
+
 /** CSS font-family used for the live preview of each catalog entry */
 export function previewFamily(id: string): string {
   switch (id) {

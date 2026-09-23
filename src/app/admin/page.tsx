@@ -9,8 +9,8 @@ import {
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
-import { FONTS } from "@/lib/fonts-data";
-import { SOFTWARE } from "@/lib/software-data";
+import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
+import { SOFTWARE, type Software } from "@/lib/software-data";
 import { cn } from "@/lib/cn";
 
 type Section =
@@ -191,6 +191,33 @@ export default function AdminPage() {
   const [planPrice, setPlanPrice] = useState("199");
   const [roleName, setRoleName] = useState("");
 
+  // Add-font form state (direct link OR local upload)
+  const [nfName, setNfName] = useState("");
+  const [nfDesigner, setNfDesigner] = useState("");
+  const [nfPremium, setNfPremium] = useState(false);
+  const [nfPrice, setNfPrice] = useState("0");
+  const [nfType, setNfType] = useState<FontType>("Unicode");
+  const [nfCat, setNfCat] = useState<FontCategory>("Sans-Serif");
+  const [nfBangla, setNfBangla] = useState(true);
+  const [nfLink, setNfLink] = useState("");
+  const [nfFallback, setNfFallback] = useState("");
+  const [nfUploadedUrl, setNfUploadedUrl] = useState("");
+  const [nfUploading, setNfUploading] = useState(false);
+  const [nfError, setNfError] = useState("");
+
+  // Add-software form state (direct link OR local upload)
+  const [nsName, setNsName] = useState("");
+  const [nsTagline, setNsTagline] = useState("");
+  const [nsPlatform, setNsPlatform] = useState("Windows 10/11");
+  const [nsVersion, setNsVersion] = useState("1.0.0");
+  const [nsSize, setNsSize] = useState("");
+  const [nsPrice, setNsPrice] = useState("0");
+  const [nsLink, setNsLink] = useState("");
+  const [nsFallback, setNsFallback] = useState("");
+  const [nsUploadedUrl, setNsUploadedUrl] = useState("");
+  const [nsUploading, setNsUploading] = useState(false);
+  const [nsError, setNsError] = useState("");
+
   useEffect(() => {
     fetch("/api/admin/me").then(async (r) => {
       if (!r.ok) { router.push("/admin/login"); return; }
@@ -282,6 +309,110 @@ export default function AdminPage() {
     };
     void save({ ads: { ...config.ads, units: [...(config.ads.units ?? []), unit] } });
     setUnitName(""); setUnitAdSlot("");
+  };
+
+  /* ---------- Catalog: custom fonts + software (link or upload) ---------- */
+
+  const slug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9\u0980-\u09ff]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "item";
+
+  const uploadCatalogFile = async (
+    kind: "font" | "software",
+    file: File,
+    setBusy: (b: boolean) => void,
+    setUrl: (u: string) => void,
+    setErr: (e: string) => void
+  ) => {
+    setBusy(true); setErr("");
+    try {
+      const form = new FormData();
+      form.append("kind", kind);
+      form.append("file", file);
+      const res = await fetch("/api/admin/uploads", { method: "POST", body: form });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Upload failed");
+      setUrl(j.url);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addCustomFont = () => {
+    if (!nfName.trim()) { setNfError("Font name is required."); return; }
+    const fileUrl = nfUploadedUrl || nfLink.trim() || "#";
+    const item: BanglaFont = {
+      id: `custom-${slug(nfName)}-${Date.now().toString(36)}`,
+      name: nfName.trim(),
+      designer: nfDesigner.trim() || "BornoLab Admin",
+      license: nfPremium ? "Paid" : "Free",
+      type: nfType,
+      category: nfCat,
+      bangla: nfBangla,
+      fileUrl,
+      fallbackUrl: nfFallback.trim() || "#",
+      premium: nfPremium,
+      priceBDT: nfPremium ? Number(nfPrice) || 0 : 0,
+    };
+    void save({ customFonts: [...(config.customFonts ?? []), item] });
+    setNfName(""); setNfDesigner(""); setNfPremium(false); setNfPrice("0");
+    setNfLink(""); setNfFallback(""); setNfUploadedUrl(""); setNfError("");
+  };
+
+  const deleteCustomFont = async (id: string) => {
+    if (!confirm("Delete this font from the catalog?")) return;
+    const target = (config.customFonts ?? []).find((f) => f.id === id);
+    const restOverrides = { ...config.fontOverrides };
+    delete restOverrides[id];
+    void save({
+      customFonts: (config.customFonts ?? []).filter((f) => f.id !== id),
+      fontOverrides: restOverrides,
+    });
+    if (target?.fileUrl.startsWith("/uploads/")) {
+      await fetch("/api/admin/uploads", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: target.fileUrl }),
+      }).catch(() => {});
+    }
+  };
+
+  const addCustomSoftware = () => {
+    if (!nsName.trim()) { setNsError("Software name is required."); return; }
+    const price = Number(nsPrice) || 0;
+    const item: Software = {
+      id: `custom-${slug(nsName)}-${Date.now().toString(36)}`,
+      name: nsName.trim(),
+      tagline: nsTagline.trim() || "Added by admin",
+      license: price > 0 ? "Paid" : "Free",
+      priceBDT: price,
+      platform: nsPlatform.trim() || "Windows 10/11",
+      version: nsVersion.trim() || "1.0.0",
+      size: nsSize.trim() || "—",
+      downloads: "New",
+      fileUrl: nsUploadedUrl || nsLink.trim() || "#",
+      fallbackUrl: nsFallback.trim() || "#",
+    };
+    void save({ customSoftware: [...(config.customSoftware ?? []), item] });
+    setNsName(""); setNsTagline(""); setNsPrice("0"); setNsSize("");
+    setNsLink(""); setNsFallback(""); setNsUploadedUrl(""); setNsError("");
+  };
+
+  const deleteCustomSoftware = async (id: string) => {
+    if (!confirm("Delete this software from the store?")) return;
+    const target = (config.customSoftware ?? []).find((s) => s.id === id);
+    const restOverrides = { ...config.softwareOverrides };
+    delete restOverrides[id];
+    void save({
+      customSoftware: (config.customSoftware ?? []).filter((s) => s.id !== id),
+      softwareOverrides: restOverrides,
+    });
+    if (target?.fileUrl.startsWith("/uploads/")) {
+      await fetch("/api/admin/uploads", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: target.fileUrl }),
+      }).catch(() => {});
+    }
   };
 
   const maxDay = Math.max(1, ...(analytics?.days.map((d) => d.views) ?? [1]));
@@ -591,6 +722,81 @@ export default function AdminPage() {
           {section === "catalog" && (
             <div className="grid gap-4">
               <GlassCard>
+                <h3 className="text-sm font-bold">Add a font — link or upload</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  Paste a direct download link <b>or</b> upload from your computer (.ttf/.otf/.woff/.woff2/.zip, max 30 MB).
+                  Premium fonts go through checkout; you deliver the file after verifying payment (Orders tab).
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <input aria-label="New font name" value={nfName} onChange={(e) => setNfName(e.target.value)} placeholder="Font name *" className={field} />
+                  <input aria-label="New font designer" value={nfDesigner} onChange={(e) => setNfDesigner(e.target.value)} placeholder="Designer (optional)" className={field} />
+                  <select aria-label="New font encoding" value={nfType} onChange={(e) => setNfType(e.target.value as FontType)} className={field}>
+                    <option value="Unicode">Unicode</option>
+                    <option value="ANSI">ANSI (Bijoy)</option>
+                    <option value="Dual">Dual</option>
+                  </select>
+                  <select aria-label="New font category" value={nfCat} onChange={(e) => setNfCat(e.target.value as FontCategory)} className={field}>
+                    <option value="Serif">Serif</option>
+                    <option value="Sans-Serif">Sans-Serif</option>
+                    <option value="Display">Display</option>
+                    <option value="Stylized">Stylized</option>
+                  </select>
+                  <input aria-label="New font download link" value={nfLink} onChange={(e) => setNfLink(e.target.value)} placeholder="Direct download link https://… (or upload below)" className={cn(field, "font-mono")} />
+                  <input aria-label="New font fallback page" value={nfFallback} onChange={(e) => setNfFallback(e.target.value)} placeholder="Fallback/foundry page https://… (optional)" className={cn(field, "font-mono")} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 font-semibold dark:bg-white/5">
+                    <input type="checkbox" checked={nfBangla} onChange={(e) => setNfBangla(e.target.checked)} className="h-4 w-4 accent-cyan-500" /> বাংলা font
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 font-semibold dark:bg-white/5">
+                    <input type="checkbox" checked={nfPremium} onChange={(e) => setNfPremium(e.target.checked)} className="h-4 w-4 accent-purple-500" /> Premium
+                  </label>
+                  {nfPremium && (
+                    <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={nfPrice} onChange={(e) => setNfPrice(e.target.value)} className={cn(field, "w-24")} aria-label="New font price" /></label>
+                  )}
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
+                    {nfUploading ? "Uploading…" : nfUploadedUrl ? "✓ File attached — replace?" : "⬆ Upload file"}
+                    <input
+                      type="file" accept=".ttf,.otf,.woff,.woff2,.zip" className="hidden"
+                      disabled={nfUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void uploadCatalogFile("font", f, setNfUploading, setNfUploadedUrl, setNfError);
+                      }}
+                    />
+                  </label>
+                  {nfUploadedUrl && (
+                    <span className="max-w-full truncate font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{nfUploadedUrl}</span>
+                  )}
+                </div>
+                {nfError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nfError}</p>}
+                <button onClick={addCustomFont} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish font</button>
+              </GlassCard>
+
+              {(config.customFonts ?? []).length > 0 && (
+                <GlassCard>
+                  <h3 className="text-sm font-bold">Your uploaded fonts ({(config.customFonts ?? []).length})</h3>
+                  <div className="mt-3 space-y-2">
+                    {(config.customFonts ?? []).map((f) => {
+                      const ov = config.fontOverrides[f.id] ?? {};
+                      const premium = ov.premium ?? f.premium ?? f.license === "Paid";
+                      return (
+                        <div key={f.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto] dark:bg-white/5">
+                          <span className="min-w-0"><b>{f.name}</b> <span className="text-slate-500">• {f.type} • {f.bangla ? "বাংলা" : "English"}</span>
+                            <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{f.fileUrl}</span></span>
+                          <label className="flex items-center gap-1.5">Premium <input type="checkbox" checked={premium} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, premium: !premium } } })} className="h-4 w-4 accent-purple-500" /></label>
+                          <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? f.priceBDT ?? 0} onChange={(e) => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
+                          <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
+                          <button onClick={() => deleteCustomFont(f.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              )}
+
+              <GlassCard>
                 <h3 className="text-sm font-bold">Font catalog overrides</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Toggle premium / set ৳ price / hide fonts. Applies on the Fonts page immediately.</p>
                 <div className="mt-3 space-y-2">
@@ -608,6 +814,63 @@ export default function AdminPage() {
                   })}
                 </div>
               </GlassCard>
+              <GlassCard>
+                <h3 className="text-sm font-bold">Add software — link or upload</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  Paste a direct download link <b>or</b> upload from your computer (.zip/.exe/.msi/.dmg/.pkg/.apk, max 300 MB).
+                  Price ৳0 = Free. Paid apps go through checkout; you deliver after verifying payment.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <input aria-label="New software name" value={nsName} onChange={(e) => setNsName(e.target.value)} placeholder="Software name *" className={field} />
+                  <input aria-label="New software tagline" value={nsTagline} onChange={(e) => setNsTagline(e.target.value)} placeholder="Tagline (optional)" className={field} />
+                  <input aria-label="New software platform" value={nsPlatform} onChange={(e) => setNsPlatform(e.target.value)} placeholder="Platform (e.g. Windows 10/11)" className={field} />
+                  <input aria-label="New software version" value={nsVersion} onChange={(e) => setNsVersion(e.target.value)} placeholder="Version (e.g. 1.0.0)" className={cn(field, "font-mono")} />
+                  <input aria-label="New software size" value={nsSize} onChange={(e) => setNsSize(e.target.value)} placeholder="Size (e.g. 48 MB)" className={field} />
+                  <label className="flex items-center gap-1.5 text-[13px] font-semibold">৳ Price (0 = Free) <input type="number" min={0} value={nsPrice} onChange={(e) => setNsPrice(e.target.value)} className={cn(field, "w-28")} aria-label="New software price" /></label>
+                  <input aria-label="New software download link" value={nsLink} onChange={(e) => setNsLink(e.target.value)} placeholder="Direct download link https://… (or upload below)" className={cn(field, "font-mono")} />
+                  <input aria-label="New software fallback page" value={nsFallback} onChange={(e) => setNsFallback(e.target.value)} placeholder="Fallback/info page https://… (optional)" className={cn(field, "font-mono")} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
+                    {nsUploading ? "Uploading…" : nsUploadedUrl ? "✓ File attached — replace?" : "⬆ Upload file"}
+                    <input
+                      type="file" accept=".zip,.exe,.msi,.dmg,.pkg,.apk" className="hidden"
+                      disabled={nsUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void uploadCatalogFile("software", f, setNsUploading, setNsUploadedUrl, setNsError);
+                      }}
+                    />
+                  </label>
+                  {nsUploadedUrl && (
+                    <span className="max-w-full truncate font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{nsUploadedUrl}</span>
+                  )}
+                </div>
+                {nsError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nsError}</p>}
+                <button onClick={addCustomSoftware} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish software</button>
+              </GlassCard>
+
+              {(config.customSoftware ?? []).length > 0 && (
+                <GlassCard>
+                  <h3 className="text-sm font-bold">Your uploaded software ({(config.customSoftware ?? []).length})</h3>
+                  <div className="mt-3 space-y-2">
+                    {(config.customSoftware ?? []).map((s) => {
+                      const ov = config.softwareOverrides[s.id] ?? {};
+                      return (
+                        <div key={s.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto] dark:bg-white/5">
+                          <span className="min-w-0"><b>{s.name}</b> <span className="text-slate-500">• {s.platform} • v{s.version}</span>
+                            <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{s.fileUrl}</span></span>
+                          <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? s.priceBDT} onChange={(e) => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
+                          <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
+                          <button onClick={() => deleteCustomSoftware(s.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              )}
+
               <GlassCard>
                 <h3 className="text-sm font-bold">Software store overrides</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Set ৳ prices (0 = Free) or hide items from the Software page.</p>
@@ -741,13 +1004,13 @@ export default function AdminPage() {
             <GlassCard>
               <h3 className="text-sm font-bold">SEO & analytics integrations</h3>
               <div className="mt-3 grid gap-3">
-                {(["title", "description", "keywords", "gaId", "adsenseClient"] as const).map((k) => (
+                {(["title", "description", "keywords", "gaId", "adsenseClient", "googleSiteVerification"] as const).map((k) => (
                   <div key={k}>
-                    <label htmlFor={`seo-${k}`} className="text-xs font-bold">{k === "gaId" ? "Google Analytics ID (G-…)" : k === "adsenseClient" ? "AdSense client (ca-pub-…)" : k}</label>
+                    <label htmlFor={`seo-${k}`} className="text-xs font-bold">{k === "gaId" ? "Google ID — GTM-XXXXXXX or G-XXXXXXXX" : k === "adsenseClient" ? "AdSense client (ca-pub-…)" : k === "googleSiteVerification" ? "Google site-verification code" : k}</label>
                     {k === "description" ? (
-                      <textarea id={`seo-${k}`} rows={2} value={config.seo[k]} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
+                      <textarea id={`seo-${k}`} rows={2} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
                     ) : (
-                      <input id={`seo-${k}`} value={config.seo[k]} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
+                      <input id={`seo-${k}`} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} placeholder={k === "googleSiteVerification" ? "googleXXXX… (Search Console → Settings)" : undefined} />
                     )}
                   </div>
                 ))}

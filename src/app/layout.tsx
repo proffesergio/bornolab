@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { AnnouncementBar, Tracker } from "@/components/site-widgets";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/site-url";
-import { GoogleTagManager } from '@next/third-parties/google'
+import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 
 const SITE_URL = getSiteUrl();
 
@@ -17,6 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const description =
       cfg.seo.description?.trim() ||
       "Free Bangla toolkit: Bijoy to Unicode converter, Bangla fonts, text styler, PDF to DOCX, PDF splitter & merger. Private, in-browser, AdSense-friendly guides.";
+    const verification = cfg.seo.googleSiteVerification?.trim() || undefined;
     return {
       metadataBase: new URL(SITE_URL),
       title: { default: title, template: "%s • BornoLab" },
@@ -24,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       keywords: cfg.seo.keywords,
       authors: [{ name: "BornoLab" }],
       alternates: { canonical: "/" },
+      ...(verification ? { verification: { google: verification } } : {}),
       openGraph: {
         type: "website",
         siteName: "BornoLab",
@@ -62,9 +64,16 @@ const ORG_JSONLD = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let adsense = "";
+  let gaId = "";
   try {
-    adsense = ((await getSiteConfig()).seo.adsenseClient ?? "").trim();
+    const seo = (await getSiteConfig()).seo;
+    adsense = (seo.adsenseClient ?? "").trim();
+    gaId = (seo.gaId ?? "").trim();
   } catch { /* defaults */ }
+  // Admin enters ONE id in SEO settings: GTM-XXXXXXX (Tag Manager container)
+  // or G-XXXXXXXX (GA4 measurement). Anything else is ignored — no broken scripts.
+  const isGtm = /^GTM-[A-Z0-9]+$/i.test(gaId);
+  const isGa = /^G-[A-Z0-9]+$/i.test(gaId);
 
   return (
     <html lang="bn" className="h-full dark" suppressHydrationWarning>
@@ -112,8 +121,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <p className="mt-1">Made for Bangladeshi creators, authors & DTP studios. See <code>docs/plans.md</code> for the print-automation roadmap.</p>
           </footer>
         </ThemeProvider>
-        <meta name="google-site-verification" content="1K6AxjUFKTfzqFLOWn1Ugtlc7Ctbr3dwrLrGmvDl6K4" />
-        <GoogleTagManager gtmId="G-1WVRY0063T" />      
+        {isGtm ? <GoogleTagManager gtmId={gaId} /> : null}
+        {isGa ? <GoogleAnalytics gaId={gaId} /> : null}
       </body>
     </html>
   );

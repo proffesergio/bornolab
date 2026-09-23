@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, ShoppingCart, MonitorDown, BadgeCheck } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { SOFTWARE, applySoftwareOverrides } from "@/lib/software-data";
+import { buildSoftwareCatalog, type Software } from "@/lib/software-data";
 import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { downloadBlob } from "@/lib/doc-utils";
@@ -11,17 +11,19 @@ import { cn } from "@/lib/cn";
 export default function SoftwarePage() {
   const [tab, setTab] = useState<"All" | "Free" | "Paid">("All");
   const [overrides, setOverrides] = useState<Record<string, { priceBDT?: number; enabled?: boolean }>>({});
+  const [custom, setCustom] = useState<Software[]>([]);
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
 
   useEffect(() => {
     fetch("/api/site-config").then((r) => r.json()).then((c) => {
       setOverrides(c?.softwareOverrides ?? {});
+      setCustom(c?.customSoftware ?? []);
     }).catch(() => {});
   }, []);
 
   const items = useMemo(
-    () => applySoftwareOverrides(SOFTWARE, overrides ?? DEFAULT_CONFIG.softwareOverrides).filter((s) => s.enabled),
-    [overrides]
+    () => buildSoftwareCatalog(overrides ?? DEFAULT_CONFIG.softwareOverrides, custom).filter((s) => s.enabled),
+    [overrides, custom]
   );
   const shown = items.filter((s) => tab === "All" || s.license === tab);
 
@@ -74,6 +76,13 @@ export default function SoftwarePage() {
                 className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
                 <ShoppingCart size={15} /> Buy ৳{s.priceBDT}
               </button>
+            ) : s.fileUrl && s.fileUrl !== "#" ? (
+              <a
+                href={s.fileUrl} download
+                {...(s.fileUrl.startsWith("http") ? { target: "_blank" as const, rel: "noopener" } : {})}
+                className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
+                <Download size={15} /> Download Free
+              </a>
             ) : (
               <button onClick={() => getFree(s.id, s.name, s.version, s.platform)}
                 className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">

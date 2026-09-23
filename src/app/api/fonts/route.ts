@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /** Local font files only — never fetch arbitrary upstream URLs (SSRF-safe). */
-const ALLOWED_RE = /^\/fonts\/[A-Za-z0-9_.\-/]+\.(ttf|otf|woff2?)$/i;
-const MAX_BYTES = 15 * 1024 * 1024; // 15 MB cap per font file
+const ALLOWED_RE = /^\/(?:fonts|uploads\/fonts)\/[A-Za-z0-9_.\-/]+\.(ttf|otf|woff2?|zip)$/i;
+const MAX_BYTES = 32 * 1024 * 1024; // 32 MB cap per file
 
 const MIME: Record<string, string> = {
   ttf: "font/ttf",
   otf: "font/otf",
   woff: "font/woff",
   woff2: "font/woff2",
+  zip: "application/zip",
 };
 
-/** GET /api/fonts?url=/fonts/…&name=… → streams a local font as attachment. */
+/** GET /api/fonts?url=/fonts/…|/uploads/fonts/…&name=… → streams a local font as attachment. */
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url") ?? "";
   const rawName = req.nextUrl.searchParams.get("name") || "font";
   if (!ALLOWED_RE.test(url)) {
-    return NextResponse.json({ error: "only /fonts/*.ttf|otf|woff served here" }, { status: 400 });
+    return NextResponse.json({ error: "only local /fonts/… or /uploads/fonts/… served here" }, { status: 400 });
   }
   const name = rawName.replace(/["\r\n/\\]/g, "").slice(0, 80) || "font";
   try {

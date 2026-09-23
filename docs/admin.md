@@ -22,14 +22,25 @@ Traffic at a glance: total views, last-7-days views, pending-order count, a 14-d
 ### 🧰 Tools — module visibility
 Toggle each of the six modules (Converter, Fonts, Styler, Translator, Splitter, Software). A disabled tool **instantly disappears** from the nav and homepage. Changes save on click with a "✓ Saved" tick.
 
-### 🔤 Fonts — catalog overrides
+### 🔤 Fonts — catalog overrides + uploads
 Per-font controls, applied on the Fonts page immediately:
 - **Premium** — flipping this on routes the font through paid checkout.
 - **৳ price** — the BDT price shown at checkout.
 - **Visible** — hide a font without deleting it.
 
-### 📦 Software — store overrides
-Per-item **৳ price** (`0` = Free) and **Visible** toggle for the Software page.
+**Add a font — link or upload** (top of the Catalog tab):
+1. Fill name (+ designer, encoding, category, বাংলা/English).
+2. Either paste a **direct download link** (`https://…`) or **⬆ Upload file** from your computer (`.ttf/.otf/.woff/.woff2/.zip`, max 30 MB).
+3. Tick **Premium** + ৳ price for paid faces, or leave free.
+4. **+ Publish font** — it appears on `/fonts` instantly, with the same premium/price/visible controls as built-in fonts, plus **Delete**.
+- Free fonts download directly; premium buyers check out and **you deliver the file after verifying payment** (Orders tab).
+- Uploads are stored in `public/uploads/fonts/` (git-ignored). **On Vercel use direct links** — serverless filesystems are ephemeral, so uploaded files won't survive redeploys there.
+
+### 📦 Software — store overrides + uploads
+Per-item **৳ price** (`0` = Free) and **Visible** toggle for the Software page, plus an **Add software** form identical in spirit to fonts:
+name, tagline, platform, version, size, price, then **direct link or ⬆ Upload** (`.zip/.exe/.msi/.dmg/.pkg/.apk`, max 300 MB).
+Free apps with a real file download it directly; paid apps go through checkout with manual delivery.
+Uploads live in `public/uploads/software/` (git-ignored) — same Vercel caveat: production uploads need direct links (Drive/R2/Dropbox direct URLs).
 
 ### 🧾 Orders — manual-payment fulfillment
 Each order shows ID, item, amount, method (bKash/Nagad/Bank/Binance), sender number, transaction ID, and timestamp. Fulfillment flow:
@@ -45,7 +56,8 @@ Three slots: **header**, **inFeed**, **footer**. Per slot: **Enabled** toggle, *
 
 ### 🔍 SEO — search & analytics integrations
 `title`, `description`, `keywords`, plus:
-- **Google Analytics ID (`G-…`)** — the `gtag.js` script auto-injects on every page once saved.
+- **Google ID (`GTM-…` or `G-…`)** — one field, auto-detected. A `GTM-…` container loads Tag Manager; a `G-…` measurement ID loads GA4. Anything else is ignored (no broken scripts). Injected server-side on every page once saved — never pasted twice.
+- **Google site-verification code** — the `googleXXXX…` token from Search Console → Settings, rendered as the `google-site-verification` meta tag. (File-based verification also works: drop the file in `public/`.)
 - **AdSense client (`ca-pub-…`)** — the AdSense script auto-injects on every page once saved.
 
 ### ✨ AI SEO — content analyzer (offline)

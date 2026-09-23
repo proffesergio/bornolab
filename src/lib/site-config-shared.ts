@@ -4,6 +4,8 @@ import {
   type AdUnit,
   type AuthProviderConfig,
 } from "./members-shared";
+import type { BanglaFont } from "./fonts-data";
+import type { Software } from "./software-data";
 
 export type { AdUnit, AuthProviderConfig };
 
@@ -47,8 +49,11 @@ export interface SiteConfig {
   pdfTools: Record<PdfToolKey, PdfToolCaps>;
   fontOverrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>;
   softwareOverrides: Record<string, { priceBDT?: number; enabled?: boolean }>;
+  /** Admin-added catalog entries (Admin → Catalog). Stored + served like overrides. */
+  customFonts: BanglaFont[];
+  customSoftware: Software[];
   ads: Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
-  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string };
+  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; googleSiteVerification: string };
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
     processors: Record<PaymentMethod, ProcessorState>;
   };
@@ -67,6 +72,8 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
   },
   fontOverrides: {},
   softwareOverrides: {},
+  customFonts: [],
+  customSoftware: [],
   ads: {
     header: { enabled: false, network: "AdSense", code: "" },
     inFeed: { enabled: false, network: "AdSense", code: "" },
@@ -79,6 +86,7 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
     keywords: "bijoy converter, unicode to bijoy, bangla fonts, sutonnymj, pdf to docx, bangla styler",
     gaId: "",
     adsenseClient: "",
+    googleSiteVerification: "",
   },
   payments: {
     bkash: "01XXXXXXXXX",
