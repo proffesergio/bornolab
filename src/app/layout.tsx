@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme";
 import { Navbar } from "@/components/navbar";
 import { AnnouncementBar, Tracker } from "@/components/site-widgets";
+import { ConsentBanner } from "@/components/ads";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/site-url";
+import { resolvePageSeo, PATHNAME_HEADER } from "@/lib/seo-pages";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 
 const SITE_URL = getSiteUrl();
@@ -13,10 +16,19 @@ const SITE_URL = getSiteUrl();
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const cfg = await getSiteConfig();
-    const title = cfg.seo.title?.trim() || "BornoLab — বাংলা Font & Document Suite";
-    const description =
+    const globalTitle = cfg.seo.title?.trim() || "BornoLab — বাংলা Font & Document Suite";
+    const globalDesc =
       cfg.seo.description?.trim() ||
       "Free Bangla toolkit: Bijoy to Unicode converter, Bangla fonts, text styler, PDF to DOCX, PDF splitter & merger. Private, in-browser, AdSense-friendly guides.";
+    let path = "/";
+    try {
+      path = (await headers()).get(PATHNAME_HEADER) || "/";
+    } catch { /* middleware header absent (static export) — use globals */ }
+    // Per-page overrides (Admin → SEO) win over globals; page-level
+    // generateMetadata (converter, etc.) still wins over both.
+    const page = resolvePageSeo(path, cfg);
+    const title = page.title.trim() || globalTitle;
+    const description = page.description.trim() || globalDesc;
     const verification = cfg.seo.googleSiteVerification?.trim() || undefined;
     return {
       metadataBase: new URL(SITE_URL),
@@ -35,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
         locale: "bn_BD",
       },
       twitter: { card: "summary_large_image", title, description },
-      robots: { index: true, follow: true },
+      robots: page.noindex ? { index: false, follow: false } : { index: true, follow: true },
       icons: { icon: "/icon.svg" },
     };
   } catch {
@@ -103,6 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <AnnouncementBar />
           <Navbar />
           <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">{children}</main>
+          <ConsentBanner />
           <footer className="border-t border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-500">
             <p>
               <span className="font-bold text-slate-700 dark:text-slate-300">BornoLab</span> • Client-first Bangla toolkit • n8n automation-ready •{" "}

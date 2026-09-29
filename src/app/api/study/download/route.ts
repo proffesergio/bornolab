@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { getSiteConfig } from "@/lib/site-config";
 import { buildStudyCatalog } from "@/lib/study-data";
-import { USER_COOKIE, sessionUser } from "@/lib/users";
+import { USER_COOKIE, logAudit, sessionUser } from "@/lib/users";
 
 export const runtime = "nodejs";
 
@@ -43,15 +43,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "only local /uploads/study/… files are downloadable here" }, { status: 400 });
   }
   try {
-    const filePath = path.join(process.cwd(), "public", decodeURIComponent(url));
-    const stat = await fs.stat(filePath);
-    if (!stat.isFile() || stat.size === 0 || stat.size > MAX_BYTES) {
-      return NextResponse.json({ error: "file unavailable" }, { status: 404 });
-    }
-    const buf = await fs.readFile(filePath);
-    const ext = (url.split(".").pop() ?? "pdf").toLowerCase();
     const safeTitle = material.title.replace(/["\r\n/\\]/g, "").trim().slice(0, 80) || "study-material";
-    return new NextResponse(new Uint8Array(buf), {
+    let data: ArrayBuffer | null = null;
+    try {
+      // Local/self-host: files live on disk.
+      const filePath = path.join(process.cwd(), "public", decodeURIComponent(url));
+      const stat = await fs.stat(filePath);
+      if (stat.isFile() && stat.size > 0 && stat.size <= MAX_BYTES) {
+        data = (await fs.readFile(filePath)).buffer as ArrayBuffer;
+      }
+    } catch { /* serverless FS — fall through to origin fetch */ }
+    if (!data) {
+      // Serverless (Vercel): public/ files are served from the CDN, not the
+      // function filesystem — stream them through the origin instead.
+      const upstream = await fetch(new URL(url, req.nextUrl.origin));
+      if (!upstream.ok) return NextResponse.json({ error: "file not found" }, { status: 404 });
+      const len = Number(upstream.headers.get("content-length") || 0);
+      if (len > MAX_BYTES) return NextResponse.json({ error: "file too large" }, { status: 413 });
+      const buf = await upstream.arrayBuffer();
+      if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) {
+        return NextResponse.json({ error: "file unavailable" }, { status: 404 });
+      }
+      data = buf;
+    }
+    const ext = (url.split(".").pop() ?? "pdf").toLowerCase();
+    // Member download ledger for Admin → Customers → Activity.
+    await logAudit(`user:${user.id}`, "study.download", `${material.id} • ${material.title.slice(0, 120)}`);
+    return new NextResponse(data, {
       headers: {
         "Content-Type": MIME[ext] ?? "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeTitle}.${ext}"`,

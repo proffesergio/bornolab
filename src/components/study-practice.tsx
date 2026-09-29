@@ -27,13 +27,24 @@ export function StudyPractice({ topics = PRACTICE_TOPICS }: { topics?: PracticeT
   const [topicId, setTopicId] = useState(topics[0]?.id ?? "");
   const [typeFilter, setTypeFilter] = useState<"All" | "MCQ" | "Written">("All");
   const [seenOnly, setSeenOnly] = useState(false);
-  const [marks, setMarks] = useState<Record<string, Mark>>(loadMarks);
+  // Start empty (matches the server render) and hydrate from localStorage
+  // after mount — reading it during render would mismatch on first paint.
+  const [marks, setMarks] = useState<Record<string, Mark>>({});
+  const [hydrated, setHydrated] = useState(false);
 
+  // External store sync (localStorage progress) — setState-in-effect is intended here
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    setMarks(loadMarks());
+    setHydrated(true);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!hydrated) return; // skip the mount commit: state is still the server snapshot
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(marks));
     } catch { /* private mode — ignore */ }
-  }, [marks]);
+  }, [marks, hydrated]);
 
   const topic = topics.find((t) => t.id === topicId) ?? topics[0];
   const items = useMemo(() => {

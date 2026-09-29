@@ -29,12 +29,20 @@ export interface PdfOp {
   ms: number; // client-measured processing time
   ok: boolean;
   err?: string;
+  uid?: string; // signed-in member id when the job was logged (admin analytics only)
 }
 
 export interface AdSlotConfig {
   enabled: boolean;
   network: string; // e.g. AdSense, Media.net, custom
   code: string; // raw HTML/JS snippet
+}
+
+/** Per-page SEO override (Admin → SEO). Path is the route, e.g. "/study". */
+export interface SeoPageOverride {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
 }
 
 export type PaymentMethod = "bkash" | "nagad" | "bank" | "binance" | "card";
@@ -58,6 +66,8 @@ export interface SiteConfig {
   studyOverrides: Record<string, { enabled?: boolean }>;
   ads: Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
   seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; googleSiteVerification: string };
+  /** Per-route SEO overrides keyed by path ("/study"). Falls back to global seo. */
+  seoPages: Record<string, SeoPageOverride>;
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
     processors: Record<PaymentMethod, ProcessorState>;
   };
@@ -94,6 +104,7 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
     adsenseClient: "",
     googleSiteVerification: "",
   },
+  seoPages: {},
   payments: {
     bkash: "01XXXXXXXXX",
     nagad: "01XXXXXXXXX",

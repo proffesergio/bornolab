@@ -29,6 +29,7 @@ export default function PrivacyPage() {
           <h2 className="font-extrabold">2. What we do collect</h2>
           <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
             <li><b>Anonymous page-view counts</b> (URL + timestamp) to understand which tools are popular. No IP fingerprinting, no cross-site tracking.</li>
+            <li><b>Signed-in activity:</b> when you are logged in, page views, PDF-tool usage and study downloads are linked to your account ID so we can provide download access and support. Logged-out usage stays anonymous. You may request deletion of this record at any time.</li>
             <li><b>Manual-payment orders:</b> when you buy a premium font or software, we store the item, amount, payment method, sender number and transaction ID you submit — solely to verify and deliver your order.</li>
             <li><b>Admin settings</b> you configure in the dashboard (kept in a JSON store / environment seed).</li>
           </ul>

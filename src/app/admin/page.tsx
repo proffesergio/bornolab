@@ -13,6 +13,7 @@ import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, 
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
 import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
 import { SOFTWARE, type Software } from "@/lib/software-data";
+import { SEO_ROUTE_OPTIONS } from "@/lib/seo-pages";
 import { cn } from "@/lib/cn";
 
 type Section =
@@ -72,7 +73,7 @@ const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
   orders: { title: "Orders", desc: "Manual-payment fulfillment." },
   ads: { title: "Ads", desc: "Slots + Google AdSense units." },
   payments: { title: "Payments", desc: "Processors and merchant accounts." },
-  seo: { title: "SEO", desc: "Search + analytics integrations." },
+  seo: { title: "SEO", desc: "Global integrations + per-page title/description/noindex." },
   aiseo: { title: "AI SEO", desc: "Offline content analyzer." },
   roles: { title: "Roles", desc: "Who can do what in this panel." },
   plans: { title: "Plans", desc: "Subscription products members buy." },
@@ -177,9 +178,11 @@ export default function AdminPage() {
   const [plans, setPlans] = useState<PlanDef[]>([]);
   const [roles, setRoles] = useState<RoleDef[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [adsCheck, setAdsCheck] = useState<{ exists: boolean; bytes?: number; sellerLines?: number; foundIds?: string[]; client?: string; pubId?: string; placeholderOnly?: boolean; match?: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [userQuery, setUserQuery] = useState("");
+  const [orderQuery, setOrderQuery] = useState("");
 
   // AI SEO local state
   const [seoText, setSeoText] = useState("আমার সোনার বাংলা ফন্ট কনভার্টার দিয়ে Bijoy থেকে Unicode এ রূপান্তর করুন। BornoLab offers free Bangla fonts, PDF tools and premium software for creators.");
@@ -223,6 +226,39 @@ export default function AdminPage() {
   const [nsUploading, setNsUploading] = useState(false);
   const [nsError, setNsError] = useState("");
 
+  // Per-page SEO override form state
+  const [seoRoute, setSeoRoute] = useState<string>("/study");
+  const [seoCustom, setSeoCustom] = useState("");
+  const [seoPTitle, setSeoPTitle] = useState("");
+  const [seoPDesc, setSeoPDesc] = useState("");
+  const [seoPNoindex, setSeoPNoindex] = useState(false);
+  // Config backup state
+  const [cfgMsg, setCfgMsg] = useState("");
+  const [cfgBusy, setCfgBusy] = useState(false);
+  // Per-user activity timeline state (Admin → Customers)
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [activityCache, setActivityCache] = useState<Record<string, {
+    views: number; pdfJobs: number; downloads: number; logins: number;
+    lastActive: number | null;
+    timeline: { at: number; kind: string; label: string; detail?: string }[];
+  }>>({});
+  const [activityBusy, setActivityBusy] = useState(false);
+
+  const toggleActivity = (id: string) => {
+    if (activityId === id) {
+      setActivityId(null);
+      return;
+    }
+    setActivityId(id);
+    if (activityCache[id]) return;
+    setActivityBusy(true);
+    fetch(`/api/admin/user-activity?id=${encodeURIComponent(id)}`)
+      .then((r) => r.json())
+      .then((j) => setActivityCache((c) => ({ ...c, [id]: j })))
+      .catch(() => {})
+      .finally(() => setActivityBusy(false));
+  };
+
   useEffect(() => {
     fetch("/api/admin/me").then(async (r) => {
       if (!r.ok) { router.push("/admin/login"); return; }
@@ -236,6 +272,7 @@ export default function AdminPage() {
     fetch("/api/admin/plans").then((r) => r.json()).then((j) => setPlans(j.plans ?? [])).catch(() => {});
     fetch("/api/admin/roles").then((r) => r.json()).then((j) => setRoles(j.roles ?? [])).catch(() => {});
     fetch("/api/admin/audit").then((r) => r.json()).then((j) => setAudit(j.entries ?? [])).catch(() => {});
+    fetch("/api/admin/ads-check").then((r) => r.json()).then(setAdsCheck).catch(() => {});
   }, [router]);
 
   const save = async (patch: Partial<SiteConfig>) => {
@@ -426,6 +463,12 @@ export default function AdminPage() {
   const filteredUsers = users.filter((u) =>
     !userQuery.trim() || u.email.toLowerCase().includes(userQuery.toLowerCase()) || u.name.toLowerCase().includes(userQuery.toLowerCase())
   );
+  const filteredOrders = orders.filter((o) =>
+    !orderQuery.trim() ||
+    o.id.toLowerCase().includes(orderQuery.toLowerCase()) ||
+    o.itemName.toLowerCase().includes(orderQuery.toLowerCase()) ||
+    o.sender.toLowerCase().includes(orderQuery.toLowerCase())
+  );
   const roleCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const u of users) m[u.role] = (m[u.role] ?? 0) + 1;
@@ -434,6 +477,53 @@ export default function AdminPage() {
 
   const field = "focus-glow w-full rounded-xl bg-slate-100 p-2.5 text-sm outline-none dark:bg-black/30";
   const head = SECTION_TITLE[section];
+
+  interface SearchHit { kind: string; label: string; sub: string; go: () => void }
+
+  const searchResults = useMemo<SearchHit[]>(() => {
+    const q = navQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const hits: SearchHit[] = [];
+    const jump = (s: Section, after?: () => void) => () => {
+      setSection(s);
+      after?.();
+      setNavOpen(false);
+      setNavQuery("");
+    };
+    for (const u of users) {
+      if (hits.length >= 12) break;
+      if (u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)) {
+        const email = u.email;
+        hits.push({ kind: "User", label: u.name, sub: email, go: jump("users", () => setUserQuery(email)) });
+      }
+    }
+    for (const o of orders) {
+      if (hits.length >= 12) break;
+      if (o.id.toLowerCase().includes(q) || o.itemName.toLowerCase().includes(q) || o.sender.toLowerCase().includes(q)) {
+        const id = o.id;
+        hits.push({ kind: "Order", label: `${o.itemName} • ৳${o.amountBDT}`, sub: `${id} • ${o.status}`, go: jump("orders", () => setOrderQuery(id)) });
+      }
+    }
+    for (const m of config.customStudy ?? []) {
+      if (hits.length >= 12) break;
+      if (m.title.toLowerCase().includes(q)) {
+        hits.push({ kind: "Study", label: m.title, sub: m.category, go: jump("study") });
+      }
+    }
+    for (const f of config.customFonts ?? []) {
+      if (hits.length >= 12) break;
+      if (f.name.toLowerCase().includes(q)) {
+        hits.push({ kind: "Font", label: f.name, sub: f.type, go: jump("catalog") });
+      }
+    }
+    for (const s of config.customSoftware ?? []) {
+      if (hits.length >= 12) break;
+      if (s.name.toLowerCase().includes(q)) {
+        hits.push({ kind: "Software", label: s.name, sub: s.version, go: jump("catalog") });
+      }
+    }
+    return hits;
+  }, [navQuery, users, orders, config.customStudy, config.customFonts, config.customSoftware]);
 
   const nav = (
     <div className="flex h-full flex-col">
@@ -448,11 +538,30 @@ export default function AdminPage() {
         <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
           <Search size={14} className="shrink-0 text-slate-400" />
           <input
-            value={navQuery} onChange={(e) => setNavQuery(e.target.value)} placeholder="Search sections…"
-            aria-label="Search admin sections"
+            value={navQuery} onChange={(e) => setNavQuery(e.target.value)} placeholder="Search sections, users, orders…"
+            aria-label="Search admin"
             className="w-full bg-transparent text-[13px] text-slate-200 outline-none placeholder:text-slate-500"
           />
         </div>
+        {searchResults.length > 0 && (
+          <div className="mt-1.5 overflow-hidden rounded-xl bg-white/5" role="listbox" aria-label="Search results">
+            {searchResults.map((h, i) => (
+              <button
+                key={`${h.kind}-${i}`}
+                role="option"
+                aria-selected="false"
+                onClick={h.go}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/5"
+              >
+                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-black text-cyan-200">{h.kind}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12.5px] font-bold text-slate-100">{h.label}</span>
+                  <span className="block truncate text-[11px] text-slate-400">{h.sub}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <nav className="flex-1 overflow-y-auto px-2 pb-3" aria-label="Admin">
         {GROUPS.map((g) => {
@@ -564,31 +673,69 @@ export default function AdminPage() {
                   <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Search name or email…" aria-label="Search customers" className={cn(field, "sm:w-64")} />
                 </div>
                 <div className="mt-3 space-y-2">
-                  {filteredUsers.map((u) => (
-                    <div key={u.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] dark:bg-white/5 lg:grid-cols-[1fr_auto_auto_auto_auto]">
-                      <span className="min-w-0">
-                        <b className="block truncate">{u.name} <span className="font-normal text-slate-500">{u.email}</span></b>
-                        <span className="text-[11.5px] text-slate-500">
-                          {u.providers.join("+")} • joined {new Date(u.createdAt).toLocaleDateString()} • last login {new Date(u.lastLoginAt).toLocaleDateString()}
+                  {filteredUsers.map((u) => {
+                    const act = activityCache[u.id];
+                    const open = activityId === u.id;
+                    return (
+                    <div key={u.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                      <div className="grid items-center gap-2 text-[13px] lg:grid-cols-[1fr_auto_auto_auto_auto_auto]">
+                        <span className="min-w-0">
+                          <b className="block truncate">{u.name} <span className="font-normal text-slate-500">{u.email}</span></b>
+                          <span className="text-[11.5px] text-slate-500">
+                            {u.providers.join("+")} • joined {new Date(u.createdAt).toLocaleDateString()} • last login {new Date(u.lastLoginAt).toLocaleDateString()}
+                            {act?.lastActive ? <> • active {new Date(act.lastActive).toLocaleString()}</> : null}
+                          </span>
                         </span>
-                      </span>
-                      <select aria-label={`Role for ${u.email}`} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })} className={cn(field, "lg:w-32")}>
-                        {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                      </select>
-                      <select aria-label={`Plan for ${u.email}`} value={u.planId} onChange={(e) => patchUser(u.id, { planId: e.target.value, planStatus: e.target.value === "free" ? "none" : "active" })} className={cn(field, "lg:w-32")}>
-                        {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.priceBDT})</option>)}
-                      </select>
-                      <select aria-label={`Subscription status for ${u.email}`} value={u.planStatus} onChange={(e) => patchUser(u.id, { planStatus: e.target.value as MemberUser["planStatus"] })} className={cn(field, "lg:w-32")}>
-                        {["active", "trial", "past_due", "cancelled", "none"].map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                      <button
-                        onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
-                        className={cn("rounded-full px-3 py-2 text-[12px] font-bold", u.status === "active" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" : "bg-red-500/15 text-red-500")}
-                      >
-                        {u.status === "active" ? "Active" : "Suspended"}
-                      </button>
+                        <select aria-label={`Role for ${u.email}`} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })} className={cn(field, "lg:w-32")}>
+                          {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                        <select aria-label={`Plan for ${u.email}`} value={u.planId} onChange={(e) => patchUser(u.id, { planId: e.target.value, planStatus: e.target.value === "free" ? "none" : "active" })} className={cn(field, "lg:w-32")}>
+                          {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.priceBDT})</option>)}
+                        </select>
+                        <select aria-label={`Subscription status for ${u.email}`} value={u.planStatus} onChange={(e) => patchUser(u.id, { planStatus: e.target.value as MemberUser["planStatus"] })} className={cn(field, "lg:w-32")}>
+                          {["active", "trial", "past_due", "cancelled", "none"].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                          onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                          className={cn("rounded-full px-3 py-2 text-[12px] font-bold", u.status === "active" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" : "bg-red-500/15 text-red-500")}
+                        >
+                          {u.status === "active" ? "Active" : "Suspended"}
+                        </button>
+                        <button
+                          onClick={() => toggleActivity(u.id)}
+                          aria-expanded={open}
+                          className={cn("rounded-full px-3 py-2 text-[12px] font-bold", open ? "bg-cyan-500 text-white" : "text-cyan-700 hover:bg-cyan-500/10 dark:text-cyan-300")}
+                        >
+                          {open ? "Hide activity" : "Activity"}
+                        </button>
+                      </div>
+                      {open && (
+                        <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                          {!act ? (
+                            <p className="text-[12.5px] text-slate-500">{activityBusy ? "Loading activity…" : "No activity data."}</p>
+                          ) : (
+                            <>
+                              <div className="flex flex-wrap gap-1.5 text-[11.5px] font-bold">
+                                <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 text-cyan-700 dark:text-cyan-200">{act.views} page views</span>
+                                <span className="rounded-full bg-purple-500/15 px-2.5 py-1 text-purple-700 dark:text-purple-200">{act.pdfJobs} PDF jobs</span>
+                                <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-700 dark:text-emerald-200">{act.downloads} downloads</span>
+                                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-amber-700 dark:text-amber-200">{act.logins} logins</span>
+                              </div>
+                              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto font-mono text-[11.5px] text-slate-600 dark:text-slate-400">
+                                {act.timeline.map((t, i) => (
+                                  <p key={`${t.at}-${i}`} className="rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 dark:bg-white/5">
+                                    {new Date(t.at).toLocaleString()} • <b>[{t.kind}]</b> {t.label}{t.detail ? ` • ${t.detail}` : ""}
+                                  </p>
+                                ))}
+                                {act.timeline.length === 0 && <p>Signed up but no tracked activity yet.</p>}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   {filteredUsers.length === 0 && <p className="text-[13px] text-slate-500">No members yet — share /login to get the first signup.</p>}
                 </div>
               </GlassCard>
@@ -901,9 +1048,12 @@ export default function AdminPage() {
 
           {section === "orders" && (
             <GlassCard>
-              <h3 className="text-sm font-bold">Manual-payment orders ({orders.length})</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold">Manual-payment orders ({filteredOrders.length})</h3>
+                <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Search id, item, sender…" aria-label="Search orders" className={cn(field, "sm:w-64")} />
+              </div>
               <div className="mt-3 space-y-2">
-                {orders.map((o) => (
+                {filteredOrders.map((o) => (
                   <div key={o.id} className="grid gap-1 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[auto_1fr_auto] sm:items-center dark:bg-white/5">
                     <span className="font-mono font-black">{o.id}</span>
                     <span>{o.itemName} • ৳{o.amountBDT} • {o.method} • from <code>{o.sender}</code>{o.txn && <> • txn <code>{o.txn}</code></>} • {new Date(o.at).toLocaleString()}{o.note && <span className="block text-slate-500">Note: {o.note}</span>}<span className="block text-slate-500">Fulfill: verify payment in your {o.method} app, then deliver the download/license to the buyer.</span></span>
@@ -912,13 +1062,37 @@ export default function AdminPage() {
                     </select>
                   </div>
                 ))}
-                {orders.length === 0 && <p className="text-[13px] text-slate-500">No orders yet.</p>}
+                {filteredOrders.length === 0 && <p className="text-[13px] text-slate-500">No orders match.</p>}
               </div>
             </GlassCard>
           )}
 
           {section === "ads" && (
             <div className="grid gap-4">
+              <GlassCard>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">ads.txt status</h3>
+                  <button
+                    onClick={() => fetch("/api/admin/ads-check").then((r) => r.json()).then(setAdsCheck).catch(() => {})}
+                    className="glass hover-glow rounded-full px-3 py-1.5 text-[12px] font-bold"
+                  >
+                    Recheck
+                  </button>
+                </div>
+                {!adsCheck ? (
+                  <p className="mt-2 text-[13px] text-slate-500">Checking…</p>
+                ) : !adsCheck.exists ? (
+                  <p className="mt-2 text-[13px] font-semibold text-rose-500">public/ads.txt not found — AdSense approval requires it.</p>
+                ) : adsCheck.placeholderOnly ? (
+                  <p className="mt-2 text-[13px] font-semibold text-amber-600 dark:text-amber-300">ads.txt has no seller lines yet — paste your publisher line after AdSense approval.</p>
+                ) : adsCheck.match ? (
+                  <p className="mt-2 text-[13px] font-semibold text-emerald-600 dark:text-emerald-300">✓ Publisher ID {adsCheck.pubId} declared ({adsCheck.sellerLines} seller line{adsCheck.sellerLines === 1 ? "" : "s"}).</p>
+                ) : (
+                  <p className="mt-2 text-[13px] font-semibold text-rose-500">
+                    Mismatch — ads.txt declares [{(adsCheck.foundIds ?? []).join(", ") || "none"}] but SEO client is {adsCheck.client || "(empty)"}. Fix public/ads.txt.
+                  </p>
+                )}
+              </GlassCard>
               <GlassCard>
                 <h3 className="text-sm font-bold">Google AdSense</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Publisher ID used by every ad unit below. Find it in AdSense → Account → Settings.</p>
@@ -1010,6 +1184,7 @@ export default function AdminPage() {
           )}
 
           {section === "seo" && (
+            <div className="grid gap-4">
             <GlassCard>
               <h3 className="text-sm font-bold">SEO & analytics integrations</h3>
               <div className="mt-3 grid gap-3">
@@ -1026,6 +1201,83 @@ export default function AdminPage() {
                 <p className="text-[12px] text-slate-500">GA script + AdSense meta auto-inject on every page once saved. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
               </div>
             </GlassCard>
+            <GlassCard>
+              <h3 className="text-sm font-bold">Per-page overrides ({Object.keys(config.seoPages ?? {}).length})</h3>
+              <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                Custom title / description / noindex per route. Exact path wins; a parent path also covers its sub-pages (e.g. <code>/study</code> covers <code>/study/…</code>).
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[180px_1fr]">
+                <select aria-label="Override route" value={seoRoute} onChange={(e) => { setSeoRoute(e.target.value); setSeoCustom(""); }} className={field}>
+                  {SEO_ROUTE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  <option value="__custom">Custom path…</option>
+                </select>
+                {seoRoute === "__custom" ? (
+                  <input aria-label="Custom route path" value={seoCustom} onChange={(e) => setSeoCustom(e.target.value)} placeholder="/some/path" className={cn(field, "font-mono")} />
+                ) : (
+                  <input aria-label="Override title" value={seoPTitle} onChange={(e) => setSeoPTitle(e.target.value)} placeholder="Page title (blank = use global)" className={field} />
+                )}
+              </div>
+              {seoRoute === "__custom" && (
+                <input aria-label="Override title" value={seoPTitle} onChange={(e) => setSeoPTitle(e.target.value)} placeholder="Page title (blank = use global)" className={cn(field, "mt-2")} />
+              )}
+              <textarea aria-label="Override description" rows={2} value={seoPDesc} onChange={(e) => setSeoPDesc(e.target.value)} placeholder="Meta description ~155 chars (blank = use global)" className={cn(field, "mt-2")} />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 text-[13px] font-semibold dark:bg-white/5">
+                  <input type="checkbox" checked={seoPNoindex} onChange={(e) => setSeoPNoindex(e.target.checked)} className="h-4 w-4 accent-rose-500" /> noindex this page
+                </label>
+                <button
+                  onClick={() => {
+                    const raw = seoRoute === "__custom" ? seoCustom : seoRoute;
+                    const path = raw.trim() ? (raw.trim().startsWith("/") ? raw.trim() : `/${raw.trim()}`) : "";
+                    if (!path) return;
+                    const next = { ...(config.seoPages ?? {}) };
+                    if (!seoPTitle.trim() && !seoPDesc.trim() && !seoPNoindex) delete next[path];
+                    else next[path] = { title: seoPTitle.trim() || undefined, description: seoPDesc.trim() || undefined, noindex: seoPNoindex || undefined };
+                    void save({ seoPages: next });
+                    setSeoPTitle(""); setSeoPDesc(""); setSeoPNoindex(false); setSeoCustom("");
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white"
+                >
+                  Save override
+                </button>
+              </div>
+              {Object.keys(config.seoPages ?? {}).length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {Object.entries(config.seoPages ?? {}).map(([path, ov]) => (
+                    <div key={path} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] dark:bg-white/5">
+                      <span className="min-w-0">
+                        <code className="font-bold">{path}</code>
+                        {ov.noindex && <span className="ml-2 rounded-full bg-rose-500/15 px-2 py-0.5 text-[10.5px] font-bold text-rose-600">noindex</span>}
+                        <span className="block truncate text-slate-500">{ov.title || <i>global title</i>} • {(ov.description || "global description").slice(0, 90)}</span>
+                      </span>
+                      <span className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSeoRoute((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? path : "__custom");
+                            setSeoCustom((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? "" : path);
+                            setSeoPTitle(ov.title ?? ""); setSeoPDesc(ov.description ?? ""); setSeoPNoindex(ov.noindex === true);
+                          }}
+                          className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            const next = { ...(config.seoPages ?? {}) };
+                            delete next[path];
+                            void save({ seoPages: next });
+                          }}
+                          className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+            </div>
           )}
 
           {section === "aiseo" && (
@@ -1164,7 +1416,8 @@ export default function AdminPage() {
           )}
 
           {section === "settings" && (
-            <GlassCard>
+          <div className="grid gap-4">
+          <GlassCard>
               <h3 className="text-sm font-bold">Brand & customization</h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
@@ -1183,6 +1436,81 @@ export default function AdminPage() {
               <input aria-label="Announcement text" value={config.announcement.text} onChange={(e) => save({ announcement: { ...config.announcement, text: e.target.value } })} className={cn(field, "mt-2")} />
               <p className="mt-3 flex items-center gap-1.5 text-[12px] text-slate-500"><Save size={12} /> All changes save instantly to the live site. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
             </GlassCard>
+            <GlassCard>
+              <h3 className="text-sm font-bold">Backup & restore</h3>
+              <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                Dashboard edits live in <code>data/site-config.json</code> (ephemeral on Vercel). Export a backup, or copy the seed below into Vercel&apos;s <code>SITE_CONFIG_JSON</code> env var to make settings durable in production. Site config holds no secrets — those stay in env vars.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `bornolab-config-${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 4000);
+                    setCfgMsg("Backup downloaded.");
+                  }}
+                  className="glass hover-glow rounded-xl px-4 py-2.5 text-[13px] font-bold"
+                >
+                  ⬇ Export JSON
+                </button>
+                <label className="glass hover-glow cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-bold">
+                  {cfgBusy ? "Restoring…" : "⬆ Import JSON"}
+                  <input
+                    type="file" accept="application/json" className="hidden"
+                    disabled={cfgBusy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      if (!confirm("Replace ALL site settings with this file? This cannot be undone (export first).")) return;
+                      setCfgBusy(true);
+                      setCfgMsg("");
+                      f.text().then(async (text) => {
+                        try {
+                          const parsed = JSON.parse(text) as unknown;
+                          if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                            throw new Error("File must contain a JSON object.");
+                          }
+                          const res = await fetch("/api/admin/config", {
+                            method: "PUT", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ __replace: true, config: parsed }),
+                          });
+                          if (!res.ok) throw new Error("Restore failed.");
+                          setConfig({ ...DEFAULT_CONFIG, ...(await res.json()) });
+                          setCfgMsg("✓ Settings restored from file.");
+                        } catch (err) {
+                          setCfgMsg(`Restore failed: ${(err as Error).message}`);
+                        } finally {
+                          setCfgBusy(false);
+                        }
+                      }).catch((err: Error) => { setCfgMsg(`Restore failed: ${err.message}`); setCfgBusy(false); });
+                    }}
+                  />
+                </label>
+                <button
+                  onClick={() => {
+                    const seed = JSON.stringify(config);
+                    const done = () => setCfgMsg("✓ SITE_CONFIG_JSON copied — paste it into Vercel env, then redeploy.");
+                    if (navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(seed).then(done).catch(() => setCfgMsg("Copy failed — export JSON instead."));
+                    } else {
+                      window.prompt("Copy your SITE_CONFIG_JSON seed:", seed);
+                    }
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white"
+                >
+                  Copy SITE_CONFIG_JSON seed
+                </button>
+              </div>
+              {cfgMsg && <p role="status" className="mt-2 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300">{cfgMsg}</p>}
+            </GlassCard>
+            </div>
           )}
         </div>
       </div>

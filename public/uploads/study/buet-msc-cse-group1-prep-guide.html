@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BUET MSc CSE (Group 1) - 3-Day Prep Guide</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--ink:#1c2230;--muted:#5d6678;--line:#dfe3ea;--accent:#1f5fd6;--accent-ink:#fff;--ok:#0f8a4f;--warn:#b45309;--chip:#eaeef5;--code:#f0f2f6;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#12151c;--card:#1a1f2a;--ink:#e8ebf2;--muted:#9aa3b5;--line:#2a3140;--accent:#6ea0ff;--accent-ink:#0b1220;--ok:#4cc38a;--warn:#f0a35a;--chip:#232a38;--code:#232a38;}}
+:root[data-theme="dark"]{--bg:#12151c;--card:#1a1f2a;--ink:#e8ebf2;--muted:#9aa3b5;--line:#2a3140;--accent:#6ea0ff;--accent-ink:#0b1220;--ok:#4cc38a;--warn:#f0a35a;--chip:#232a38;--code:#232a38;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 16px 8px;max-width:900px;margin:0 auto}
+h1{font-size:1.35rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.9rem}
+nav{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;border-bottom:1px solid var(--line)}
+nav .in{max-width:900px;margin:0 auto;display:flex;gap:6px;padding:8px 12px;overflow-x:auto}
+button{font:inherit;cursor:pointer}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px;border-radius:999px;white-space:nowrap}
+.tab.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+main{max-width:900px;margin:0 auto;padding:14px 12px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:5px 11px;border-radius:999px;font-size:.85rem}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tag{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);margin-right:5px}
+.tag.seen{background:var(--warn);color:#fff}
+.q{font-weight:600;margin:6px 0}
+.ans{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.ans.open{display:block}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:6px 14px;border-radius:8px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.rv.on{background:var(--warn);border-color:var(--warn);color:#fff}
+pre{background:var(--code);padding:10px;border-radius:8px;overflow-x:auto;font-size:.85rem;margin:8px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.88em}
+pre code{padding:0;background:none}
+.bar{height:10px;background:var(--chip);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+label.ck{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+label.ck input{margin-top:5px;width:18px;height:18px}
+label.ck.done span{text-decoration:line-through;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.scroll{overflow-x:auto}
+a{color:var(--accent)}
+.note{font-size:.85rem;color:var(--muted)}
+h2{font-size:1.1rem;margin:18px 0 8px}
+h3{font-size:1rem;margin:12px 0 6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>BUET M.Sc. CSE - Group 1: 3-Day Prep Guide</h1>
+  <div class="sub">Q&amp;A with explanations for all 10 Group 1 topics, tagged with patterns seen in past papers.</div>
+  <div style="margin-top:10px"><div class="bar"><i id="gbar"></i></div><div class="note" id="gtxt"></div></div>
+</header>
+<nav><div class="in" id="tabs"></div></nav>
+<main id="view"></main>
+
+<script>
+/* ---------- storage helpers (safe) ---------- */
+var mem = {};
+function sget(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return mem[k]||null}}
+function sset(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v}}
+
+/* ---------- data ---------- */
+var T = [
+{id:'prog',name:'Programming (Structured + OOP)',items:[
+{ty:'MCQ',seen:'Apr 2024',q:'C++: <code>unsigned int i = 10; if (i > -1) cout&lt;&lt;"Yes"; else cout&lt;&lt;"No";</code> What is printed?',
+ a:'<b>No</b>',ex:'In a signed/unsigned comparison the signed value is converted to unsigned. -1 becomes 4294967295 (32-bit), so 10 > 4294967295 is false. Rule to remember: mixed signed/unsigned comparison silently converts to unsigned.'},
+{ty:'MCQ',seen:'Older paper',q:'Java: <code>String s = new String("hello"); String ss = "hello"; String sp = "hello";</code> Evaluate <code>s==ss</code>, <code>ss==sp</code>, <code>s.equals(ss)</code>, <code>s.compareTo(ss)</code>.',
+ a:'<b>false, true, true, 0</b>',ex:'String literals are interned in the string pool, so ss and sp point to the same object. <code>new String</code> creates a separate heap object. <code>==</code> compares references, <code>equals</code> compares content, <code>compareTo</code> returns 0 for equal strings.'},
+{ty:'MCQ',seen:'',q:'C: <code>int a = 5; printf("%d", a++ + ++a);</code> Output?',
+ a:'<b>Undefined behavior</b> (compiler dependent, commonly 12).',ex:'Modifying the same variable twice between sequence points is undefined in C/C++. If an option says "undefined/unspecified", pick it. Never rely on the "usual" answer.'},
+{ty:'MCQ',seen:'',q:'C: <code>int arr[]={10,20,30,40}; int *p = arr+1; printf("%d %d", *p, *(p+2));</code>',
+ a:'<b>20 40</b>',ex:'p points to arr[1] (20). p+2 points to arr[3] (40). Pointer arithmetic scales by sizeof(int).'},
+{ty:'Written',seen:'Older paper',q:'Write a function to reverse a string without using any global variable.',
+ a:'<pre><code>void rev(char *s){\n  int i = 0, j = strlen(s) - 1;\n  while (i &lt; j){ char t = s[i]; s[i++] = s[j]; s[j--] = t; }\n}</code></pre>',
+ ex:'Two-pointer swap: O(n) time, O(1) extra space, all state is local. A recursive version also works: swap s[l] and s[r], recurse on (l+1, r-1). Mention both for full marks; state the base case l >= r.'},
+{ty:'Written',seen:'Apr 2024',q:'What is a functional interface in Java? Give an example.',
+ a:'An interface with <b>exactly one abstract method</b> (it may also have default/static methods). It is the target type for lambda expressions.<pre><code>@FunctionalInterface\ninterface Calc { int op(int a, int b); }\nCalc add = (a, b) -> a + b;\nSystem.out.println(add.op(5, 3)); // 8</code></pre>',
+ ex:'Built-in examples: Runnable, Comparator, Predicate, Function. The annotation is optional but makes the compiler enforce the single-abstract-method rule.'},
+{ty:'Written',seen:'Older paper',q:'How do you create an object of an inner class in Java?',
+ a:'<b>Non-static inner class</b> needs an outer instance:<pre><code>Outer o = new Outer();\nOuter.Inner in = o.new Inner();</code></pre><b>Static nested class</b> does not: <code>new Outer.Nested()</code>.',ex:'An inner (non-static) class holds a hidden reference to its enclosing instance, so it cannot exist without one.'},
+{ty:'Written',seen:'',q:'Differentiate overloading and overriding. What makes runtime polymorphism work?',
+ a:'<table><tr><th></th><th>Overloading</th><th>Overriding</th></tr><tr><td>Where</td><td>Same class</td><td>Subclass redefines parent method</td></tr><tr><td>Signature</td><td>Different parameters</td><td>Same signature</td></tr><tr><td>Binding</td><td>Compile time</td><td>Run time</td></tr></table>',
+ ex:'Runtime polymorphism = a parent-type reference calls an overridden method and the object\'s actual type decides which runs. In C++ this needs <code>virtual</code> (vtable dispatch); in Java all instance methods are virtual by default.'}
+]},
+{id:'disc',name:'Discrete, Concrete Math, Probability, Stats',items:[
+{ty:'MCQ',seen:'',q:'Minimum number of people to guarantee two share a birth month?',a:'<b>13</b>',ex:'Pigeonhole principle: 12 months = 12 boxes, so 13 people force a repeat.'},
+{ty:'MCQ',seen:'',q:'How many binary strings of length 8 have no two consecutive 1s?',a:'<b>55</b>',ex:'a(n) = a(n-1) + a(n-2) with a(1)=2, a(2)=3: 2,3,5,8,13,21,34,55. (End in 0: a(n-1) ways. End in 01: a(n-2) ways.)'},
+{ty:'MCQ',seen:'',q:'Distinct arrangements of the letters of BANANA?',a:'<b>60</b>',ex:'6! / (3! x 2!) = 720 / 12 = 60 (3 A\'s, 2 N\'s repeated).'},
+{ty:'MCQ',seen:'',q:'Can a simple graph have 5 vertices each of degree 3?',a:'<b>No</b>',ex:'Handshaking lemma: sum of degrees = 2E. 5 x 3 = 15 is odd, so impossible.'},
+{ty:'Written',seen:'Apr 2024',q:'Runs of successes with probability p (failure q = 1-p): find P(run length = k) and the expected run length.',
+ a:'P(run = k) = p<sup>k-1</sup>(1-p) for k = 1, 2, ... (geometric). Expected run length = <b>1/(1-p)</b>.',
+ ex:'A run of successes continues each step with probability p and stops on the first failure. Geometric mean = 1/(stop probability). Same idea for failure runs: 1/p. Example: p = 0.75 gives average success-run length 4.'},
+{ty:'Written',seen:'',q:'Two fair coins are tossed. Given at least one head, what is P(both heads)?',a:'<b>1/3</b>',ex:'Sample space given the condition: HH, HT, TH (TT removed). Only HH qualifies, so 1/3, not 1/2.'},
+{ty:'Written',seen:'',q:'Disease prevalence 1%. Test: 90% sensitivity, 5% false-positive rate. P(disease | positive)?',
+ a:'<b>~15.4%</b>',ex:'Bayes: (0.9 x 0.01) / (0.9 x 0.01 + 0.05 x 0.99) = 0.009 / 0.0585 = 0.154. Low prevalence dominates. Write the formula P(A|B) = P(B|A)P(A)/P(B) first.'},
+{ty:'MCQ',seen:'',q:'Data: 2,4,4,4,5,5,7,9. Mean, population variance, standard deviation?',a:'<b>5, 4, 2</b>',ex:'Sum = 40, mean = 5. Squared deviations: 9,1,1,1,0,0,4,16 = 32; 32/8 = 4; sd = 2. (Sample variance divides by n-1.)'}
+]},
+{id:'dsa',name:'Data Structures & Algorithms',items:[
+{ty:'Written',seen:'Apr 2024',q:'Detect a loop in a singly linked list.',
+ a:'Floyd tortoise-and-hare: slow moves 1 step, fast moves 2. If they meet there is a cycle; if fast hits NULL there is none.<pre><code>int hasCycle(Node *h){\n  Node *s = h, *f = h;\n  while (f &amp;&amp; f->next){\n    s = s->next; f = f->next->next;\n    if (s == f) return 1;\n  }\n  return 0;\n}</code></pre>',ex:'O(n) time, O(1) space. A hash-set of visited nodes also works but uses O(n) space.'},
+{ty:'Written',seen:'Older paper',q:'Implement enqueue and dequeue in O(1) using a singly linked list.',
+ a:'Keep <b>head</b> and <b>tail</b> pointers. Enqueue: link at tail, move tail. Dequeue: remove at head, move head (if head becomes NULL, set tail = NULL).',ex:'Inserting at the head and removing at the tail would be O(n) for removal in a singly list. So the direction must be tail-in, head-out.'},
+{ty:'Written',seen:'Older paper',q:'Graph with 100 vertices and about 300 edges: adjacency matrix or list?',
+ a:'<b>Adjacency list</b>.',ex:'The matrix always costs V^2 = 10,000 cells. The list costs V + E (about 100 + 300 or 600 entries). E is about 3V, which is sparse (max possible about 4,950). Rule of thumb: E close to V^2 means matrix; E close to V means list.'},
+{ty:'Written',seen:'Older paper',q:'Explain Bellman-Ford with negative weights. Why not Dijkstra?',
+ a:'Relax every edge V-1 times. If any edge can still be relaxed on the V-th pass, a <b>negative cycle</b> is reachable. Complexity O(VE).',ex:'Dijkstra finalizes a vertex when popped, assuming later paths cannot be shorter. Negative edges break that assumption. Bellman-Ford makes no such assumption.'},
+{ty:'Written',seen:'Older paper',q:'When does IDDFS perform worse than DFS?',
+ a:'When the branching factor is very small, e.g. a chain of depth d: DFS visits d nodes, IDDFS visits 1+2+...+d = <b>O(d^2)</b>.',ex:'For a normal tree with branching b, most nodes are at the deepest level, so the repeated shallow work is only a small constant factor. IDDFS gives BFS-like completeness with DFS-like memory O(bd).'},
+{ty:'MCQ',seen:'',q:'Solve T(n) = 2T(n/2) + n.',a:'<b>Theta(n log n)</b>',ex:'Master theorem case 2: n^(log_2 2) = n matches f(n) = n. Also: T(n)=T(n/2)+1 gives O(log n); T(n)=2T(n/2)+1 gives O(n).'},
+{ty:'MCQ',seen:'',q:'Worst case of Quick Sort and when it happens?',a:'<b>O(n^2)</b> with a first/last pivot on an already sorted array.',ex:'Partitions become 0 and n-1. Fix with random or median-of-three pivot. Average is O(n log n). Building a heap is O(n); heap sort is O(n log n).'},
+{ty:'MCQ',seen:'',q:'Which traversal of a BST yields sorted output?',a:'<b>Inorder</b>',ex:'Left, root, right visits keys in ascending order. Preorder is used to copy a tree; postorder to delete it.'}
+]},
+{id:'toc',name:'Compiler & Theory of Computation',items:[
+{ty:'Written',seen:'Apr 2024',q:'Why is the pumping lemma used only to prove a language is NOT regular?',
+ a:'It gives a <b>necessary, not sufficient</b> condition. Every regular language satisfies it, but some non-regular languages satisfy it too. So only violation is conclusive.',ex:'Proof template: assume regular, take pumping length p, pick w in L with |w| >= p (e.g. a^p b^p), any split w = xyz with |xy| <= p and |y| >= 1 makes y all a\'s, pump to xy^2z, count mismatch, contradiction.'},
+{ty:'Written',seen:'Older paper',q:'Construct an automaton accepting binary strings with an odd number of 1s OR an even number of 0s.',
+ a:'Track two parities: (parity of 1s, parity of 0s). 4 states: (E1,E0) start, (E1,O0), (O1,E0), (O1,O0). Reading 1 flips the first parity, reading 0 flips the second. Accept every state <b>except (E1,O0)</b> (even 1s AND odd 0s).',ex:'"A or B" is the complement of "not A and not B": rejecting states are those with even 1s and odd 0s only. Start state has 0 zeros (even), so it accepts the empty string.'},
+{ty:'Written',seen:'Apr 2024',q:'Rules for filling an LL(1) predictive parsing table.',
+ a:'For each production A -> alpha: (1) for each terminal a in FIRST(alpha), put it in M[A,a]. (2) If epsilon is in FIRST(alpha), put it in M[A,b] for every b in FOLLOW(A) (include $ if $ is in FOLLOW(A)).',ex:'A grammar is LL(1) if no cell gets two productions. Practice: E->TE\', E\'->+TE\'|eps, T->id gives FIRST(E)={id}, FIRST(E\')={+,eps}, FOLLOW(E)=FOLLOW(E\')={$}, FOLLOW(T)={+,$}.'},
+{ty:'Written',seen:'',q:'Eliminate left recursion: A -> A alpha | beta.',a:'A -> beta A\'<br>A\' -> alpha A\' | epsilon',ex:'Top-down parsers loop forever on left recursion, so it must be removed. Left factoring is the separate fix for common prefixes.'},
+{ty:'Written',seen:'Older paper',q:'Draw the relationship between P, NP, NP-hard, NP-complete.',
+ a:'P is inside NP. NP-complete = NP intersect NP-hard. NP-hard extends beyond NP (e.g. Halting problem). If P != NP (assumed), P and NP-complete are disjoint.',ex:'Also define: P = solvable in polynomial time; NP = verifiable in polynomial time. Approximation algorithms give a provable bound (e.g. within 2x of optimal); heuristics give no guarantee.'},
+{ty:'MCQ',seen:'2021 online',q:'True or false: Turing machines can decide all context-free languages.',a:'<b>True</b>',ex:'Hierarchy: Regular in CFL in CSL in Decidable in Recursively enumerable. The halting problem is undecidable but semi-decidable.'},
+{ty:'MCQ',seen:'',q:'Order the compiler phases.',a:'Lexical, syntax, semantic analysis, intermediate code, optimization, code generation.',ex:'Symbol table and error handler serve all phases. Front end = analysis; back end = synthesis.'}
+]},
+{id:'db',name:'Database',items:[
+{ty:'MCQ',seen:'2021 online',q:'Which is NOT part of ACID? Atomicity, Isolation, Concurrency, Durability.',a:'<b>Concurrency</b>',ex:'ACID = Atomicity, Consistency, Isolation, Durability. Concurrency is what isolation controls, not one of the four properties.'},
+{ty:'MCQ',seen:'2021 online',q:'student has 5 rows, takes has 15. Rows returned by <code>SELECT * FROM student, takes</code>?',a:'<b>75</b>',ex:'Comma with no WHERE is a Cartesian product: 5 x 15. Adding a join condition filters it down.'},
+{ty:'MCQ',seen:'2021 online',q:'B+ tree with n = 100. Maximum record pointers in a leaf node?',a:'<b>99</b>',ex:'A leaf holds up to n-1 search keys with their record pointers; the n-th pointer links to the next leaf. An internal node holds up to n child pointers.'},
+{ty:'Written',seen:'Older paper',q:'Update prices: raise by 10% when cost < 500, reduce by 10% when cost > 1000.',
+ a:'<pre><code>UPDATE product SET cost = CASE\n  WHEN cost &lt; 500  THEN cost * 1.10\n  WHEN cost &gt; 1000 THEN cost * 0.90\n  ELSE cost END;</code></pre>',ex:'One statement with CASE evaluates each row once against its original value. Two separate UPDATEs risk a row being changed twice depending on order.'},
+{ty:'Written',seen:'Older paper',q:'Write a trigger that logs price changes.',
+ a:'<pre><code>CREATE TRIGGER log_price AFTER UPDATE ON product\nFOR EACH ROW\nINSERT INTO price_log(pid, old_price, new_price)\nVALUES (OLD.id, OLD.price, NEW.price);</code></pre>',ex:'BEFORE triggers can modify NEW values; AFTER triggers are for auditing. OLD and NEW refer to the row before and after the change (MySQL/Oracle style; SQL Server uses inserted/deleted tables).'},
+{ty:'Written',seen:'Apr 2024',q:'Count articles per topic.',a:'<code>SELECT topic_name, COUNT(*) FROM articles GROUP BY topic_name;</code>',ex:'Use HAVING (not WHERE) to filter groups, e.g. <code>HAVING COUNT(*) &gt; 5</code>. WHERE filters rows before grouping.'},
+{ty:'Written',seen:'',q:'R(A,B,C) with FDs A->B and B->C. Which normal form? Decompose.',
+ a:'Key is A. B->C is a <b>transitive dependency</b>, so it is 2NF but not 3NF. Decompose into R1(A,B) and R2(B,C).',ex:'3NF: for every FD X->Y, X is a superkey or Y is a prime attribute. BCNF: X must always be a superkey. Check lossless join and dependency preservation.'}
+]},
+{id:'net',name:'Computer Network & Security',items:[
+{ty:'Written',seen:'Apr 2024',q:'How does a DHCP starvation attack work and how do you defend?',
+ a:'The attacker floods DHCP Discover messages with spoofed MACs. The server leases its whole pool to fake clients, so real clients get no IP (denial of service). Defense: <b>DHCP snooping</b> and port security to rate-limit per port.',ex:'Related: a rogue DHCP server (man-in-the-middle) is the follow-up attack; snooping also blocks it via trusted ports.'},
+{ty:'Written',seen:'Apr 2024',q:'Host 192.168.10.45/27: find network address, broadcast, host range.',
+ a:'Mask 255.255.255.224, block size 32. Network <b>192.168.10.32</b>, first host .33, last host .62, broadcast <b>.63</b>. 30 usable hosts.',ex:'Method: block = 256 - last mask octet = 32. Find the multiple of 32 at or below 45 (that is 32). Broadcast = next block - 1. Usable hosts = 2^(32-27) - 2 = 30.'},
+{ty:'MCQ',seen:'2021 online',q:'Users can talk in either direction but only one at a time. Which transmission mode?',a:'<b>Half duplex</b>',ex:'Simplex = one fixed direction. Half duplex = both directions, alternating. Full duplex = both simultaneously (normal phone call).'},
+{ty:'MCQ',seen:'',q:'Usable hosts in a /26 network?',a:'<b>62</b>',ex:'2^6 - 2 = 62 (subtract network and broadcast addresses).'},
+{ty:'Written',seen:'',q:'RSA toy example: p=3, q=11, e=3. Find n, phi, d, and encrypt m=4.',
+ a:'n = 33, phi = 20, d = 7 (3 x 7 = 21 = 1 mod 20). Ciphertext = 4^3 mod 33 = 64 mod 33 = <b>31</b>. Check: 31^7 mod 33 = 4.',ex:'Public key (e,n), private key (d,n). d is the modular inverse of e mod phi. Security rests on the difficulty of factoring n.'},
+{ty:'Written',seen:'',q:'TCP three-way handshake and SYN flood.',
+ a:'SYN, then SYN-ACK, then ACK. A SYN flood sends many SYNs and never completes the handshake, filling the server\'s half-open connection table. Defense: SYN cookies, rate limiting.',ex:'TCP is connection-oriented and reliable; UDP is connectionless with no delivery guarantee. Compare distance vector (Bellman-Ford, RIP) with link state (Dijkstra, OSPF) as well.'}
+]},
+{id:'se',name:'Software Engg & Info System Design',items:[
+{ty:'Written',seen:'Apr 2024',q:'Strategy design pattern for sorting.',
+ a:'Define interface <code>SortStrategy { sort(arr) }</code>. Concrete classes: InsertionSort, QuickSort, MergeSort. A Context holds a SortStrategy reference and delegates to it; the client swaps the strategy at runtime.',ex:'Benefit: open/closed principle. Replaces if-else chains on algorithm type. Draw: Context -> (uses) -> SortStrategy <- implemented by concrete strategies.'},
+{ty:'Written',seen:'Apr 2024',q:'Top reasons software projects fail.',
+ a:'Unclear or changing requirements, poor planning and estimation, lack of user involvement, poor communication, weak risk management.',ex:'Give one sentence of explanation each. Add a mitigation (e.g. agile iterations for changing requirements).'},
+{ty:'Written',seen:'Older paper',q:'Types of software maintenance.',
+ a:'<b>Corrective</b> (fix bugs), <b>adaptive</b> (new environment/OS), <b>perfective</b> (new features/performance), <b>preventive</b> (refactor to avoid future problems).',ex:'Perfective usually takes the largest share of maintenance effort.'},
+{ty:'Written',seen:'Older paper',q:'Explain levels of software testing.',
+ a:'Unit (single function/class, by developers), integration (modules together), system (whole product vs requirements), acceptance (client validates). Black-box tests behavior; white-box tests internal paths.',ex:'Regression testing re-runs tests after changes. Alpha = in-house users; beta = external real users.'},
+{ty:'Written',seen:'Older paper',q:'Draw a class diagram and state diagram for an online shopping site.',
+ a:'Classes: Customer (1) -> (0..*) Order; Order (1) -> (1..*) OrderItem -> (1) Product; Customer (1) -> (1) Cart; Order (1) -> (1) Payment. State diagram of Order: <b>Placed -> Paid -> Shipped -> Delivered</b>, with Cancelled reachable from Placed/Paid and Returned from Delivered.',ex:'Mark attributes/methods (Product: id, name, price; Order: total(), cancel()) and multiplicities. Use composition for Order-OrderItem (item dies with order).'},
+{ty:'MCQ',seen:'',q:'Flow graph has E = 9 edges, N = 7 nodes, one component. Cyclomatic complexity?',a:'<b>4</b>',ex:'V(G) = E - N + 2P = 9 - 7 + 2 = 4. It also equals the number of decision points + 1 and the number of independent paths to test.'}
+]},
+{id:'dld',name:'Digital Logic, Microprocessors',items:[
+{ty:'Written',seen:'Older paper',q:'Implement F1 = A + B and F2 = AB with minimum NAND gates, then minimum NOR gates.',
+ a:'<b>NAND:</b> F2 = NAND(NAND(A,B), NAND(A,B)) uses 2 gates. F1 = NAND(A\', B\') with A\' = NAND(A,A), B\' = NAND(B,B) uses 3 gates.<br><b>NOR:</b> F1 = NOR(NOR(A,B), NOR(A,B)) uses 2 gates. F2 = NOR(A\', B\') with inverters from NOR uses 3 gates.',ex:'NAND and NOR are universal. Trick: tie the inputs together for a NOT; De Morgan converts AND to OR and back.'},
+{ty:'Written',seen:'Apr 2024',q:'Build an XOR gate from a 2-to-4 decoder and a NOR gate.',
+ a:'Decoder outputs D0 = A\'B\', D1 = A\'B, D2 = AB\', D3 = AB. Feed <b>D0 and D3</b> into a NOR: NOR(D0, D3) = (A\'B\' + AB)\' = XNOR\' = <b>A xor B</b>.',ex:'XOR = D1 + D2. Since D0 + D1 + D2 + D3 = 1, the complement of D0 + D3 is D1 + D2. That is why one NOR is enough.'},
+{ty:'MCQ',seen:'',q:'Simplify F(A,B,C) = sum of minterms (1,3,5,7).',a:'<b>F = C</b>',ex:'Minterms 1,3,5,7 are exactly the rows where C = 1. A K-map quad covers all four and eliminates A and B.'},
+{ty:'MCQ',seen:'',q:'-13 in 8-bit two\'s complement?',a:'<b>11110011 (0xF3)</b>',ex:'13 = 00001101. Invert: 11110010. Add 1: 11110011. Range of 8-bit two\'s complement: -128 to +127.'},
+{ty:'MCQ',seen:'',q:'JK flip-flop with J = K = 1 on a clock edge?',a:'<b>Toggles</b>',ex:'Characteristic equation Q+ = J Q\' + K\' Q. J=K=0 holds, J=0 K=1 resets, J=1 K=0 sets.'},
+{ty:'MCQ',seen:'',q:'8086: segment 2000h, offset 0050h. Physical address?',a:'<b>20050h</b>',ex:'Physical = segment x 16 + offset = 20000h + 0050h. The 20-bit address bus gives 1 MB.'},
+{ty:'Written',seen:'Older paper',q:'Write assembly for push and pop using only mov a,b / add a,b / add a,k.',
+ a:'Pattern (adapt to the given ISA): <b>PUSH x</b>: <code>add sp,-1</code> then <code>mov [sp],x</code>. <b>POP x</b>: <code>mov x,[sp]</code> then <code>add sp,1</code>.',ex:'Stack grows downward: pre-decrement on push, post-increment on pop. Use the word size instead of 1 if words are wider. State your assumption clearly if the question is ambiguous.'}
+]},
+{id:'arch',name:'Computer Architecture & OS',items:[
+{ty:'MCQ',seen:'',q:'5-stage pipeline, 100 instructions, no stalls. Speedup over non-pipelined?',a:'<b>about 4.81</b>',ex:'Speedup = (n x k) / (k + n - 1) = 500 / 104 = 4.81. It approaches k as n grows.'},
+{ty:'MCQ',seen:'',q:'Cache hit ratio 0.9, cache 10 ns, memory 100 ns (memory accessed after a miss). Effective access time?',a:'<b>20 ns</b>',ex:'0.9 x 10 + 0.1 x (10 + 100) = 9 + 11 = 20 ns. If cache and memory are accessed simultaneously, 0.9x10 + 0.1x100 = 19 ns. Always state your assumption.'},
+{ty:'Written',seen:'2021 online',q:'Compare RAID 0, 1, 5, 6.',
+ a:'RAID 0: striping, no redundancy. RAID 1: mirroring. RAID 5: striping with distributed parity, survives 1 disk failure. RAID 6: double parity, survives 2 failures.',ex:'RAID 5 usable capacity = (N-1) disks; RAID 1 = 50%. RAID 0 has the best speed but any disk failure loses all data.'},
+{ty:'Written',seen:'',q:'FCFS vs non-preemptive SJF: P1 (arrival 0, burst 5), P2 (1, 3), P3 (2, 1). Average waiting times.',
+ a:'FCFS: waits 0, 4, 6, average <b>3.33</b>. SJF: P1 runs 0-5, then P3 (5-6), then P2 (6-9); waits 0, 5, 3, average <b>2.67</b>.',ex:'Waiting = start - arrival. SJF minimizes average waiting time but can starve long jobs. Preemptive SJF is SRTF.'},
+{ty:'Written',seen:'',q:'Four necessary conditions for deadlock and how to prevent it.',
+ a:'Mutual exclusion, hold and wait, no preemption, circular wait. Break any one: e.g. impose a global resource ordering to break circular wait. Avoidance uses Banker\'s algorithm (safe state check).',ex:'All four must hold together. Detection + recovery is the alternative when prevention is too costly.'},
+{ty:'MCQ',seen:'',q:'String 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1 with 3 frames. Page faults for FIFO, LRU, Optimal?',a:'<b>15, 12, 9</b>',ex:'Classic textbook example. Belady\'s anomaly (more frames, more faults) can occur with FIFO but never with LRU or Optimal (stack algorithms).'}
+]},
+{id:'ai',name:'AI & Machine Learning',items:[
+{ty:'Written',seen:'Apr 2024',q:'What is overfitting and how do you avoid it?',
+ a:'The model memorizes noise in training data: low training error, high test error. Avoid with regularization (L1/L2), cross-validation, pruning, dropout, more data or augmentation, early stopping.',ex:'Diagnose with a learning curve: training error keeps falling while validation error turns upward. Underfitting is the opposite (high bias).'},
+{ty:'Written',seen:'Apr 2024',q:'Why is A* optimal? State the conditions.',
+ a:'Optimal if h(n) is <b>admissible</b> (never overestimates true cost) and, for graph search, <b>consistent</b>: h(n) <= c(n,a,n\') + h(n\').',ex:'f(n) = g(n) + h(n). With admissible h, the first goal popped has the lowest cost. Example admissible heuristic: Manhattan distance in the 8-puzzle.'},
+{ty:'MCQ',seen:'',q:'Confusion matrix TP=40, FP=10, FN=20, TN=30. Precision, recall, accuracy, F1?',a:'<b>0.80, 0.667, 0.70, 0.727</b>',ex:'Precision = 40/50. Recall = 40/60. Accuracy = 70/100. F1 = 2PR/(P+R) = 0.727.'},
+{ty:'MCQ',seen:'',q:'Entropy of a set with 9 positive and 5 negative examples?',a:'<b>0.940 bits</b>',ex:'-(9/14)log2(9/14) - (5/14)log2(5/14) = 0.940. Information gain = entropy before minus weighted entropy after a split (decision trees).'},
+{ty:'MCQ',seen:'',q:'Gradient descent: w = 2, gradient = 0.5, learning rate = 0.1. New w?',a:'<b>1.95</b>',ex:'w = w - eta x gradient = 2 - 0.05. Too large a learning rate overshoots; too small converges slowly.'},
+{ty:'Written',seen:'',q:'Minimax with alpha-beta pruning: what is pruned and does it change the answer?',
+ a:'Branches that cannot influence the final decision are skipped (when alpha >= beta). The result is <b>identical</b> to minimax. Best case with perfect ordering: O(b^(d/2)).',ex:'Alpha = best value MAX can guarantee so far; beta = best value MIN can guarantee. Move ordering decides how much is pruned.'}
+]}
+];
+
+var PLAN = [
+ {day:'Day 1 - Highest-frequency core',blocks:[
+  'DSA: cycle detection, O(1) queue, Bellman-Ford, graph representation, master theorem',
+  'Programming: C/C++ output tricks, Java strings, inner classes, reverse string',
+  'Theory of Computation and Compiler: pumping lemma, DFA parity construction, LL(1) table, P/NP diagram',
+  'Discrete, Probability, Statistics: pigeonhole, recurrences, Bayes, geometric runs',
+  'Evening: reveal-mode self-test on every card in these four topics; mark Review items'
+ ]},
+ {day:'Day 2 - Applied CS topics',blocks:[
+  'Database: ACID, B+ tree, joins, CASE update, trigger, normalization',
+  'Networking and Security: subnetting drills (do 5 more), DHCP/SYN attacks, RSA toy example',
+  'Software Engineering: strategy pattern, testing levels, maintenance, class and state diagram',
+  'AI/ML: overfitting, A*, precision/recall, entropy, alpha-beta',
+  'Evening: redo all Review-marked cards from Day 1 and Day 2'
+ ]},
+ {day:'Day 3 - Hardware, OS, and mock exam',blocks:[
+  'Digital Logic: NAND/NOR realization, decoder tricks, K-map, two\'s complement',
+  'Architecture and OS: pipeline, cache EAT, scheduling, page replacement, deadlock, RAID',
+  'Mock MCQ: 50 questions in 50 minutes, apply the guessing rule below',
+  'Mock written: pick 10 Written cards, answer on paper in 1 hour, then compare',
+  'Final hour: skim the "Seen" filter only, prepare calculator (non-programmable) and admit card, sleep early'
+ ]}
+];
+
+/* ---------- state ---------- */
+var st = sget('buet_state') || {marks:{}, plan:{}};
+var cur = {tab:'plan', topic:'prog', filter:'all'};
+
+function save(){sset('buet_state',st)}
+function totalItems(){var n=0;T.forEach(function(t){n+=t.items.length});return n}
+function updateGlobal(){
+  var tot=totalItems(), ok=0;
+  Object.keys(st.marks).forEach(function(k){if(st.marks[k]==='ok')ok++});
+  document.getElementById('gbar').style.width=(100*ok/tot)+'%';
+  document.getElementById('gtxt').textContent=ok+' of '+tot+' cards marked "Got it"';
+}
+
+/* ---------- views ---------- */
+var TABS=[['plan','3-Day Plan'],['topics','Q&A Cards'],['exam','Exam Info'],['res','Resources']];
+function renderTabs(){
+  var el=document.getElementById('tabs');el.innerHTML='';
+  TABS.forEach(function(t){
+    var b=document.createElement('button');b.className='tab'+(cur.tab===t[0]?' on':'');b.textContent=t[1];
+    b.onclick=function(){cur.tab=t[0];render()};el.appendChild(b);
+  });
+}
+function render(){renderTabs();var v=document.getElementById('view');v.innerHTML='';
+  if(cur.tab==='plan')viewPlan(v);else if(cur.tab==='topics')viewTopics(v);else if(cur.tab==='exam')viewExam(v);else viewRes(v);
+  updateGlobal();window.scrollTo(0,0);
+}
+
+function viewPlan(v){
+  var intro=document.createElement('div');intro.className='card';
+  intro.innerHTML='<b>How to use this:</b> attempt each card before revealing the answer, then mark <i>Got it</i> or <i>Review</i>. Tick the plan items as you finish them. Progress is saved in this browser.';
+  v.appendChild(intro);
+  PLAN.forEach(function(d,di){
+    var c=document.createElement('div');c.className='card';
+    var done=0;d.blocks.forEach(function(b,bi){if(st.plan[di+'-'+bi])done++});
+    c.innerHTML='<h3>'+d.day+' <span class="tag">'+done+'/'+d.blocks.length+'</span></h3>';
+    d.blocks.forEach(function(b,bi){
+      var key=di+'-'+bi;var l=document.createElement('label');l.className='ck'+(st.plan[key]?' done':'');
+      l.innerHTML='<input type="checkbox" '+(st.plan[key]?'checked':'')+'><span>'+b+'</span>';
+      l.querySelector('input').onchange=function(e){st.plan[key]=e.target.checked;save();render()};
+      c.appendChild(l);
+    });
+    v.appendChild(c);
+  });
+  var g=document.createElement('div');g.className='card';
+  g.innerHTML='<h3>MCQ guessing rule (0.5 negative marking, 4 options)</h3>'+
+  '<div class="scroll"><table><tr><th>Options you can eliminate</th><th>Chance right</th><th>Expected marks</th></tr>'+
+  '<tr><td>0</td><td>25%</td><td>-0.125 (skip)</td></tr><tr><td>1</td><td>33%</td><td>0 (neutral)</td></tr><tr><td>2</td><td>50%</td><td>+0.25 (guess)</td></tr></table></div>'+
+  '<p class="note">Assumes 1 mark per MCQ and 4 options. Skip when you cannot eliminate at least two.</p>';
+  v.appendChild(g);
+}
+
+function viewTopics(v){
+  var c=document.createElement('div');c.className='chips';
+  T.forEach(function(t){var b=document.createElement('button');b.className='chip'+(cur.topic===t.id?' on':'');b.textContent=t.name;b.onclick=function(){cur.topic=t.id;render()};c.appendChild(b)});
+  v.appendChild(c);
+  var f=document.createElement('div');f.className='chips';
+  [['all','All'],['MCQ','MCQ'],['Written','Written'],['seen','Seen in past papers'],['review','Review pile']].forEach(function(x){
+    var b=document.createElement('button');b.className='chip'+(cur.filter===x[0]?' on':'');b.textContent=x[1];b.onclick=function(){cur.filter=x[0];render()};f.appendChild(b)});
+  v.appendChild(f);
+  var topic=T.filter(function(t){return t.id===cur.topic})[0];
+  var shown=0;
+  topic.items.forEach(function(it,i){
+    var key=topic.id+'-'+i;var m=st.marks[key];
+    if(cur.filter==='MCQ'&&it.ty!=='MCQ')return;
+    if(cur.filter==='Written'&&it.ty!=='Written')return;
+    if(cur.filter==='seen'&&!it.seen)return;
+    if(cur.filter==='review'&&m!=='rv')return;
+    shown++;
+    var d=document.createElement('div');d.className='card';
+    d.innerHTML='<div><span class="tag">'+it.ty+'</span>'+(it.seen?'<span class="tag seen">Seen: '+it.seen+'</span>':'')+'</div>'+
+      '<div class="q">'+it.q+'</div>'+
+      '<button class="btn ghost">Show answer</button>'+
+      '<div class="ans"><div>'+it.a+'</div><p class="note" style="margin:8px 0 0"><b>Why:</b> '+it.ex+'</p>'+
+      '<div class="row"><button class="btn ghost ok'+(m==='ok'?' on':'')+'">Got it</button><button class="btn ghost rv'+(m==='rv'?' on':'')+'">Review</button></div></div>';
+    var btn=d.querySelector('button'),ans=d.querySelector('.ans');
+    btn.onclick=function(){var o=ans.classList.toggle('open');btn.textContent=o?'Hide answer':'Show answer'};
+    d.querySelector('.ok').onclick=function(){st.marks[key]=(st.marks[key]==='ok')?null:'ok';save();render()};
+    d.querySelector('.rv').onclick=function(){st.marks[key]=(st.marks[key]==='rv')?null:'rv';save();render()};
+    v.appendChild(d);
+  });
+  if(!shown){var e=document.createElement('div');e.className='card note';e.textContent='Nothing here for this filter yet.';v.appendChild(e)}
+}
+
+function viewExam(v){
+  var c=document.createElement('div');c.className='card';
+  c.innerHTML='<h3>Format (from the admission circular you shared)</h3><div class="scroll"><table>'+
+  '<tr><th>Part</th><th>Details</th></tr>'+
+  '<tr><td>MCQ</td><td>50 questions, 50 marks, 50 minutes, <b>-0.5 per wrong answer</b></td></tr>'+
+  '<tr><td>Written</td><td>10 questions, 100 marks, 1 hour</td></tr>'+
+  '<tr><td>Rule</td><td>Written script is checked only if MCQ score is at or above the committee cut-off. Final merit = MCQ + written.</td></tr>'+
+  '<tr><td>Calculator</td><td>Non-programmable only</td></tr></table></div>'+
+  '<p class="note">Formats have varied between sessions (older papers had more MCQs or different mark splits; a 2021 online session had 100 MCQs). Confirm against your current circular.</p>';
+  v.appendChild(c);
+  var g=document.createElement('div');g.className='card';
+  g.innerHTML='<h3>Group 1 syllabus (10 areas)</h3><ol>'+T.map(function(t){return '<li>'+t.name+'</li>'}).join('')+'</ol>'+
+  '<p class="note">The circular lists broader names (e.g. "Digital Logic Design, Microprocessors and Microcontrollers"). Your image did not show visible highlighting, so all ten Group 1 topics are covered. Tell me which ones to drop or expand.</p>';
+  v.appendChild(g);
+  var p=document.createElement('div');p.className='card';
+  p.innerHTML='<h3>What past papers tell us</h3><ul>'+
+  '<li>Written questions are short, concept-plus-small-design tasks (define, draw, write a snippet, derive a result), spread across nearly all topics.</li>'+
+  '<li>Repeated patterns: linked-list and graph algorithms, DFA/NFA construction, LL(1), SQL with GROUP BY/CASE/triggers, subnetting, UML diagrams, gate-level realization, A*, overfitting.</li>'+
+  '<li>MCQs like to test tricky output questions and definitions (ACID, B+ tree order, duplex modes).</li></ul>';
+  v.appendChild(p);
+}
+
+function viewRes(v){
+  var c=document.createElement('div');c.className='card';
+  c.innerHTML='<h3>Free past-question sources found</h3><ul>'+
+  '<li><a href="https://github.com/golammostafa13/buet-msc-cse-questions" target="_blank" rel="noopener">GitHub: BUET MSc CSE questions and solutions</a> (Apr 2017, Oct 2017, Oct 2018, Apr 2019, Apr 2024, plus topic guides and a 60-question bank)</li>'+
+  '<li><a href="https://github.com/RakibHasanFahim/BUET-CSE-MSc-Admission" target="_blank" rel="noopener">GitHub: 650-question practice bank</a> (500 explained MCQs, 150 written, all 10 Group 1 areas; original practice questions)</li>'+
+  '<li><a href="https://www.itjobexam.com/2021/06/buet-msc-in-cse-online-exam-2021-question-with-solution.html" target="_blank" rel="noopener">itjobexam: 2021 online exam, 100 MCQs</a></li>'+
+  '</ul>';
+  v.appendChild(c);
+  var b=document.createElement('div');b.className='card';
+  b.innerHTML='<h3>About the help-guide PDF</h3><p>The book in your first image (BUET M.Sc. in CSE &amp; IICT Admission Help Guide, Sultan Ahmed Sagor, 224 pages) is a commercial title sold through book shops. I did not find a legitimate free PDF, and I will not point to pirated copies. If you own a copy, upload the PDF or photos of pages and I can align this guide to its chapters.</p>'+
+  '<h3>Recommended textbooks (per topic)</h3><ul><li>DSA: CLRS</li><li>Database: Silberschatz, Korth, Sudarshan</li><li>OS: Silberschatz, Galvin, Gagne</li><li>Networks: Kurose and Ross</li><li>Architecture: Patterson and Hennessy</li><li>TOC: Hopcroft, Motwani, Ullman</li><li>Compilers: the Dragon Book</li><li>Discrete Math: Rosen</li></ul>';
+  v.appendChild(b);
+}
+
+render();
+</script>
+</body>
+</html>

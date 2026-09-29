@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Copy, Check, Search, Crown, ShoppingCart } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { AdUnits } from "@/components/ads";
 import { DEFAULT_PREVIEW_TEXT, previewFamily, buildFontCatalog, type BanglaFont, type FontType, type FontCategory } from "@/lib/fonts-data";
 import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
@@ -189,6 +190,7 @@ export default function FontsPage() {
       )}
       {list.length === 0 && <GlassCard><p className="text-sm text-slate-500">No fonts match these filters.</p></GlassCard>}
       {buy && <CheckoutModal open onClose={() => setBuy(null)} itemType="font" itemId={buy.id} itemName={buy.name} amountBDT={buy.price} />}
+      <AdUnits slot="inFeed" className="mt-4" />
     </div>
   );
 }

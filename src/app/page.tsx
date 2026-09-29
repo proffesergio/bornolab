@@ -8,6 +8,7 @@ import {
 import { GlassCard } from "@/components/ui";
 import { HeroRotator } from "@/components/hero-rotator";
 import { AdSlot, useSiteConfig } from "@/components/site-widgets";
+import { AdUnits } from "@/components/ads";
 import type { ToolKey } from "@/lib/site-config-shared";
 
 const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
@@ -84,6 +85,7 @@ export default function Home() {
       </div>
 
       <AdSlot slot="header" className="mt-4" />
+      <AdUnits slot="header" className="mt-4" />
 
       {/* TOOLS with usefulness points */}
       <h2 className="mb-3 mt-8 text-lg font-black">Everything you need, one hub</h2>
@@ -140,6 +142,7 @@ export default function Home() {
       </GlassCard>
 
       <AdSlot slot="inFeed" className="mt-4" />
+      <AdUnits slot="inFeed" className="mt-4" />
 
       {/* FAQ */}
       <script
@@ -179,6 +182,7 @@ export default function Home() {
       </GlassCard>
 
       <AdSlot slot="footer" className="mt-4" />
+      <AdUnits slot="footer" className="mt-4" />
     </div>
   );
 }

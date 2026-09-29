@@ -1,0 +1,4 @@
+# BornoLab ads.txt — replace the placeholder line after AdSense approval.
+# Format: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f75b4d3d8b noget
+# See: https://support.google.com/adsense/answer/7532446
+# Until then this file intentionally declares no sellers (comments are ignored).

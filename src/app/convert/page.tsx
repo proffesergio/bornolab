@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, ArrowLeftRight, Copy, Eraser, Check, Download, Eye, Upload, FileDown } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { AdUnits } from "@/components/ads";
 import { unicodeToBijoy, bijoyToUnicode, detectScript } from "@/lib/bijoy";
 import { cn } from "@/lib/cn";
 
@@ -285,6 +286,8 @@ export default function ConvertPage() {
           <li>English/URLs/numbers pass through byte-for-byte; greedy reverse tokenizer keeps it reversible.</li>
         </ul>
       </GlassCard>
+
+      <AdUnits slot="inFeed" className="mt-4" />
     </div>
   );
 }

@@ -47,25 +47,25 @@ export interface StudyMaterial {
 export const BUILT_IN_STUDY_MATERIALS: StudyMaterial[] = [
   {
     id: "buet-msc-cse-prep-pdf",
-    title: "BUET M.Sc. CSE (Group 1) — 3-Day Prep Guide (PDF)",
+    title: "BUET M.Sc. CSE (Group 1) — Prep Guide",
     category: "masters",
     subcategory: "BUET Post Graduate Admission",
     description:
-      "Q&A with explanations for all 10 Group-1 topics — Programming, Discrete Math, DSA, Compiler & TOC, Database, Networks & Security, Software Engineering, Digital Logic, Architecture & OS, AI/ML — plus a 3-day study plan.",
-    fileUrl: "/uploads/study/BUET_MSc_CSE_Group1_Prep_Guide.pdf",
+      "Q&A with explanations for all 10 Group-1 topics — Programming, Discrete Math, DSA, Compiler & TOC, Database, Networks & Security, Software Engineering, Digital Logic, Architecture & OS, AI/ML — plus a 3-day study plan. Read online free, or download the PDF after login.",
+    fileUrl: "/uploads/study/buet-msc-cse-group1-prep-guide.pdf",
     fileType: "pdf",
     topics: ["prog", "disc", "dsa", "toc", "db", "net", "se", "dld", "arch", "ai"],
     featured: true,
     enabled: true,
   },
   {
-    id: "buet-msc-cse-prep-html",
-    title: "BUET M.Sc. CSE (Group 1) — Interactive Prep Guide (HTML)",
+    id: "buet-msc-cse-prep-interactive",
+    title: "BUET M.Sc. CSE (Group 1) — Interactive Practice",
     category: "masters",
     subcategory: "BUET Post Graduate Admission",
     description:
-      "The same 3-day prep guide as an interactive page — topic tabs, reveal-mode self-test cards and a progress bar.",
-    fileUrl: "/uploads/study/BUET%20MSc%20CSE%20(Group%201)%20-%203-Day%20Prep%20Guide.html",
+      "The same 3-day prep guide as a step-by-step interactive module — topic walkthrough, flashcards and exam mode with progress tracking. No login needed.",
+    fileUrl: "/uploads/study/buet-msc-cse-group1-prep-guide.html",
     fileType: "html",
     topics: ["prog", "disc", "dsa", "toc", "db", "net", "se", "dld", "arch", "ai"],
     featured: false,

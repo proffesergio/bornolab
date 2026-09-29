@@ -2,9 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock } from "lucide-react";
+import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyPractice } from "@/components/study-practice";
+import { AdUnits } from "@/components/ads";
+import { useLogin } from "@/components/use-login";
 import { STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
 import { cn } from "@/lib/cn";
 
@@ -16,14 +18,13 @@ export default function StudyPage() {
   const [cat, setCat] = useState<CatFilter>("all");
   const [sub, setSub] = useState<string>("all");
   const [q, setQ] = useState("");
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  const { loggedIn, refresh } = useLogin();
   const [dlBusy, setDlBusy] = useState<string | null>(null);
   const [dlError, setDlError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/study").then((r) => r.json()).then((j) => setMaterials(j.materials ?? [])).catch(() => {});
-    fetch("/api/auth/me").then((r) => r.json()).then((j) => setLoggedIn(Boolean(j.user))).catch(() => setLoggedIn(false));
   }, []);
 
   const subs = useMemo(() => {
@@ -50,7 +51,10 @@ export default function StudyPage() {
 
   const download = async (m: StudyMaterial) => {
     setDlError(null);
-    if (!loggedIn) {
+    // Recheck at click time: never bounce a signed-in user to /login
+    // just because the initial session check was slow or failed once.
+    const ok = loggedIn === true || (loggedIn === null && (await refresh()));
+    if (!ok) {
       router.push(`/login?next=${encodeURIComponent(`/study/${m.id}`)}`);
       return;
     }
@@ -152,55 +156,59 @@ export default function StudyPage() {
         </GlassCard>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        {list.map((m) => (
+        {list.map((m) => {
+          const interactive = m.fileType !== "pdf" && m.fileType !== "link";
+          const FormatIcon = m.fileType === "link" ? Globe : interactive ? Sparkles : FileText;
+          const formatLabel = m.fileType === "link" ? "Resource link" : interactive ? "Interactive module" : "PDF guide";
+          return (
           <GlassCard key={m.id} className="group flex flex-col p-5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-2.5 py-1 text-[10.5px] font-bold text-white">
-                {catMeta(m.category)?.label ?? m.category}
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 text-white">
+                <FormatIcon size={18} />
               </span>
-              {m.subcategory && (
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-[10.5px] font-bold text-amber-700 dark:text-amber-300">
-                  {m.subcategory}
-                </span>
-              )}
-              <span className="rounded-full bg-slate-900/5 px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase text-slate-500 dark:bg-white/10 dark:text-slate-400">
-                {m.fileType}
-              </span>
+              <div className="min-w-0">
+                <h3 className="truncate font-extrabold leading-6">{m.title}</h3>
+                <p className="truncate text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
+                  {formatLabel} • {catMeta(m.category)?.label ?? m.category}{m.subcategory ? ` • ${m.subcategory}` : ""}
+                </p>
+              </div>
             </div>
-            <h3 className="mt-2.5 font-extrabold leading-6">{m.title}</h3>
-            <p className="mt-1 line-clamp-3 flex-1 text-[13px] leading-6 text-slate-600 dark:text-slate-400">{m.description}</p>
+            <p className="mt-2.5 line-clamp-2 flex-1 text-[13px] leading-6 text-slate-600 dark:text-slate-400">{m.description}</p>
             {(m.topics?.length ?? 0) > 0 && (
               <p className="mt-2 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300">
-                + {m.topics!.length} practice topics • flashcards & exam mode included
+                Flashcards & exam mode included
               </p>
             )}
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <Link
                 href={`/study/${m.id}`}
-                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2 text-[13px] font-bold text-white hover:brightness-110"
+                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2 text-[13px] font-bold text-white hover:brightness-110"
               >
-                <FileText size={14} /> Read free
+                <FormatIcon size={14} /> {interactive ? "Start" : m.fileType === "link" ? "Open" : "Read"}
               </Link>
-              <button
-                onClick={() => download(m)}
-                disabled={dlBusy === m.id}
-                title={loggedIn ? "Download file" : "Login required to download"}
-                className="glass hover-glow flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold"
-              >
-                {loggedIn ? <Download size={14} /> : <Lock size={14} />}
-                {dlBusy === m.id ? "Preparing…" : loggedIn ? "Download" : "Login to download"}
-              </button>
+              {m.fileType === "pdf" && (
+                <button
+                  onClick={() => download(m)}
+                  disabled={dlBusy === m.id}
+                  title={loggedIn === false ? "Login required to download" : "Download PDF"}
+                  className="glass hover-glow flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold"
+                >
+                  {loggedIn === false ? <Lock size={14} /> : <Download size={14} />}
+                  {dlBusy === m.id ? "Preparing…" : loggedIn === false ? "Login to download" : "Download"}
+                </button>
+              )}
               <button
                 onClick={() => share(m)}
                 title="Copy shareable link"
-                className="glass hover-glow flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold"
+                aria-label={`Share ${m.title}`}
+                className="glass hover-glow grid h-9 w-9 place-items-center rounded-full"
               >
-                {copied === m.id ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
-                {copied === m.id ? "Copied!" : "Share"}
+                {copied === m.id ? <Check size={15} className="text-emerald-500" /> : <Share2 size={15} />}
               </button>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
       </div>
       {dlError && <p role="alert" className="mt-3 text-[13px] font-semibold text-rose-500">{dlError}</p>}
       {loggedIn === false && (
@@ -210,6 +218,7 @@ export default function StudyPage() {
       )}
 
       {/* practice */}
+      <AdUnits slot="inFeed" className="mt-8" />
       <h2 id="practice" className="mb-3 mt-10 flex scroll-mt-24 items-center gap-1.5 text-lg font-black">
         <GraduationCap size={19} /> Step-by-step practice
       </h2>
