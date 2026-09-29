@@ -6,10 +6,11 @@ import {
 } from "./members-shared";
 import type { BanglaFont } from "./fonts-data";
 import type { Software } from "./software-data";
+import type { StudyMaterial } from "./study-data";
 
 export type { AdUnit, AuthProviderConfig };
 
-export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software";
+export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software" | "study";
 
 /** Per-tool caps + ops telemetry for the PDF Tools suite (Admin CRM managed). */
 export type PdfToolKey = "merge" | "split" | "translate" | "compress" | "images";
@@ -52,6 +53,9 @@ export interface SiteConfig {
   /** Admin-added catalog entries (Admin → Catalog). Stored + served like overrides. */
   customFonts: BanglaFont[];
   customSoftware: Software[];
+  /** Admin-added study materials (Admin → Study). Stored + served like overrides. */
+  customStudy: StudyMaterial[];
+  studyOverrides: Record<string, { enabled?: boolean }>;
   ads: Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
   seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; googleSiteVerification: string };
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
@@ -62,7 +66,7 @@ export interface SiteConfig {
 
 export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite" },
   announcement: { enabled: false, text: "নতুন: প্রিমিয়াম ফন্ট এখন বিকাশ/নগদে কিনুন!" },
-  tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true },
+  tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true, study: true },
   pdfTools: {
     merge: { enabled: true, maxMB: 25, maxFiles: 20 },
     split: { enabled: true, maxMB: 25, maxFiles: 1 },
@@ -74,6 +78,8 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
   softwareOverrides: {},
   customFonts: [],
   customSoftware: [],
+  customStudy: [],
+  studyOverrides: {},
   ads: {
     header: { enabled: false, network: "AdSense", code: "" },
     inFeed: { enabled: false, network: "AdSense", code: "" },

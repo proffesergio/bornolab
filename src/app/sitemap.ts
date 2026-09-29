@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/images-to-pdf",
     "/format",
     "/software",
+    "/study",
     "/login",
     "/about",
     "/contact",

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home,
   FileText, Scissors, Combine, Minimize2, Image as ImageIcon, LayoutGrid, ChevronDown,
+  GraduationCap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "./theme";
@@ -18,6 +19,7 @@ const LINKS: { href: string; label: string; icon: typeof Home; tool?: ToolKey }[
   { href: "/bijoy-unicode-converter", label: "Bijoy <> Unicode", icon: Languages, tool: "convert" },
   { href: "/fonts", label: "Fonts", icon: Type, tool: "fonts" },
   { href: "/styler", label: "Styler", icon: Sparkles, tool: "styler" },
+  { href: "/study", label: "Study", icon: GraduationCap, tool: "study" },
   { href: "/software", label: "Software", icon: MonitorDown, tool: "software" },
 ];
 

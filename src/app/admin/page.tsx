@@ -5,8 +5,10 @@ import {
   LayoutDashboard, Wrench, Receipt, Megaphone, Search,
   Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check, FileText,
   Users, CreditCard, ShieldCheck, ClipboardList, KeyRound, Menu, X, Building2, Layers,
+  GraduationCap,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { AdminStudy } from "@/components/admin-study";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
 import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
@@ -15,7 +17,7 @@ import { cn } from "@/lib/cn";
 
 type Section =
   | "dashboard" | "users" | "subscriptions"
-  | "tools" | "pdftools" | "catalog"
+  | "tools" | "pdftools" | "catalog" | "study"
   | "orders" | "ads" | "payments" | "seo" | "aiseo"
   | "roles" | "plans" | "audit" | "access" | "settings";
 
@@ -34,6 +36,7 @@ const GROUPS: { title: string; items: { id: Section; label: string; icon: typeof
       { id: "tools", label: "Site Tools", icon: Wrench },
       { id: "pdftools", label: "PDF Tools", icon: FileText },
       { id: "catalog", label: "Catalog", icon: Layers },
+      { id: "study", label: "Study", icon: GraduationCap },
     ],
   },
   {
@@ -65,6 +68,7 @@ const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
   tools: { title: "Site Tools", desc: "Module visibility for the storefront." },
   pdftools: { title: "PDF Tools", desc: "Availability, caps and usage telemetry." },
   catalog: { title: "Catalog", desc: "Font + software overrides." },
+  study: { title: "Study Materials", desc: "PDF/HTML guides per category + visibility." },
   orders: { title: "Orders", desc: "Manual-payment fulfillment." },
   ads: { title: "Ads", desc: "Slots + Google AdSense units." },
   payments: { title: "Payments", desc: "Processors and merchant accounts." },
@@ -84,6 +88,7 @@ const TOOL_LABELS: Record<ToolKey, string> = {
   translate: "PDF⇆DOCX Translator",
   split: "PDF Splitter",
   software: "Software Store",
+  study: "Study Hub",
 };
 
 const PDF_TOOL_LABELS: Record<PdfToolKey, string> = {
@@ -628,6 +633,10 @@ export default function AdminPage() {
               </div>
               {saving ? <p className="mt-2 text-xs text-slate-500"><Loader2 size={12} className="inline animate-spin" /> Saving…</p> : savedTick ? <p className="mt-2 text-xs text-emerald-500"><Check size={12} className="inline" /> Saved</p> : null}
             </GlassCard>
+          )}
+
+          {section === "study" && (
+            <AdminStudy config={config} save={save} />
           )}
 
           {section === "pdftools" && (
