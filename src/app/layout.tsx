@@ -91,6 +91,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bn" className="h-full dark" suppressHydrationWarning>
     
       <body className="flex min-h-full flex-col bg-white text-slate-900 antialiased dark:bg-[#070b16] dark:text-slate-100 dark:bg-[radial-gradient(60rem_30rem_at_20%_-10%,rgba(34,211,238,.15),transparent),radial-gradient(50rem_28rem_at_90%_0%,rgba(168,85,247,.18),transparent)]">
+        {isGtm ? (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gaId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        ) : null}
         <Script
           id="bornolab-theme-init"
           strategy="beforeInteractive"
