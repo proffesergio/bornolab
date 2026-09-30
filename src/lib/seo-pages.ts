@@ -19,6 +19,7 @@ export const SEO_ROUTE_OPTIONS = [
   "/pdf-tools",
   "/format",
   "/software",
+  "/guides",
   "/about",
   "/contact",
   "/login",

@@ -100,7 +100,7 @@ export default function StudyPage() {
       <SectionTitle
         kicker="Study Hub"
         title="Study Hub — Notes, Guides & Practice"
-        desc="Read free in your browser, share with a link. Login is only needed to download PDFs."
+        desc="Preview every guide free. Login with Google to keep reading and download — paid guides unlock via bKash."
       />
 
       {/* category tabs */}
@@ -158,6 +158,7 @@ export default function StudyPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         {list.map((m) => {
           const interactive = m.fileType !== "pdf" && m.fileType !== "link";
+          const paid = m.access === "paid";
           const FormatIcon = m.fileType === "link" ? Globe : interactive ? Sparkles : FileText;
           const formatLabel = m.fileType === "link" ? "Resource link" : interactive ? "Interactive module" : "PDF guide";
           return (
@@ -166,12 +167,15 @@ export default function StudyPage() {
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 text-white">
                 <FormatIcon size={18} />
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="truncate font-extrabold leading-6">{m.title}</h3>
                 <p className="truncate text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
                   {formatLabel} • {catMeta(m.category)?.label ?? m.category}{m.subcategory ? ` • ${m.subcategory}` : ""}
                 </p>
               </div>
+              <span className={paid ? "shrink-0 rounded-full bg-amber-400/20 px-2.5 py-1 text-[10.5px] font-black text-amber-700 dark:text-amber-300" : "shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-black text-emerald-600 dark:text-emerald-300"}>
+                {paid ? `৳${m.priceBDT ?? 0}` : "FREE"}
+              </span>
             </div>
             <p className="mt-2.5 line-clamp-2 flex-1 text-[13px] leading-6 text-slate-600 dark:text-slate-400">{m.description}</p>
             {(m.topics?.length ?? 0) > 0 && (
@@ -184,9 +188,9 @@ export default function StudyPage() {
                 href={`/study/${m.id}`}
                 className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2 text-[13px] font-bold text-white hover:brightness-110"
               >
-                <FormatIcon size={14} /> {interactive ? "Start" : m.fileType === "link" ? "Open" : "Read"}
+                <FormatIcon size={14} /> {paid ? "Preview" : interactive ? "Start" : m.fileType === "link" ? "Open" : "Read"}
               </Link>
-              {m.fileType === "pdf" && (
+              {!paid && m.fileType === "pdf" && (
                 <button
                   onClick={() => download(m)}
                   disabled={dlBusy === m.id}

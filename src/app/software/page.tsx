@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Download, ShoppingCart, MonitorDown, BadgeCheck } from "lucide-react";
+import Link from "next/link";
+import { Download, ShoppingCart, MonitorDown, BadgeCheck, Check } from "lucide-react";
+import { addToCart } from "@/lib/cart";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { buildSoftwareCatalog, type Software } from "@/lib/software-data";
 import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
@@ -13,6 +15,7 @@ export default function SoftwarePage() {
   const [overrides, setOverrides] = useState<Record<string, { priceBDT?: number; enabled?: boolean }>>({});
   const [custom, setCustom] = useState<Software[]>([]);
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/site-config").then((r) => r.json()).then((c) => {
@@ -72,10 +75,23 @@ export default function SoftwarePage() {
             <p className="mt-1 flex-1 text-[13px] text-slate-600 dark:text-slate-400">{s.tagline}</p>
             <p className="mt-2 text-[11px] text-slate-500">{s.platform} • v{s.version} • {s.size} • ⬇ {s.downloads}</p>
             {s.license === "Paid" ? (
-              <button onClick={() => setBuy({ id: s.id, name: s.name, price: s.priceBDT })}
-                className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
-                <ShoppingCart size={15} /> Buy ৳{s.priceBDT}
-              </button>
+              <span className="mt-3 flex gap-2">
+                <button onClick={() => setBuy({ id: s.id, name: s.name, price: s.priceBDT })}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
+                  <ShoppingCart size={15} /> Buy ৳{s.priceBDT}
+                </button>
+                <button
+                  onClick={() => {
+                    if (addToCart({ key: `software:${s.id}`, itemType: "software", itemId: s.id, itemName: s.name, amountBDT: s.priceBDT })) {
+                      setAdded(s.id);
+                      setTimeout(() => setAdded(null), 1200);
+                    }
+                  }}
+                  aria-label={`Add ${s.name} to cart`}
+                  title="Add to cart"
+                  className="glass hover-glow rounded-full p-2.5"
+                >{added === s.id ? <Check size={15} className="text-emerald-500" /> : <ShoppingCart size={15} />}</button>
+              </span>
             ) : s.fileUrl && s.fileUrl !== "#" ? (
               <a
                 href={s.fileUrl} download
@@ -90,6 +106,9 @@ export default function SoftwarePage() {
               </button>
             )}
             <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500"><BadgeCheck size={12} /> bKash • Nagad • Bank • Binance accepted</p>
+            <Link href={`/software/${s.id}`} className="mt-1.5 block text-center text-[12px] font-bold text-cyan-700 hover:underline dark:text-cyan-300">
+              Details{(s.versions?.length ?? 0) > 0 ? ` • ${s.versions!.length} versions` : s.guide ? " • setup guide" : ""} →
+            </Link>
           </GlassCard>
         ))}
       </div>

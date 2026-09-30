@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme";
@@ -130,17 +131,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <footer className="border-t border-slate-200 px-4 py-6 text-center text-xs text-slate-500 dark:border-white/10 dark:text-slate-500">
             <p>
               <span className="font-bold text-slate-700 dark:text-slate-300">BornoLab</span> • Client-first Bangla toolkit • n8n automation-ready •{" "}
-              <a className="underline decoration-cyan-500/50 underline-offset-2" href="/fonts">Fonts</a> •{" "}
-              <a className="underline decoration-purple-500/50 underline-offset-2" href="/bijoy-unicode-converter">Bijoy {"<>"} Unicode</a> •{" "}
-              <a className="underline decoration-emerald-500/50 underline-offset-2" href="/pdf-tools">PDF Tools</a> •{" "}
-              <a className="underline decoration-slate-400/50 underline-offset-2" href="/software">Software</a>
+              <Link className="underline decoration-cyan-500/50 underline-offset-2" href="/fonts">Fonts</Link> •{" "}
+              <Link className="underline decoration-purple-500/50 underline-offset-2" href="/bijoy-unicode-converter">Bijoy {"<>"} Unicode</Link> •{" "}
+              <Link className="underline decoration-emerald-500/50 underline-offset-2" href="/pdf-tools">PDF Tools</Link> •{" "}
+              <Link className="underline decoration-slate-400/50 underline-offset-2" href="/software">Software</Link> •{" "}
+              <Link className="underline decoration-amber-500/50 underline-offset-2" href="/guides">Guides</Link>
             </p>
             <p className="mt-2">
-              <a className="underline underline-offset-2" href="/about">About</a> •{" "}
-              <a className="underline underline-offset-2" href="/contact">Contact</a> •{" "}
-              <a className="underline underline-offset-2" href="/privacy">Privacy Policy</a> •{" "}
-              <a className="underline underline-offset-2" href="/terms">Terms of Use</a> •{" "}
-              <a className="underline decoration-slate-400/50 underline-offset-2" href="/admin/login">Admin</a>
+              <Link className="underline underline-offset-2" href="/about">About</Link> •{" "}
+              <Link className="underline underline-offset-2" href="/contact">Contact</Link> •{" "}
+              <Link className="underline underline-offset-2" href="/privacy">Privacy Policy</Link> •{" "}
+              <Link className="underline underline-offset-2" href="/terms">Terms of Use</Link> •{" "}
+              <Link className="underline decoration-slate-400/50 underline-offset-2" href="/admin/login">Admin</Link>
             </p>
             <p className="mt-1">Made for Bangladeshi creators, authors & DTP studios. See <code>docs/plans.md</code> for the print-automation roadmap.</p>
           </footer>

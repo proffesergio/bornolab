@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Wrench, Receipt, Megaphone, Search,
   Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check, FileText,
   Users, CreditCard, ShieldCheck, ClipboardList, KeyRound, Menu, X, Building2, Layers,
-  GraduationCap,
+  GraduationCap, HardDrive,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { AdminStudy } from "@/components/admin-study";
@@ -14,11 +14,13 @@ import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDe
 import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
 import { SOFTWARE, type Software } from "@/lib/software-data";
 import { SEO_ROUTE_OPTIONS } from "@/lib/seo-pages";
+import { CsvBulkTools, duplicateCustom, FontBulkImporter, FontVariantsEditor, SoftwareBulkImporter, SoftwareVersionsEditor } from "@/components/admin-bulk";
+import { BkashQrButton } from "@/components/bkash-qr";
 import { cn } from "@/lib/cn";
 
 type Section =
   | "dashboard" | "users" | "subscriptions"
-  | "tools" | "pdftools" | "catalog" | "study"
+  | "tools" | "pdftools" | "catalog" | "study" | "media"
   | "orders" | "ads" | "payments" | "seo" | "aiseo"
   | "roles" | "plans" | "audit" | "access" | "settings";
 
@@ -38,6 +40,7 @@ const GROUPS: { title: string; items: { id: Section; label: string; icon: typeof
       { id: "pdftools", label: "PDF Tools", icon: FileText },
       { id: "catalog", label: "Catalog", icon: Layers },
       { id: "study", label: "Study", icon: GraduationCap },
+      { id: "media", label: "Media", icon: HardDrive },
     ],
   },
   {
@@ -70,6 +73,7 @@ const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
   pdftools: { title: "PDF Tools", desc: "Availability, caps and usage telemetry." },
   catalog: { title: "Catalog", desc: "Font + software overrides." },
   study: { title: "Study Materials", desc: "PDF/HTML guides per category + visibility." },
+  media: { title: "Media Library", desc: "Uploaded files, storage usage, orphan cleanup." },
   orders: { title: "Orders", desc: "Manual-payment fulfillment." },
   ads: { title: "Ads", desc: "Slots + Google AdSense units." },
   payments: { title: "Payments", desc: "Processors and merchant accounts." },
@@ -170,7 +174,12 @@ export default function AdminPage() {
   const [navQuery, setNavQuery] = useState("");
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
   const [analytics, setAnalytics] = useState<{ totalViews: number; weekViews: number; days: { date: string; views: number }[]; topPages: { path: string; views: number }[] } | null>(null);
-  const [orders, setOrders] = useState<Array<{ id: string; at: number; itemName: string; amountBDT: number; method: string; sender: string; txn: string; note: string; status: string }>>([]);
+  const [orders, setOrders] = useState<Array<{ id: string; at: number; kind?: "purchase" | "request"; itemName: string; amountBDT: number; method: string; sender: string; txn: string; note: string; status: string; items?: { itemType: string; itemId: string; itemName: string; amountBDT: number }[]; delivery?: { label: string; url: string }[]; history?: { at: number; actor: string; from: string; to: string; note?: string }[] }>>([]);
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
+  const [orderOpen, setOrderOpen] = useState<string | null>(null);
+  const [orderKind, setOrderKind] = useState<"all" | "purchase" | "request">("all");
+  const [delLabel, setDelLabel] = useState<Record<string, string>>({});
+  const [delUrl, setDelUrl] = useState<Record<string, string>>({});
   const [pdfStats, setPdfStats] = useState<PdfStats | null>(null);
   const [users, setUsers] = useState<MemberUser[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -179,6 +188,11 @@ export default function AdminPage() {
   const [roles, setRoles] = useState<RoleDef[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [adsCheck, setAdsCheck] = useState<{ exists: boolean; bytes?: number; sellerLines?: number; foundIds?: string[]; client?: string; pubId?: string; placeholderOnly?: boolean; match?: boolean } | null>(null);
+  const [media, setMedia] = useState<{ files: { url: string; kind: string; bytes: number; mtime: number; referenced: boolean }[]; count: number; totalBytes: number; orphanBytes: number } | null>(null);
+
+  const refreshMedia = () => {
+    fetch("/api/admin/media").then((r) => r.json()).then(setMedia).catch(() => {});
+  };
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [userQuery, setUserQuery] = useState("");
@@ -214,17 +228,25 @@ export default function AdminPage() {
   const [nfError, setNfError] = useState("");
 
   // Add-software form state (direct link OR local upload)
-  const [nsName, setNsName] = useState("");
-  const [nsTagline, setNsTagline] = useState("");
+  const [nsName, setNsName] = useState("");  const [nsTagline, setNsTagline] = useState("");
   const [nsPlatform, setNsPlatform] = useState("Windows 10/11");
   const [nsVersion, setNsVersion] = useState("1.0.0");
   const [nsSize, setNsSize] = useState("");
   const [nsPrice, setNsPrice] = useState("0");
   const [nsLink, setNsLink] = useState("");
   const [nsFallback, setNsFallback] = useState("");
+  const [nsGuide, setNsGuide] = useState("");
+  const [nsShots, setNsShots] = useState("");
   const [nsUploadedUrl, setNsUploadedUrl] = useState("");
   const [nsUploading, setNsUploading] = useState(false);
   const [nsError, setNsError] = useState("");
+  // bKash QR upload state
+  const [qrUploading, setQrUploading] = useState(false);
+  const [qrError, setQrError] = useState("");
+  // Font variant editors open per custom font id
+  const [varOpen, setVarOpen] = useState<Record<string, boolean>>({});
+  // Software version editors open per custom app id
+  const [verOpen, setVerOpen] = useState<Record<string, boolean>>({});
 
   // Per-page SEO override form state
   const [seoRoute, setSeoRoute] = useState<string>("/study");
@@ -273,6 +295,7 @@ export default function AdminPage() {
     fetch("/api/admin/roles").then((r) => r.json()).then((j) => setRoles(j.roles ?? [])).catch(() => {});
     fetch("/api/admin/audit").then((r) => r.json()).then((j) => setAudit(j.entries ?? [])).catch(() => {});
     fetch("/api/admin/ads-check").then((r) => r.json()).then(setAdsCheck).catch(() => {});
+    fetch("/api/admin/media").then((r) => r.json()).then(setMedia).catch(() => {});
   }, [router]);
 
   const save = async (patch: Partial<SiteConfig>) => {
@@ -293,9 +316,13 @@ export default function AdminPage() {
     router.push("/admin/login");
   };
 
-  const setOrderStatus = async (id: string, status: string) => {
-    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
-    setOrders((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
+  const setOrderStatus = async (id: string, status: string, note?: string) => {
+    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status, note }) });
+    // Re-fetch so the verify-trail history comes back from the server.
+    fetch("/api/admin/orders").then((r) => r.json()).then((j) => setOrders(j.orders ?? [])).catch(() => {
+      setOrders((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
+    });
+    setOrderNotes((ns) => ({ ...ns, [id]: "" }));
   };
 
   const patchUser = async (id: string, patch: Partial<Pick<MemberUser, "role" | "planId" | "planStatus" | "status">>) => {
@@ -359,7 +386,7 @@ export default function AdminPage() {
     s.toLowerCase().replace(/[^a-z0-9\u0980-\u09ff]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "item";
 
   const uploadCatalogFile = async (
-    kind: "font" | "software",
+    kind: "font" | "software" | "study" | "media",
     file: File,
     setBusy: (b: boolean) => void,
     setUrl: (u: string) => void,
@@ -434,10 +461,12 @@ export default function AdminPage() {
       downloads: "New",
       fileUrl: nsUploadedUrl || nsLink.trim() || "#",
       fallbackUrl: nsFallback.trim() || "#",
+      guide: nsGuide.trim() || undefined,
+      screenshots: nsShots.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
     };
     void save({ customSoftware: [...(config.customSoftware ?? []), item] });
     setNsName(""); setNsTagline(""); setNsPrice("0"); setNsSize("");
-    setNsLink(""); setNsFallback(""); setNsUploadedUrl(""); setNsError("");
+    setNsLink(""); setNsFallback(""); setNsUploadedUrl(""); setNsError(""); setNsGuide(""); setNsShots("");
   };
 
   const deleteCustomSoftware = async (id: string) => {
@@ -464,11 +493,17 @@ export default function AdminPage() {
     !userQuery.trim() || u.email.toLowerCase().includes(userQuery.toLowerCase()) || u.name.toLowerCase().includes(userQuery.toLowerCase())
   );
   const filteredOrders = orders.filter((o) =>
-    !orderQuery.trim() ||
+    (orderKind === "all" || (o.kind ?? "purchase") === orderKind) &&
+    (!orderQuery.trim() ||
     o.id.toLowerCase().includes(orderQuery.toLowerCase()) ||
     o.itemName.toLowerCase().includes(orderQuery.toLowerCase()) ||
-    o.sender.toLowerCase().includes(orderQuery.toLowerCase())
+    o.sender.toLowerCase().includes(orderQuery.toLowerCase()))
   );
+
+  const saveDelivery = async (id: string, delivery: { label: string; url: string }[]) => {
+    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, delivery }) });
+    fetch("/api/admin/orders").then((r) => r.json()).then((j) => setOrders(j.orders ?? [])).catch(() => {});
+  };
   const roleCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const u of users) m[u.role] = (m[u.role] ?? 0) + 1;
@@ -786,6 +821,50 @@ export default function AdminPage() {
             <AdminStudy config={config} save={save} />
           )}
 
+          {section === "media" && (
+            <div className="grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Files</p><p className="mt-1 text-3xl font-black">{media?.count ?? "…"}</p></GlassCard>
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Storage used</p><p className="mt-1 text-3xl font-black">{media ? `${(media.totalBytes / 1048576).toFixed(1)} MB` : "…"}</p></GlassCard>
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Orphaned</p><p className="mt-1 text-3xl font-black">{media ? `${(media.orphanBytes / 1048576).toFixed(1)} MB` : "…"}</p></GlassCard>
+              </div>
+              <GlassCard>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">Uploaded files</h3>
+                  <button onClick={refreshMedia} className="glass hover-glow rounded-full px-3 py-1.5 text-[12px] font-bold">Refresh</button>
+                </div>
+                <p className="mt-1 text-[12px] text-slate-500">Orphan = no catalog item references this file — safe to delete. On Vercel this reflects the current instance only; use external URLs for production files.</p>
+                <div className="mt-3 space-y-2">
+                  {(media?.files ?? []).map((f) => (
+                    <div key={f.url} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto] dark:bg-white/5">
+                      <span className="min-w-0">
+                        <span className="block max-w-full truncate font-mono text-[12px]">{f.url}</span>
+                        <span className="text-[11.5px] text-slate-500">{f.kind} • {(f.bytes / 1024).toFixed(1)} KB • {new Date(f.mtime).toLocaleDateString()}</span>
+                      </span>
+                      <span className={f.referenced ? "rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-300" : "rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-300"}>
+                        {f.referenced ? "in use" : "orphan"}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete ${f.url}? Items linking to it will break.`)) return;
+                          await fetch("/api/admin/uploads", {
+                            method: "DELETE", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ url: f.url }),
+                          }).catch(() => {});
+                          refreshMedia();
+                        }}
+                        className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                  {(!media || media.files.length === 0) && <p className="text-[13px] text-slate-500">{media ? "No uploaded files yet." : "Loading…"}</p>}
+                </div>
+              </GlassCard>
+            </div>
+          )}
+
           {section === "pdftools" && (
             <div className="grid gap-4">
               <GlassCard>
@@ -928,23 +1007,42 @@ export default function AdminPage() {
                 </div>
                 {nfError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nfError}</p>}
                 <button onClick={addCustomFont} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish font</button>
+                <FontBulkImporter
+                  onPublish={(fonts) => void save({ customFonts: [...(config.customFonts ?? []), ...fonts] })}
+                />
               </GlassCard>
 
               {(config.customFonts ?? []).length > 0 && (
                 <GlassCard>
                   <h3 className="text-sm font-bold">Your uploaded fonts ({(config.customFonts ?? []).length})</h3>
+                  <CsvBulkTools
+                    kind="font"
+                    items={(config.customFonts ?? []) as unknown as Record<string, unknown>[]}
+                    onImport={(built) => void save({ customFonts: [...(config.customFonts ?? []), ...(built as unknown as BanglaFont[])] })}
+                  />
                   <div className="mt-3 space-y-2">
                     {(config.customFonts ?? []).map((f) => {
                       const ov = config.fontOverrides[f.id] ?? {};
                       const premium = ov.premium ?? f.premium ?? f.license === "Paid";
+                      const vOpen = varOpen[f.id] === true;
                       return (
-                        <div key={f.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto] dark:bg-white/5">
-                          <span className="min-w-0"><b>{f.name}</b> <span className="text-slate-500">• {f.type} • {f.bangla ? "বাংলা" : "English"}</span>
+                        <div key={f.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                        <div className="grid items-center gap-2 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto_auto_auto]">
+                          <span className="min-w-0"><b>{f.name}</b> <span className="text-slate-500">• {f.type} • {f.bangla ? "বাংলা" : "English"}{(f.variants?.length ?? 0) > 0 ? ` • ${f.variants!.length} variants` : ""}</span>
                             <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{f.fileUrl}</span></span>
                           <label className="flex items-center gap-1.5">Premium <input type="checkbox" checked={premium} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, premium: !premium } } })} className="h-4 w-4 accent-purple-500" /></label>
                           <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? f.priceBDT ?? 0} onChange={(e) => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
                           <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
+                          <button onClick={() => setVarOpen((v) => ({ ...v, [f.id]: !vOpen }))} aria-expanded={vOpen} className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", vOpen ? "bg-cyan-500 text-white" : "text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300")}>Variants</button>
+                          <button onClick={() => void save({ customFonts: [...(config.customFonts ?? []), duplicateCustom("font", f)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
                           <button onClick={() => deleteCustomFont(f.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                        </div>
+                        {vOpen && (
+                          <FontVariantsEditor
+                            font={f}
+                            onChange={(variants) => void save({ customFonts: (config.customFonts ?? []).map((x) => (x.id === f.id ? { ...x, variants } : x)) })}
+                          />
+                        )}
                         </div>
                       );
                     })}
@@ -985,6 +1083,8 @@ export default function AdminPage() {
                   <label className="flex items-center gap-1.5 text-[13px] font-semibold">৳ Price (0 = Free) <input type="number" min={0} value={nsPrice} onChange={(e) => setNsPrice(e.target.value)} className={cn(field, "w-28")} aria-label="New software price" /></label>
                   <input aria-label="New software download link" value={nsLink} onChange={(e) => setNsLink(e.target.value)} placeholder="Direct download link https://… (or upload below)" className={cn(field, "font-mono")} />
                   <input aria-label="New software fallback page" value={nsFallback} onChange={(e) => setNsFallback(e.target.value)} placeholder="Fallback/info page https://… (optional)" className={cn(field, "font-mono")} />
+                  <textarea aria-label="Setup and install guide" value={nsGuide} onChange={(e) => setNsGuide(e.target.value)} placeholder="Setup / install guide — steps, license activation notes (shown on the app page)" rows={2} className={cn(field, "sm:col-span-2")} />
+                  <input aria-label="Screenshot image URLs" value={nsShots} onChange={(e) => setNsShots(e.target.value)} placeholder="Screenshot URLs, comma separated (upload via Media first)" className={cn(field, "font-mono sm:col-span-2")} />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
                   <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
@@ -1005,21 +1105,42 @@ export default function AdminPage() {
                 </div>
                 {nsError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nsError}</p>}
                 <button onClick={addCustomSoftware} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish software</button>
+                <SoftwareBulkImporter
+                  onPublish={(apps) => void save({ customSoftware: [...(config.customSoftware ?? []), ...apps] })}
+                />
               </GlassCard>
 
               {(config.customSoftware ?? []).length > 0 && (
                 <GlassCard>
                   <h3 className="text-sm font-bold">Your uploaded software ({(config.customSoftware ?? []).length})</h3>
+                  <CsvBulkTools
+                    kind="software"
+                    items={(config.customSoftware ?? []) as unknown as Record<string, unknown>[]}
+                    onImport={(built) => void save({ customSoftware: [...(config.customSoftware ?? []), ...(built as unknown as Software[])] })}
+                  />
                   <div className="mt-3 space-y-2">
                     {(config.customSoftware ?? []).map((s) => {
                       const ov = config.softwareOverrides[s.id] ?? {};
+                      const vOpen = verOpen[s.id] === true;
                       return (
-                        <div key={s.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto] dark:bg-white/5">
-                          <span className="min-w-0"><b>{s.name}</b> <span className="text-slate-500">• {s.platform} • v{s.version}</span>
+                        <div key={s.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                        <div className="grid items-center gap-2 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto]">
+                          <span className="min-w-0"><b>{s.name}</b> <span className="text-slate-500">• {s.platform} • v{s.version}{(s.versions?.length ?? 0) > 0 ? ` • ${s.versions!.length} more` : ""}</span>
                             <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{s.fileUrl}</span></span>
                           <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? s.priceBDT} onChange={(e) => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
                           <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
-                          <button onClick={() => deleteCustomSoftware(s.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                          <button onClick={() => setVerOpen((v) => ({ ...v, [s.id]: !vOpen }))} aria-expanded={vOpen} className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", vOpen ? "bg-cyan-500 text-white" : "text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300")}>Versions</button>
+                          <span className="flex gap-1">
+                            <button onClick={() => void save({ customSoftware: [...(config.customSoftware ?? []), duplicateCustom("software", s)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
+                            <button onClick={() => deleteCustomSoftware(s.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                          </span>
+                        </div>
+                        {vOpen && (
+                          <SoftwareVersionsEditor
+                            app={s}
+                            onChange={(versions) => void save({ customSoftware: (config.customSoftware ?? []).map((x) => (x.id === s.id ? { ...x, versions } : x)) })}
+                          />
+                        )}
                         </div>
                       );
                     })}
@@ -1050,18 +1171,102 @@ export default function AdminPage() {
             <GlassCard>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-bold">Manual-payment orders ({filteredOrders.length})</h3>
-                <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Search id, item, sender…" aria-label="Search orders" className={cn(field, "sm:w-64")} />
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="flex gap-1" role="tablist" aria-label="Order kind">
+                    {(["all", "purchase", "request"] as const).map((k) => (
+                      <button key={k} role="tab" aria-selected={orderKind === k} onClick={() => setOrderKind(k)}
+                        className={orderKind === k ? "rounded-full bg-slate-900 px-3 py-1.5 text-[12px] font-bold text-white dark:bg-white dark:text-slate-900" : "glass rounded-full px-3 py-1.5 text-[12px] font-bold capitalize"}>
+                        {k === "all" ? "All" : k === "purchase" ? "Purchases" : "Requests"}
+                      </button>
+                    ))}
+                  </span>
+                  <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Search id, item, sender…" aria-label="Search orders" className={cn(field, "sm:w-56")} />
+                </span>
               </div>
               <div className="mt-3 space-y-2">
-                {filteredOrders.map((o) => (
-                  <div key={o.id} className="grid gap-1 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[auto_1fr_auto] sm:items-center dark:bg-white/5">
-                    <span className="font-mono font-black">{o.id}</span>
-                    <span>{o.itemName} • ৳{o.amountBDT} • {o.method} • from <code>{o.sender}</code>{o.txn && <> • txn <code>{o.txn}</code></>} • {new Date(o.at).toLocaleString()}{o.note && <span className="block text-slate-500">Note: {o.note}</span>}<span className="block text-slate-500">Fulfill: verify payment in your {o.method} app, then deliver the download/license to the buyer.</span></span>
-                    <select aria-label={`Status for ${o.id}`} value={o.status} onChange={(e) => setOrderStatus(o.id, e.target.value)} className={cn(field, "sm:w-36")}>
-                      {["pending", "paid", "delivered", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                {filteredOrders.map((o) => {
+                  const open = orderOpen === o.id;
+                  return (
+                  <div key={o.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                    <div className="grid gap-1 text-[13px] sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-mono font-black">{o.id}</span>
+                        <span className={(o.kind ?? "purchase") === "request" ? "rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-black text-purple-700 dark:text-purple-300" : "rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-black text-cyan-700 dark:text-cyan-200"}>
+                          {(o.kind ?? "purchase") === "request" ? "REQUEST" : "PURCHASE"}
+                        </span>
+                      </span>
+                      <span>{o.itemName} • ৳{o.amountBDT} • {o.method} • from <code>{o.sender}</code>{o.txn && <> • txn <code>{o.txn}</code></>} • {new Date(o.at).toLocaleString()}{o.note && <span className="block text-slate-500">Note: {o.note}</span>}
+                      {(o.items?.length ?? 0) > 1 && <span className="block text-slate-500">Lines: {o.items!.map((l) => `${l.itemName} (৳${l.amountBDT})`).join(" • ")}</span>}
+                      <span className="block text-slate-500">Fulfill: verify payment in your {o.method} app, then deliver the download/license to the buyer.</span>
+                      {o.method === "bkash" && (
+                        <span className="mt-1 flex flex-wrap items-center gap-2">
+                          <span className="text-slate-500">Verify against personal:</span>
+                          <code className="font-bold text-slate-700 dark:text-slate-200">{config.payments.bkashPersonal || config.payments.bkash}</code>
+                          <BkashQrButton number={config.payments.bkashPersonal || config.payments.bkash} qrUrl={config.payments.bkashQrUrl} size="sm" />
+                        </span>
+                      )}</span>
+                      <span className="flex flex-wrap gap-1.5">
+                        <select aria-label={`Status for ${o.id}`} value={o.status} onChange={(e) => setOrderStatus(o.id, e.target.value, orderNotes[o.id])} className={cn(field, "sm:w-36")}>
+                          {["pending", "paid", "delivered", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                          onClick={() => setOrderOpen(open ? null : o.id)}
+                          aria-expanded={open}
+                          className="rounded-full px-3 py-2 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
+                        >
+                          {open ? "Hide trail" : `Trail (${(o.history ?? []).length})`}
+                        </button>
+                      </span>
+                    </div>
+                    {open && (
+                      <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                        <input
+                          aria-label={`Verification note for ${o.id}`}
+                          value={orderNotes[o.id] ?? ""}
+                          onChange={(e) => setOrderNotes((ns) => ({ ...ns, [o.id]: e.target.value }))}
+                          placeholder="Verification note (e.g. bKash txn matched ৳990) — saved with the next status change"
+                          className={cn(field, "font-mono")}
+                        />
+                        <div className="mt-2 space-y-1 font-mono text-[11.5px] text-slate-600 dark:text-slate-400">
+                          {(o.history ?? []).slice().reverse().map((h, i) => (
+                            <p key={`${h.at}-${i}`} className="rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 dark:bg-white/5">
+                              {new Date(h.at).toLocaleString()} • {h.actor} • {h.from}→{h.to}{h.note ? ` • ${h.note}` : ""}
+                            </p>
+                          ))}
+                          {(o.history ?? []).length === 0 && <p>No status changes recorded yet.</p>}
+                        </div>
+                        <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                          <p className="text-[12px] font-bold">Delivery links / licenses ({(o.delivery ?? []).length})</p>
+                          <div className="mt-1.5 space-y-1">
+                            {(o.delivery ?? []).map((d, i) => (
+                              <p key={`${d.url}-${i}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 font-mono text-[11.5px] dark:bg-white/5">
+                                <span className="min-w-0"><b>{d.label || "Download"}</b> <span className="block truncate text-slate-500">{d.url}</span></span>
+                                <button onClick={() => saveDelivery(o.id, (o.delivery ?? []).filter((_, j) => j !== i))} className="rounded-full px-2 py-1 text-[11px] font-bold text-red-500 hover:bg-red-500/10">Remove</button>
+                              </p>
+                            ))}
+                          </div>
+                          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-[1fr_1fr_auto]">
+                            <input aria-label={`Delivery label for ${o.id}`} value={delLabel[o.id] ?? ""} onChange={(e) => setDelLabel((m) => ({ ...m, [o.id]: e.target.value }))} placeholder="Label (e.g. Installer v2.1)" className={cn(field, "font-mono")} />
+                            <input aria-label={`Delivery URL for ${o.id}`} value={delUrl[o.id] ?? ""} onChange={(e) => setDelUrl((m) => ({ ...m, [o.id]: e.target.value }))} placeholder="https://… download/license URL" className={cn(field, "font-mono")} />
+                            <button
+                              onClick={() => {
+                                const url = (delUrl[o.id] ?? "").trim();
+                                if (!url) return;
+                                saveDelivery(o.id, [...(o.delivery ?? []), { label: (delLabel[o.id] ?? "").trim() || "Download", url }]);
+                                setDelLabel((m) => ({ ...m, [o.id]: "" }));
+                                setDelUrl((m) => ({ ...m, [o.id]: "" }));
+                              }}
+                              className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-3.5 py-2 text-[12px] font-bold text-white"
+                            >
+                              + Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
                 {filteredOrders.length === 0 && <p className="text-[13px] text-slate-500">No orders match.</p>}
               </div>
             </GlassCard>
@@ -1177,6 +1382,53 @@ export default function AdminPage() {
                   <div>
                     <label htmlFor="pay-card" className="text-xs font-bold">Card publishable key (Stripe, optional)</label>
                     <input id="pay-card" value={config.payments.cardKey ?? ""} onChange={(e) => save({ payments: { ...config.payments, cardKey: e.target.value } })} className={cn(field, "mt-1 font-mono")} placeholder="pk_live_…" />
+                  </div>
+                </div>
+              </GlassCard>
+              <GlassCard>
+                <h3 className="text-sm font-bold">bKash Personal — Send Money</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  This personal number (not the merchant account) is shown at checkout and in order verification, with a QR button.
+                  Upload the official QR from your bKash app for in-app scanning — otherwise buyers get a generated number QR.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="pay-bkash-personal" className="text-xs font-bold">Personal number</label>
+                    <input id="pay-bkash-personal" value={config.payments.bkashPersonal ?? ""} onChange={(e) => save({ payments: { ...config.payments, bkashPersonal: e.target.value } })} className={cn(field, "mt-1 font-mono")} placeholder="+8801XXXXXXXXX" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold">Official QR image (optional)</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-pink-500/15 px-3 py-2 text-[13px] font-bold text-pink-700 dark:text-pink-300">
+                        {qrUploading ? "Uploading…" : config.payments.bkashQrUrl ? "✓ QR attached — replace?" : "⬆ Upload QR (.png/.jpg)"}
+                        <input
+                          type="file" accept=".png,.jpg,.jpeg,.webp" className="hidden"
+                          disabled={qrUploading}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (!f) return;
+                            setQrUploading(true);
+                            setQrError("");
+                            const form = new FormData();
+                            form.append("kind", "media");
+                            form.append("file", f);
+                            fetch("/api/admin/uploads", { method: "POST", body: form })
+                              .then(async (res) => {
+                                const j = await res.json();
+                                if (!res.ok) throw new Error(j.error || "Upload failed");
+                                void save({ payments: { ...config.payments, bkashQrUrl: j.url } });
+                              })
+                              .catch((err: Error) => setQrError(err.message))
+                              .finally(() => setQrUploading(false));
+                          }}
+                        />
+                      </label>
+                      {config.payments.bkashQrUrl && (
+                        <button onClick={() => save({ payments: { ...config.payments, bkashQrUrl: "" } })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Remove</button>
+                      )}
+                    </div>
+                    {qrError && <p role="alert" className="mt-1 text-[12px] font-semibold text-rose-500">{qrError}</p>}
                   </div>
                 </div>
               </GlassCard>

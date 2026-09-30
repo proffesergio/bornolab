@@ -11,12 +11,13 @@ export const runtime = "nodejs";
  * NOTE: local/self-hosted Node persists them; on Vercel (serverless) the
  * filesystem is ephemeral — use direct download links there instead.
  */
-type Kind = "font" | "software" | "study";
+type Kind = "font" | "software" | "study" | "media";
 
 const RULES: Record<Kind, { dir: string; exts: string[]; maxBytes: number }> = {
   font: { dir: "fonts", exts: ["ttf", "otf", "woff", "woff2", "zip"], maxBytes: 30 * 1024 * 1024 },
   software: { dir: "software", exts: ["zip", "exe", "msi", "dmg", "pkg", "apk"], maxBytes: 300 * 1024 * 1024 },
   study: { dir: "study", exts: ["pdf", "html", "zip"], maxBytes: 100 * 1024 * 1024 },
+  media: { dir: "qr", exts: ["png", "jpg", "jpeg", "webp"], maxBytes: 5 * 1024 * 1024 },
 };
 
 function safeName(raw: string, ext: string): string {
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
   const kind = String(form.get("kind") ?? "") as Kind;
   const rule = RULES[kind];
   if (!rule) {
-    return NextResponse.json({ error: 'kind must be "font", "software" or "study"' }, { status: 400 });
+    return NextResponse.json({ error: 'kind must be "font", "software", "study" or "media"' }, { status: 400 });
   }
   const entry = form.get("file");
   const isFile =

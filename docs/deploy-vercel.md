@@ -101,3 +101,22 @@ vercel env ls              # audit which vars exist per environment
 | Dashboard edits disappear | Expected on serverless — persist via `SITE_CONFIG_JSON` (§2, `docs/admin.md` §3) |
 | `vercel link` points at the wrong project | `rm -rf .vercel && vercel link` |
 | CLI asks to confirm everything | `vercel --yes --prod` for non-interactive use (CI-like shells) |
+
+## 9. File storage: local disk vs object storage
+
+Admin uploads (`/api/admin/uploads` → `public/uploads/…`) persist on local/self-hosted
+Node but are **ephemeral on Vercel** (per-instance filesystem) and serverless
+functions cap request sizes — large font/software bundles will fail or vanish
+in production.
+
+Rules of thumb:
+
+| Case | Recommendation |
+|---|---|
+| Dev / self-host | Local disk uploads work as-is (fonts ≤30 MB, software ≤300 MB, study ≤100 MB, QR ≤5 MB). |
+| Production files | Host on object storage (Supabase Storage, Cloudflare R2, S3) and paste the **external URL** into the admin link fields — every catalog form accepts links as well as uploads. |
+| bKash QR, small images | Upload anywhere durable (or commit tiny files to git like the BUET guides). |
+
+The Media Library (Admin → Tools → Media) flags orphaned files; on Vercel it
+reflects the current instance only — treat external URLs as the source of
+truth for production downloads.

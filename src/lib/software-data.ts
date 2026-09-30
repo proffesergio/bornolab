@@ -12,6 +12,24 @@ export interface Software {
   downloads: string;
   fileUrl: string;
   fallbackUrl: string;
+  /** Setup/install guide (steps, license activation notes). Rendered as plain text. */
+  guide?: string;
+  /** Changelog entries, newest first. */
+  changelog?: string[];
+  /** Older/alternate releases besides the current fileUrl. */
+  versions?: SoftwareVersion[];
+  /** Screenshot image URLs (uploaded via Admin → Media). */
+  screenshots?: string[];
+}
+
+/** One downloadable release of an app. */
+export interface SoftwareVersion {
+  id: string;
+  version: string;
+  fileUrl: string;
+  size?: string;
+  changelog?: string;
+  createdAt?: number;
 }
 
 export const SOFTWARE: Software[] = [

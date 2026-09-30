@@ -70,6 +70,10 @@ export interface SiteConfig {
   seoPages: Record<string, SeoPageOverride>;
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
     processors: Record<PaymentMethod, ProcessorState>;
+    /** Personal bKash number shown at checkout/verification (Send Money). */
+    bkashPersonal: string;
+    /** Official bKash QR image URL (uploaded by admin) — falls back to a generated number QR. */
+    bkashQrUrl: string;
   };
   auth: AuthProviderConfig;
 }
@@ -111,11 +115,13 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
     bank: "Bank Name • A/C 000-000-000 • Branch",
     binance: "Binance Pay ID / UID",
     cardKey: "",
+    bkashPersonal: "+8801842168117",
+    bkashQrUrl: "",
     processors: {
       bkash: { enabled: true },
-      nagad: { enabled: true },
-      bank: { enabled: true },
-      binance: { enabled: true },
+      nagad: { enabled: false },
+      bank: { enabled: false },
+      binance: { enabled: false },
       card: { enabled: false },
     },
   },

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Download, Copy, Check, Search, Crown, ShoppingCart } from "lucide-react";
+import { addToCart } from "@/lib/cart";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { AdUnits } from "@/components/ads";
 import { DEFAULT_PREVIEW_TEXT, previewFamily, buildFontCatalog, type BanglaFont, type FontType, type FontCategory } from "@/lib/fonts-data";
@@ -30,6 +32,7 @@ export default function FontsPage() {
   const [cat, setCat] = useState<(typeof CATS)[number]>("All");
   const [lang, setLang] = useState<Lang>("All");
   const [copied, setCopied] = useState<string | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
   const [dlError, setDlError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>>({});
@@ -120,7 +123,23 @@ export default function FontsPage() {
           aria-label={`Copy preview for ${f.name}`}
           className="glass hover-glow rounded-full p-2.5"
         >{copied === f.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}</button>
+        {f.premium && (
+          <button
+            onClick={() => {
+              if (addToCart({ key: `font:${f.id}`, itemType: "font", itemId: f.id, itemName: f.name, amountBDT: f.priceBDT ?? 0 })) {
+                setAdded(f.id);
+                setTimeout(() => setAdded(null), 1200);
+              }
+            }}
+            aria-label={`Add ${f.name} to cart`}
+            title="Add to cart"
+            className="glass hover-glow rounded-full p-2.5"
+          >{added === f.id ? <Check size={14} className="text-emerald-500" /> : <ShoppingCart size={14} />}</button>
+        )}
       </div>
+      <Link href={`/fonts/${f.id}`} className="mt-2 block text-center text-[12px] font-bold text-cyan-700 hover:underline dark:text-cyan-300">
+        Details{(f.variants?.length ?? 0) > 0 ? ` • ${f.variants!.length} variants` : ""} →
+      </Link>
     </GlassCard>
   );
 

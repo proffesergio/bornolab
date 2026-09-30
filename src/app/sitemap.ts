@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
+import { GUIDES } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = getSiteUrl();
@@ -18,6 +19,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/format",
     "/software",
     "/study",
+    "/cart",
+    "/guides",
+    ...GUIDES.map((g) => `/guides/${g.slug}`),
     "/login",
     "/about",
     "/contact",

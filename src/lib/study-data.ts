@@ -38,7 +38,15 @@ export interface StudyMaterial {
   featured?: boolean;
   enabled?: boolean;
   createdAt?: number;
+  /** Access control: free = login to read/download; paid = buy first. */
+  access?: "free" | "paid";
+  priceBDT?: number;
+  /** Free preview page count for PDFs (default 3). */
+  previewPages?: number;
 }
+
+/** Free preview length when the material does not specify one. */
+export const DEFAULT_PREVIEW_PAGES = 3;
 
 /**
  * Built-in reference materials. The two files ship in

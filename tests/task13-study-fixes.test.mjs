@@ -40,15 +40,18 @@ test("login state is tri-state — no login CTA while checking", () => {
   assert.ok(existsSync(join(root, "src/components/use-login.ts")), "useLogin hook must exist.");
   const hook = read("src/components/use-login.ts");
   assert.ok(hook.includes("null"), "hook must model the checking state.");
-  for (const p of ["src/app/study/page.tsx", "src/app/study/[id]/page.tsx"]) {
-    const src = read(p);
-    assert.ok(src.includes("useLogin"), `${p} must use the tri-state hook.`);
-    assert.ok(src.includes("loggedIn === false"), `${p} must only show the login CTA when definitively logged out.`);
-    assert.ok(src.includes("await refresh()"), `${p} must recheck auth at click time.`);
-  }
+  const reader = read("src/components/study-reader.tsx");
+  assert.ok(reader.includes("access.loggedIn") || reader.includes("useLogin"), "reader must gate on resolved login state.");
+  assert.ok(reader.includes("loggedIn === false") || reader.includes('gate === "login"'), "reader must only show the login CTA when definitively logged out.");
+  const detail = read("src/app/study/[id]/page.tsx");
+  assert.ok(detail.includes("StudyReader"), "detail page must render through the gated reader.");
+  const hub = read("src/app/study/page.tsx");
+  assert.ok(hub.includes("useLogin"), "hub must use the tri-state hook.");
+  assert.ok(hub.includes("await refresh()"), "hub must recheck auth at click time.");
 });
 
 test("study download falls back to origin fetch on serverless", () => {
-  const src = read("src/app/api/study/download/route.ts");
-  assert.ok(src.includes("new URL(url, req.nextUrl.origin)"), "download must fall back to origin fetch.");
+  // File loading lives in the shared access helper used by read/download/preview.
+  const src = read("src/lib/study-access.ts");
+  assert.ok(src.includes("new URL(url, origin)"), "file loader must fall back to origin fetch.");
 });

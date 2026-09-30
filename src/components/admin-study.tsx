@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { GlassCard } from "@/components/ui";
 import { BUILT_IN_STUDY_MATERIALS, STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
+import { CsvBulkTools, duplicateCustom } from "@/components/admin-bulk";
 import type { SiteConfig } from "@/lib/site-config-shared";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +20,9 @@ export function AdminStudy({ config, save }: {
   const [subcategory, setSubcategory] = useState("BUET Post Graduate Admission");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
+  const [access, setAccess] = useState<"free" | "paid">("free");
+  const [price, setPrice] = useState("0");
+  const [previewPages, setPreviewPages] = useState("3");
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -64,9 +68,13 @@ export function AdminStudy({ config, save }: {
       featured,
       enabled: true,
       createdAt: Date.now(),
+      access,
+      priceBDT: access === "paid" ? Number(price) || 0 : 0,
+      previewPages: Math.max(1, Math.min(20, Number(previewPages) || 3)),
     };
     void save({ customStudy: [...(config.customStudy ?? []), item] });
     setTitle(""); setDescription(""); setLink(""); setUploadedUrl(""); setFeatured(false); setError("");
+    setAccess("free"); setPrice("0"); setPreviewPages("3");
   };
 
   const remove = async (id: string) => {
@@ -109,6 +117,16 @@ export function AdminStudy({ config, save }: {
           <input aria-label="Material subcategory" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} placeholder="Subcategory e.g. BUET Post Graduate Admission" className={field} />
           <textarea aria-label="Material description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description — what is inside, who is it for?" rows={2} className={cn(field, "sm:col-span-2")} />
           <input aria-label="External file link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https:// direct file link (or upload below)" className={cn(field, "font-mono sm:col-span-2")} />
+          <div className="flex flex-wrap items-center gap-2">
+            <select aria-label="Access" value={access} onChange={(e) => setAccess(e.target.value as "free" | "paid")} className={field}>
+              <option value="free">Free — login to read/download</option>
+              <option value="paid">Paid — buy first (bKash)</option>
+            </select>
+            {access === "paid" && (
+              <label className="flex items-center gap-1.5 font-semibold">৳ <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className={cn(field, "w-24")} aria-label="Material price" /></label>
+            )}
+            <label className="flex items-center gap-1.5 font-semibold">Preview <input type="number" min={1} max={20} value={previewPages} onChange={(e) => setPreviewPages(e.target.value)} className={cn(field, "w-20")} aria-label="Free preview pages" /> pages</label>
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
           <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
@@ -135,16 +153,25 @@ export function AdminStudy({ config, save }: {
       {customs.length > 0 && (
         <GlassCard>
           <h3 className="text-sm font-bold">Your published materials ({customs.length})</h3>
+          <CsvBulkTools
+            kind="study"
+            items={customs as unknown as Record<string, unknown>[]}
+            onImport={(built) => void save({ customStudy: [...customs, ...(built as unknown as StudyMaterial[])] })}
+          />
           <div className="mt-3 space-y-2">
             {customs.map((m) => {
               const enabled = config.studyOverrides?.[m.id]?.enabled ?? m.enabled ?? true;
+              const paid = m.access === "paid";
               return (
-                <div key={m.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto] dark:bg-white/5">
+                <div key={m.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto] dark:bg-white/5">
                   <span className="min-w-0">
                     <b>{m.title}</b> <span className="text-slate-500">• {STUDY_CATEGORIES.find((c) => c.id === m.category)?.label}{m.subcategory ? ` • ${m.subcategory}` : ""}</span>
-                    <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{m.fileUrl}</span>
+                    <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{m.fileUrl}</span></span>
+                  <span className={paid ? "rounded-full bg-amber-400/20 px-2.5 py-1 text-[11px] font-black text-amber-700 dark:text-amber-300" : "rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-black text-emerald-600 dark:text-emerald-300"}>
+                    {paid ? `৳${m.priceBDT ?? 0}` : "FREE"}
                   </span>
                   <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={enabled} onChange={() => toggle(m.id, !enabled)} className="h-4 w-4 accent-cyan-500" /></label>
+                  <button onClick={() => void save({ customStudy: [...customs, duplicateCustom("study", m)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
                   <button onClick={() => remove(m.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
                 </div>
               );

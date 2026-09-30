@@ -15,6 +15,25 @@ export interface BanglaFont {
   previewWeight?: number;
   premium?: boolean; // true → buy-to-download (admin can override per font)
   priceBDT?: number; // 0 / undefined = free
+  /** Weight/style variants (Regular, Bold, Light…) — each downloadable/buyable separately. */
+  variants?: FontVariant[];
+  /** Optional full-family .zip bundle (all variants in one download). */
+  bundleUrl?: string;
+}
+
+/** One downloadable file within a font family. */
+export interface FontVariant {
+  id: string;
+  label: string; // e.g. "Regular", "Bold", "Light Italic"
+  fileUrl: string; // .ttf/.otf/.woff/.woff2 (single weight) or .zip
+  premium?: boolean; // inherit family value when undefined
+  priceBDT?: number; // inherit family value when undefined
+}
+
+/** Effective price/premium for a variant (falls back to the family). */
+export function variantPricing(font: Pick<BanglaFont, "premium" | "priceBDT" | "license">, v: FontVariant): { premium: boolean; priceBDT: number } {
+  const premium = v.premium ?? font.premium ?? font.license === "Paid";
+  return { premium, priceBDT: v.priceBDT ?? font.priceBDT ?? 0 };
 }
 
 // Catalog: entries with /fonts/*.ttf ship in this repo (noto, baloo, hind,
