@@ -12,6 +12,24 @@ export interface Software {
   downloads: string;
   fileUrl: string;
   fallbackUrl: string;
+  /** Setup/install guide (steps, license activation notes). Rendered as plain text. */
+  guide?: string;
+  /** Changelog entries, newest first. */
+  changelog?: string[];
+  /** Older/alternate releases besides the current fileUrl. */
+  versions?: SoftwareVersion[];
+  /** Screenshot image URLs (uploaded via Admin → Media). */
+  screenshots?: string[];
+}
+
+/** One downloadable release of an app. */
+export interface SoftwareVersion {
+  id: string;
+  version: string;
+  fileUrl: string;
+  size?: string;
+  changelog?: string;
+  createdAt?: number;
 }
 
 export const SOFTWARE: Software[] = [
@@ -22,6 +40,14 @@ export const SOFTWARE: Software[] = [
   { id: "font-manager", name: "Borno Font Manager", tagline: "Install, preview & activate 500+ Bangla fonts in one click", license: "Free", priceBDT: 0, platform: "Windows 10/11", version: "1.5.1", size: "32 MB", downloads: "47k+", fileUrl: "#", fallbackUrl: "#" },
   { id: "nikosh-office-pack", name: "Nikosh Office Pack", tagline: "Govt-standard Nikosh templates for Word + Excel", license: "Free", priceBDT: 0, platform: "Word / Excel", version: "2026.1", size: "18 MB", downloads: "29k+", fileUrl: "#", fallbackUrl: "#" },
 ];
+
+/** Full storefront catalog: built-in entries + admin-uploaded custom apps, with overrides. */
+export function buildSoftwareCatalog(
+  overrides: Record<string, { priceBDT?: number; enabled?: boolean }>,
+  custom: Software[] = []
+): (Software & { enabled: boolean })[] {
+  return applySoftwareOverrides([...SOFTWARE, ...custom], overrides);
+}
 
 /** Merge admin store overrides (price / visibility). priceBDT 0 = Free. */
 export function applySoftwareOverrides(

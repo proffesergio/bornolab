@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, verifyAdminToken } from "./lib/auth";
+import { PATHNAME_HEADER } from "./lib/seo-pages";
 
 // Mirrors USER_COOKIE in src/lib/users.ts without importing fs-backed modules (Edge-safe).
 const MEMBER_COOKIE = "bornolab_user";
@@ -27,7 +28,13 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
-  return NextResponse.next();
+  // Expose the route to Server Components (per-page SEO in layout)
+  // via request headers — headers() in generateMetadata reads these.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set(PATHNAME_HEADER, pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-export const config = { matcher: ["/admin/:path*", "/dashboard/:path*", "/account/:path*"] };
+export const config = {
+  matcher: ["/admin/:path*", "/((?!_next/static|_next/image|favicon.ico|icon.svg|.*\\..*).*)"],
+};

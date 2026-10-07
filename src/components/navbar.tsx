@@ -5,11 +5,13 @@ import { useRef, useState } from "react";
 import {
   Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home, Globe, ShieldCheck, Unlock, Pencil,
   FileText, Scissors, Combine, Minimize2, Image as ImageIcon, LayoutGrid, ChevronDown,
+  GraduationCap, ShoppingCart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "./theme";
 import { UserMenu } from "./user-menu";
 import { useSiteConfig } from "./site-widgets";
+import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/cn";
 import { pdfCaps, type PdfToolKey, type ToolKey } from "@/lib/site-config-shared";
 
@@ -18,6 +20,7 @@ const LINKS: { href: string; label: string; icon: typeof Home; tool?: ToolKey }[
   { href: "/bijoy-unicode-converter", label: "Bijoy <> Unicode", icon: Languages, tool: "convert" },
   { href: "/fonts", label: "Fonts", icon: Type, tool: "fonts" },
   { href: "/styler", label: "Styler", icon: Sparkles, tool: "styler" },
+  { href: "/study", label: "Study", icon: GraduationCap, tool: "study" },
   { href: "/software", label: "Software", icon: MonitorDown, tool: "software" },
 ];
 
@@ -42,6 +45,7 @@ export function Navbar() {
   const path = usePathname();
   const { dark, toggle } = useTheme();
   const { config } = useSiteConfig();
+  const { count } = useCart();
   const [pdfOpen, setPdfOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -167,6 +171,19 @@ export function Navbar() {
           })}
         </nav>
         <div className="flex items-center gap-2">
+          <Link
+            href="/cart"
+            aria-label={`Cart, ${count} items`}
+            title="Cart"
+            className="glass relative rounded-full p-2.5 text-slate-700 dark:text-slate-200"
+          >
+            <ShoppingCart size={16} />
+            {count > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-1 text-[10px] font-black text-white">
+                {count}
+              </span>
+            )}
+          </Link>
           <UserMenu />
           <button
             onClick={toggle}

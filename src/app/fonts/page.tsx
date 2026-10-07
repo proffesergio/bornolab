@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Download, Copy, Check, Search, Crown, ShoppingCart } from "lucide-react";
+import { addToCart } from "@/lib/cart";
 import { GlassCard, SectionTitle } from "@/components/ui";
-import { FONTS, DEFAULT_PREVIEW_TEXT, previewFamily, applyFontOverrides, type FontType, type FontCategory } from "@/lib/fonts-data";
+import { AdUnits } from "@/components/ads";
+import { DEFAULT_PREVIEW_TEXT, previewFamily, buildFontCatalog, type BanglaFont, type FontType, type FontCategory } from "@/lib/fonts-data";
 import { DEFAULT_CONFIG } from "@/lib/site-config-shared";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { downloadBlob } from "@/lib/doc-utils";
@@ -13,7 +16,14 @@ const CATS: ("All" | FontCategory)[] = ["All", "Serif", "Sans-Serif", "Display",
 const LANGS = ["All", "Bangla", "English"] as const;
 type Lang = (typeof LANGS)[number];
 
-type Font = ReturnType<typeof applyFontOverrides>[number];
+type Font = ReturnType<typeof buildFontCatalog>[number];
+
+/** Save filename that keeps the real extension (.ttf/.otf/.woff2/.zip …). */
+function downloadName(f: Font): string {
+  const clean = f.name.replace(/["\r\n/\\]/g, "").trim().slice(0, 80) || "font";
+  const m = f.fileUrl.split("?")[0].match(/\.([a-z0-9]{2,5})$/i);
+  return `${clean}.${(m?.[1] ?? "ttf").toLowerCase()}`;
+}
 
 export default function FontsPage() {
   const [q, setQ] = useState(DEFAULT_PREVIEW_TEXT);
@@ -22,19 +32,22 @@ export default function FontsPage() {
   const [cat, setCat] = useState<(typeof CATS)[number]>("All");
   const [lang, setLang] = useState<Lang>("All");
   const [copied, setCopied] = useState<string | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
   const [buy, setBuy] = useState<{ id: string; name: string; price: number } | null>(null);
   const [dlError, setDlError] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>>({});
+  const [custom, setCustom] = useState<BanglaFont[]>([]);
 
   useEffect(() => {
     fetch("/api/site-config").then((r) => r.json()).then((c) => {
       setOverrides(c?.fontOverrides ?? {});
+      setCustom(c?.customFonts ?? []);
     }).catch(() => {});
   }, []);
 
   const catalog = useMemo(
-    () => applyFontOverrides(FONTS, overrides ?? DEFAULT_CONFIG.fontOverrides).filter((f) => f.enabled),
-    [overrides]
+    () => buildFontCatalog(overrides ?? DEFAULT_CONFIG.fontOverrides, custom).filter((f) => f.enabled),
+    [overrides, custom]
   );
 
   const list = useMemo(
@@ -64,7 +77,7 @@ export default function FontsPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       if (!blob.size) throw new Error("empty file");
-      downloadBlob(blob, `${f.name}.ttf`);
+      downloadBlob(blob, downloadName(f));
     } catch {
       // Same-origin proxy fallback (verifies success before saving).
       try {
@@ -72,7 +85,7 @@ export default function FontsPage() {
         if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
         const blob = await res.blob();
         if (!blob.size) throw new Error("empty file");
-        downloadBlob(blob, `${f.name}.ttf`);
+        downloadBlob(blob, downloadName(f));
       } catch {
         if (hasFallback) window.open(f.fallbackUrl, "_blank", "noopener");
         setDlError(`Could not download “${f.name}” from this site${hasFallback ? " — opened the foundry page instead" : ""}.`);
@@ -110,7 +123,23 @@ export default function FontsPage() {
           aria-label={`Copy preview for ${f.name}`}
           className="glass hover-glow rounded-full p-2.5"
         >{copied === f.id ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}</button>
+        {f.premium && (
+          <button
+            onClick={() => {
+              if (addToCart({ key: `font:${f.id}`, itemType: "font", itemId: f.id, itemName: f.name, amountBDT: f.priceBDT ?? 0 })) {
+                setAdded(f.id);
+                setTimeout(() => setAdded(null), 1200);
+              }
+            }}
+            aria-label={`Add ${f.name} to cart`}
+            title="Add to cart"
+            className="glass hover-glow rounded-full p-2.5"
+          >{added === f.id ? <Check size={14} className="text-emerald-500" /> : <ShoppingCart size={14} />}</button>
+        )}
       </div>
+      <Link href={`/fonts/${f.id}`} className="mt-2 block text-center text-[12px] font-bold text-cyan-700 hover:underline dark:text-cyan-300">
+        Details{(f.variants?.length ?? 0) > 0 ? ` • ${f.variants!.length} variants` : ""} →
+      </Link>
     </GlassCard>
   );
 
@@ -180,6 +209,7 @@ export default function FontsPage() {
       )}
       {list.length === 0 && <GlassCard><p className="text-sm text-slate-500">No fonts match these filters.</p></GlassCard>}
       {buy && <CheckoutModal open onClose={() => setBuy(null)} itemType="font" itemId={buy.id} itemName={buy.name} amountBDT={buy.price} />}
+      <AdUnits slot="inFeed" className="mt-4" />
     </div>
   );
 }

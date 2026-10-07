@@ -32,9 +32,19 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # runtime data (local analytics, dashboard edits) — never commit
 data/*.json
+
+# admin-uploaded catalog files — local/self-host content, never commit
+/public/uploads/*
+!/public/uploads/.gitkeep
+# Exception: shipped BUET study reference guides (small, cleared for sharing)
+!/public/uploads/study/
+/public/uploads/study/*
+!/public/uploads/study/buet-msc-cse-group1-prep-guide.pdf
+!/public/uploads/study/buet-msc-cse-group1-prep-guide.html
 
 # vercel
 .vercel

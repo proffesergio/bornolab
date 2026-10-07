@@ -5,19 +5,24 @@ import {
   LayoutDashboard, Wrench, Receipt, Megaphone, Search,
   Sparkles, Wallet, Settings as SettingsIcon, LogOut, Save, Loader2, Check, FileText,
   Users, CreditCard, ShieldCheck, ClipboardList, KeyRound, Menu, X, Building2, Layers,
+  GraduationCap, HardDrive,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { NotificationBell, NotificationFeed, NotificationToasts, useNotifications } from "@/components/admin-notifications";
 import type { AdminNotification } from "@/lib/notifications";
+import { AdminStudy } from "@/components/admin-study";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
-import { FONTS } from "@/lib/fonts-data";
-import { SOFTWARE } from "@/lib/software-data";
+import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
+import { SOFTWARE, type Software } from "@/lib/software-data";
+import { SEO_ROUTE_OPTIONS } from "@/lib/seo-pages";
+import { CsvBulkTools, duplicateCustom, FontBulkImporter, FontVariantsEditor, SoftwareBulkImporter, SoftwareVersionsEditor } from "@/components/admin-bulk";
+import { BkashQrButton } from "@/components/bkash-qr";
 import { cn } from "@/lib/cn";
 
 type Section =
   | "dashboard" | "users" | "subscriptions"
-  | "tools" | "pdftools" | "catalog"
+  | "tools" | "pdftools" | "catalog" | "study" | "media"
   | "orders" | "ads" | "payments" | "seo" | "aiseo"
   | "roles" | "plans" | "audit" | "access" | "settings";
 
@@ -36,6 +41,8 @@ const GROUPS: { title: string; items: { id: Section; label: string; icon: typeof
       { id: "tools", label: "Site Tools", icon: Wrench },
       { id: "pdftools", label: "PDF Tools", icon: FileText },
       { id: "catalog", label: "Catalog", icon: Layers },
+      { id: "study", label: "Study", icon: GraduationCap },
+      { id: "media", label: "Media", icon: HardDrive },
     ],
   },
   {
@@ -67,10 +74,12 @@ const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
   tools: { title: "Site Tools", desc: "Module visibility for the storefront." },
   pdftools: { title: "PDF Tools", desc: "Availability, caps and usage telemetry." },
   catalog: { title: "Catalog", desc: "Font + software overrides." },
+  study: { title: "Study Materials", desc: "PDF/HTML guides per category + visibility." },
+  media: { title: "Media Library", desc: "Uploaded files, storage usage, orphan cleanup." },
   orders: { title: "Orders", desc: "Manual-payment fulfillment." },
   ads: { title: "Ads", desc: "Slots + Google AdSense units." },
   payments: { title: "Payments", desc: "Processors and merchant accounts." },
-  seo: { title: "SEO", desc: "Search + analytics integrations." },
+  seo: { title: "SEO", desc: "Global integrations + per-page title/description/noindex." },
   aiseo: { title: "AI SEO", desc: "Offline content analyzer." },
   roles: { title: "Roles", desc: "Who can do what in this panel." },
   plans: { title: "Plans", desc: "Subscription products members buy." },
@@ -86,6 +95,7 @@ const TOOL_LABELS: Record<ToolKey, string> = {
   translate: "PDF⇆DOCX Translator",
   split: "PDF Splitter",
   software: "Software Store",
+  study: "Study Hub",
 };
 
 const PDF_TOOL_LABELS: Record<PdfToolKey, string> = {
@@ -172,7 +182,12 @@ export default function AdminPage() {
   const [navQuery, setNavQuery] = useState("");
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
   const [analytics, setAnalytics] = useState<{ totalViews: number; weekViews: number; days: { date: string; views: number }[]; topPages: { path: string; views: number }[] } | null>(null);
-  const [orders, setOrders] = useState<Array<{ id: string; at: number; itemName: string; amountBDT: number; method: string; sender: string; txn: string; note: string; status: string }>>([]);
+  const [orders, setOrders] = useState<Array<{ id: string; at: number; kind?: "purchase" | "request"; itemName: string; amountBDT: number; method: string; sender: string; txn: string; note: string; status: string; items?: { itemType: string; itemId: string; itemName: string; amountBDT: number }[]; delivery?: { label: string; url: string }[]; history?: { at: number; actor: string; from: string; to: string; note?: string }[] }>>([]);
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
+  const [orderOpen, setOrderOpen] = useState<string | null>(null);
+  const [orderKind, setOrderKind] = useState<"all" | "purchase" | "request">("all");
+  const [delLabel, setDelLabel] = useState<Record<string, string>>({});
+  const [delUrl, setDelUrl] = useState<Record<string, string>>({});
   const [pdfStats, setPdfStats] = useState<PdfStats | null>(null);
   const [users, setUsers] = useState<MemberUser[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -180,9 +195,16 @@ export default function AdminPage() {
   const [plans, setPlans] = useState<PlanDef[]>([]);
   const [roles, setRoles] = useState<RoleDef[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [adsCheck, setAdsCheck] = useState<{ exists: boolean; bytes?: number; sellerLines?: number; foundIds?: string[]; client?: string; pubId?: string; placeholderOnly?: boolean; match?: boolean } | null>(null);
+  const [media, setMedia] = useState<{ files: { url: string; kind: string; bytes: number; mtime: number; referenced: boolean }[]; count: number; totalBytes: number; orphanBytes: number } | null>(null);
+
+  const refreshMedia = () => {
+    fetch("/api/admin/media").then((r) => r.json()).then(setMedia).catch(() => {});
+  };
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [userQuery, setUserQuery] = useState("");
+  const [orderQuery, setOrderQuery] = useState("");
 
   // AI SEO local state
   const [seoText, setSeoText] = useState("আমার সোনার বাংলা ফন্ট কনভার্টার দিয়ে Bijoy থেকে Unicode এ রূপান্তর করুন। BornoLab offers free Bangla fonts, PDF tools and premium software for creators.");
@@ -206,6 +228,74 @@ export default function AdminPage() {
     setNavOpen(false);
   };
 
+  // Add-font form state (direct link OR local upload)
+  const [nfName, setNfName] = useState("");
+  const [nfDesigner, setNfDesigner] = useState("");
+  const [nfPremium, setNfPremium] = useState(false);
+  const [nfPrice, setNfPrice] = useState("0");
+  const [nfType, setNfType] = useState<FontType>("Unicode");
+  const [nfCat, setNfCat] = useState<FontCategory>("Sans-Serif");
+  const [nfBangla, setNfBangla] = useState(true);
+  const [nfLink, setNfLink] = useState("");
+  const [nfFallback, setNfFallback] = useState("");
+  const [nfUploadedUrl, setNfUploadedUrl] = useState("");
+  const [nfUploading, setNfUploading] = useState(false);
+  const [nfError, setNfError] = useState("");
+
+  // Add-software form state (direct link OR local upload)
+  const [nsName, setNsName] = useState("");  const [nsTagline, setNsTagline] = useState("");
+  const [nsPlatform, setNsPlatform] = useState("Windows 10/11");
+  const [nsVersion, setNsVersion] = useState("1.0.0");
+  const [nsSize, setNsSize] = useState("");
+  const [nsPrice, setNsPrice] = useState("0");
+  const [nsLink, setNsLink] = useState("");
+  const [nsFallback, setNsFallback] = useState("");
+  const [nsGuide, setNsGuide] = useState("");
+  const [nsShots, setNsShots] = useState("");
+  const [nsUploadedUrl, setNsUploadedUrl] = useState("");
+  const [nsUploading, setNsUploading] = useState(false);
+  const [nsError, setNsError] = useState("");
+  // bKash QR upload state
+  const [qrUploading, setQrUploading] = useState(false);
+  const [qrError, setQrError] = useState("");
+  // Font variant editors open per custom font id
+  const [varOpen, setVarOpen] = useState<Record<string, boolean>>({});
+  // Software version editors open per custom app id
+  const [verOpen, setVerOpen] = useState<Record<string, boolean>>({});
+
+  // Per-page SEO override form state
+  const [seoRoute, setSeoRoute] = useState<string>("/study");
+  const [seoCustom, setSeoCustom] = useState("");
+  const [seoPTitle, setSeoPTitle] = useState("");
+  const [seoPDesc, setSeoPDesc] = useState("");
+  const [seoPNoindex, setSeoPNoindex] = useState(false);
+  // Config backup state
+  const [cfgMsg, setCfgMsg] = useState("");
+  const [cfgBusy, setCfgBusy] = useState(false);
+  // Per-user activity timeline state (Admin → Customers)
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [activityCache, setActivityCache] = useState<Record<string, {
+    views: number; pdfJobs: number; downloads: number; logins: number;
+    lastActive: number | null;
+    timeline: { at: number; kind: string; label: string; detail?: string }[];
+  }>>({});
+  const [activityBusy, setActivityBusy] = useState(false);
+
+  const toggleActivity = (id: string) => {
+    if (activityId === id) {
+      setActivityId(null);
+      return;
+    }
+    setActivityId(id);
+    if (activityCache[id]) return;
+    setActivityBusy(true);
+    fetch(`/api/admin/user-activity?id=${encodeURIComponent(id)}`)
+      .then((r) => r.json())
+      .then((j) => setActivityCache((c) => ({ ...c, [id]: j })))
+      .catch(() => {})
+      .finally(() => setActivityBusy(false));
+  };
+
   useEffect(() => {
     fetch("/api/admin/me").then(async (r) => {
       if (!r.ok) { router.push("/admin/login"); return; }
@@ -219,6 +309,8 @@ export default function AdminPage() {
     fetch("/api/admin/plans").then((r) => r.json()).then((j) => setPlans(j.plans ?? [])).catch(() => {});
     fetch("/api/admin/roles").then((r) => r.json()).then((j) => setRoles(j.roles ?? [])).catch(() => {});
     fetch("/api/admin/audit").then((r) => r.json()).then((j) => setAudit(j.entries ?? [])).catch(() => {});
+    fetch("/api/admin/ads-check").then((r) => r.json()).then(setAdsCheck).catch(() => {});
+    fetch("/api/admin/media").then((r) => r.json()).then(setMedia).catch(() => {});
   }, [router]);
 
   const save = async (patch: Partial<SiteConfig>) => {
@@ -239,9 +331,13 @@ export default function AdminPage() {
     router.push("/admin/login");
   };
 
-  const setOrderStatus = async (id: string, status: string) => {
-    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
-    setOrders((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
+  const setOrderStatus = async (id: string, status: string, note?: string) => {
+    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status, note }) });
+    // Re-fetch so the verify-trail history comes back from the server.
+    fetch("/api/admin/orders").then((r) => r.json()).then((j) => setOrders(j.orders ?? [])).catch(() => {
+      setOrders((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
+    });
+    setOrderNotes((ns) => ({ ...ns, [id]: "" }));
   };
 
   const patchUser = async (id: string, patch: Partial<Pick<MemberUser, "role" | "planId" | "planStatus" | "status">>) => {
@@ -299,12 +395,130 @@ export default function AdminPage() {
     setUnitName(""); setUnitAdSlot("");
   };
 
+  /* ---------- Catalog: custom fonts + software (link or upload) ---------- */
+
+  const slug = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9\u0980-\u09ff]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "item";
+
+  const uploadCatalogFile = async (
+    kind: "font" | "software" | "study" | "media",
+    file: File,
+    setBusy: (b: boolean) => void,
+    setUrl: (u: string) => void,
+    setErr: (e: string) => void
+  ) => {
+    setBusy(true); setErr("");
+    try {
+      const form = new FormData();
+      form.append("kind", kind);
+      form.append("file", file);
+      const res = await fetch("/api/admin/uploads", { method: "POST", body: form });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Upload failed");
+      setUrl(j.url);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addCustomFont = () => {
+    if (!nfName.trim()) { setNfError("Font name is required."); return; }
+    const fileUrl = nfUploadedUrl || nfLink.trim() || "#";
+    const item: BanglaFont = {
+      id: `custom-${slug(nfName)}-${Date.now().toString(36)}`,
+      name: nfName.trim(),
+      designer: nfDesigner.trim() || "BornoLab Admin",
+      license: nfPremium ? "Paid" : "Free",
+      type: nfType,
+      category: nfCat,
+      bangla: nfBangla,
+      fileUrl,
+      fallbackUrl: nfFallback.trim() || "#",
+      premium: nfPremium,
+      priceBDT: nfPremium ? Number(nfPrice) || 0 : 0,
+    };
+    void save({ customFonts: [...(config.customFonts ?? []), item] });
+    setNfName(""); setNfDesigner(""); setNfPremium(false); setNfPrice("0");
+    setNfLink(""); setNfFallback(""); setNfUploadedUrl(""); setNfError("");
+  };
+
+  const deleteCustomFont = async (id: string) => {
+    if (!confirm("Delete this font from the catalog?")) return;
+    const target = (config.customFonts ?? []).find((f) => f.id === id);
+    const restOverrides = { ...config.fontOverrides };
+    delete restOverrides[id];
+    void save({
+      customFonts: (config.customFonts ?? []).filter((f) => f.id !== id),
+      fontOverrides: restOverrides,
+    });
+    if (target?.fileUrl.startsWith("/uploads/")) {
+      await fetch("/api/admin/uploads", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: target.fileUrl }),
+      }).catch(() => {});
+    }
+  };
+
+  const addCustomSoftware = () => {
+    if (!nsName.trim()) { setNsError("Software name is required."); return; }
+    const price = Number(nsPrice) || 0;
+    const item: Software = {
+      id: `custom-${slug(nsName)}-${Date.now().toString(36)}`,
+      name: nsName.trim(),
+      tagline: nsTagline.trim() || "Added by admin",
+      license: price > 0 ? "Paid" : "Free",
+      priceBDT: price,
+      platform: nsPlatform.trim() || "Windows 10/11",
+      version: nsVersion.trim() || "1.0.0",
+      size: nsSize.trim() || "—",
+      downloads: "New",
+      fileUrl: nsUploadedUrl || nsLink.trim() || "#",
+      fallbackUrl: nsFallback.trim() || "#",
+      guide: nsGuide.trim() || undefined,
+      screenshots: nsShots.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
+    };
+    void save({ customSoftware: [...(config.customSoftware ?? []), item] });
+    setNsName(""); setNsTagline(""); setNsPrice("0"); setNsSize("");
+    setNsLink(""); setNsFallback(""); setNsUploadedUrl(""); setNsError(""); setNsGuide(""); setNsShots("");
+  };
+
+  const deleteCustomSoftware = async (id: string) => {
+    if (!confirm("Delete this software from the store?")) return;
+    const target = (config.customSoftware ?? []).find((s) => s.id === id);
+    const restOverrides = { ...config.softwareOverrides };
+    delete restOverrides[id];
+    void save({
+      customSoftware: (config.customSoftware ?? []).filter((s) => s.id !== id),
+      softwareOverrides: restOverrides,
+    });
+    if (target?.fileUrl.startsWith("/uploads/")) {
+      await fetch("/api/admin/uploads", {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: target.fileUrl }),
+      }).catch(() => {});
+    }
+  };
+
   const maxDay = Math.max(1, ...(analytics?.days.map((d) => d.views) ?? [1]));
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
   const subscribers = users.filter((u) => u.planId !== "free" && (u.planStatus === "active" || u.planStatus === "trial"));
   const filteredUsers = users.filter((u) =>
     !userQuery.trim() || u.email.toLowerCase().includes(userQuery.toLowerCase()) || u.name.toLowerCase().includes(userQuery.toLowerCase())
   );
+  const filteredOrders = orders.filter((o) =>
+    (orderKind === "all" || (o.kind ?? "purchase") === orderKind) &&
+    (!orderQuery.trim() ||
+    o.id.toLowerCase().includes(orderQuery.toLowerCase()) ||
+    o.itemName.toLowerCase().includes(orderQuery.toLowerCase()) ||
+    o.sender.toLowerCase().includes(orderQuery.toLowerCase()))
+  );
+
+  const saveDelivery = async (id: string, delivery: { label: string; url: string }[]) => {
+    await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, delivery }) });
+    fetch("/api/admin/orders").then((r) => r.json()).then((j) => setOrders(j.orders ?? [])).catch(() => {});
+  };
   const roleCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const u of users) m[u.role] = (m[u.role] ?? 0) + 1;
@@ -313,6 +527,53 @@ export default function AdminPage() {
 
   const field = "focus-glow w-full rounded-xl bg-slate-100 p-2.5 text-sm outline-none dark:bg-black/30";
   const head = SECTION_TITLE[section];
+
+  interface SearchHit { kind: string; label: string; sub: string; go: () => void }
+
+  const searchResults = useMemo<SearchHit[]>(() => {
+    const q = navQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const hits: SearchHit[] = [];
+    const jump = (s: Section, after?: () => void) => () => {
+      setSection(s);
+      after?.();
+      setNavOpen(false);
+      setNavQuery("");
+    };
+    for (const u of users) {
+      if (hits.length >= 12) break;
+      if (u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)) {
+        const email = u.email;
+        hits.push({ kind: "User", label: u.name, sub: email, go: jump("users", () => setUserQuery(email)) });
+      }
+    }
+    for (const o of orders) {
+      if (hits.length >= 12) break;
+      if (o.id.toLowerCase().includes(q) || o.itemName.toLowerCase().includes(q) || o.sender.toLowerCase().includes(q)) {
+        const id = o.id;
+        hits.push({ kind: "Order", label: `${o.itemName} • ৳${o.amountBDT}`, sub: `${id} • ${o.status}`, go: jump("orders", () => setOrderQuery(id)) });
+      }
+    }
+    for (const m of config.customStudy ?? []) {
+      if (hits.length >= 12) break;
+      if (m.title.toLowerCase().includes(q)) {
+        hits.push({ kind: "Study", label: m.title, sub: m.category, go: jump("study") });
+      }
+    }
+    for (const f of config.customFonts ?? []) {
+      if (hits.length >= 12) break;
+      if (f.name.toLowerCase().includes(q)) {
+        hits.push({ kind: "Font", label: f.name, sub: f.type, go: jump("catalog") });
+      }
+    }
+    for (const s of config.customSoftware ?? []) {
+      if (hits.length >= 12) break;
+      if (s.name.toLowerCase().includes(q)) {
+        hits.push({ kind: "Software", label: s.name, sub: s.version, go: jump("catalog") });
+      }
+    }
+    return hits;
+  }, [navQuery, users, orders, config.customStudy, config.customFonts, config.customSoftware]);
 
   const nav = (
     <div className="flex h-full flex-col">
@@ -335,11 +596,30 @@ export default function AdminPage() {
         <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
           <Search size={14} className="shrink-0 text-slate-400" />
           <input
-            value={navQuery} onChange={(e) => setNavQuery(e.target.value)} placeholder="Search sections…"
-            aria-label="Search admin sections"
+            value={navQuery} onChange={(e) => setNavQuery(e.target.value)} placeholder="Search sections, users, orders…"
+            aria-label="Search admin"
             className="w-full bg-transparent text-[13px] text-slate-200 outline-none placeholder:text-slate-500"
           />
         </div>
+        {searchResults.length > 0 && (
+          <div className="mt-1.5 overflow-hidden rounded-xl bg-white/5" role="listbox" aria-label="Search results">
+            {searchResults.map((h, i) => (
+              <button
+                key={`${h.kind}-${i}`}
+                role="option"
+                aria-selected="false"
+                onClick={h.go}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/5"
+              >
+                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-black text-cyan-200">{h.kind}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12.5px] font-bold text-slate-100">{h.label}</span>
+                  <span className="block truncate text-[11px] text-slate-400">{h.sub}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <nav className="flex-1 overflow-y-auto px-2 pb-3" aria-label="Admin">
         {GROUPS.map((g) => {
@@ -461,31 +741,69 @@ export default function AdminPage() {
                   <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Search name or email…" aria-label="Search customers" className={cn(field, "sm:w-64")} />
                 </div>
                 <div className="mt-3 space-y-2">
-                  {filteredUsers.map((u) => (
-                    <div key={u.id} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] dark:bg-white/5 lg:grid-cols-[1fr_auto_auto_auto_auto]">
-                      <span className="min-w-0">
-                        <b className="block truncate">{u.name} <span className="font-normal text-slate-500">{u.email}</span></b>
-                        <span className="text-[11.5px] text-slate-500">
-                          {u.providers.join("+")} • joined {new Date(u.createdAt).toLocaleDateString()} • last login {new Date(u.lastLoginAt).toLocaleDateString()}
+                  {filteredUsers.map((u) => {
+                    const act = activityCache[u.id];
+                    const open = activityId === u.id;
+                    return (
+                    <div key={u.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                      <div className="grid items-center gap-2 text-[13px] lg:grid-cols-[1fr_auto_auto_auto_auto_auto]">
+                        <span className="min-w-0">
+                          <b className="block truncate">{u.name} <span className="font-normal text-slate-500">{u.email}</span></b>
+                          <span className="text-[11.5px] text-slate-500">
+                            {u.providers.join("+")} • joined {new Date(u.createdAt).toLocaleDateString()} • last login {new Date(u.lastLoginAt).toLocaleDateString()}
+                            {act?.lastActive ? <> • active {new Date(act.lastActive).toLocaleString()}</> : null}
+                          </span>
                         </span>
-                      </span>
-                      <select aria-label={`Role for ${u.email}`} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })} className={cn(field, "lg:w-32")}>
-                        {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                      </select>
-                      <select aria-label={`Plan for ${u.email}`} value={u.planId} onChange={(e) => patchUser(u.id, { planId: e.target.value, planStatus: e.target.value === "free" ? "none" : "active" })} className={cn(field, "lg:w-32")}>
-                        {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.priceBDT})</option>)}
-                      </select>
-                      <select aria-label={`Subscription status for ${u.email}`} value={u.planStatus} onChange={(e) => patchUser(u.id, { planStatus: e.target.value as MemberUser["planStatus"] })} className={cn(field, "lg:w-32")}>
-                        {["active", "trial", "past_due", "cancelled", "none"].map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                      <button
-                        onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
-                        className={cn("rounded-full px-3 py-2 text-[12px] font-bold", u.status === "active" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" : "bg-red-500/15 text-red-500")}
-                      >
-                        {u.status === "active" ? "Active" : "Suspended"}
-                      </button>
+                        <select aria-label={`Role for ${u.email}`} value={u.role} onChange={(e) => patchUser(u.id, { role: e.target.value })} className={cn(field, "lg:w-32")}>
+                          {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                        <select aria-label={`Plan for ${u.email}`} value={u.planId} onChange={(e) => patchUser(u.id, { planId: e.target.value, planStatus: e.target.value === "free" ? "none" : "active" })} className={cn(field, "lg:w-32")}>
+                          {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.priceBDT})</option>)}
+                        </select>
+                        <select aria-label={`Subscription status for ${u.email}`} value={u.planStatus} onChange={(e) => patchUser(u.id, { planStatus: e.target.value as MemberUser["planStatus"] })} className={cn(field, "lg:w-32")}>
+                          {["active", "trial", "past_due", "cancelled", "none"].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                          onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                          className={cn("rounded-full px-3 py-2 text-[12px] font-bold", u.status === "active" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" : "bg-red-500/15 text-red-500")}
+                        >
+                          {u.status === "active" ? "Active" : "Suspended"}
+                        </button>
+                        <button
+                          onClick={() => toggleActivity(u.id)}
+                          aria-expanded={open}
+                          className={cn("rounded-full px-3 py-2 text-[12px] font-bold", open ? "bg-cyan-500 text-white" : "text-cyan-700 hover:bg-cyan-500/10 dark:text-cyan-300")}
+                        >
+                          {open ? "Hide activity" : "Activity"}
+                        </button>
+                      </div>
+                      {open && (
+                        <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                          {!act ? (
+                            <p className="text-[12.5px] text-slate-500">{activityBusy ? "Loading activity…" : "No activity data."}</p>
+                          ) : (
+                            <>
+                              <div className="flex flex-wrap gap-1.5 text-[11.5px] font-bold">
+                                <span className="rounded-full bg-cyan-500/15 px-2.5 py-1 text-cyan-700 dark:text-cyan-200">{act.views} page views</span>
+                                <span className="rounded-full bg-purple-500/15 px-2.5 py-1 text-purple-700 dark:text-purple-200">{act.pdfJobs} PDF jobs</span>
+                                <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-700 dark:text-emerald-200">{act.downloads} downloads</span>
+                                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-amber-700 dark:text-amber-200">{act.logins} logins</span>
+                              </div>
+                              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto font-mono text-[11.5px] text-slate-600 dark:text-slate-400">
+                                {act.timeline.map((t, i) => (
+                                  <p key={`${t.at}-${i}`} className="rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 dark:bg-white/5">
+                                    {new Date(t.at).toLocaleString()} • <b>[{t.kind}]</b> {t.label}{t.detail ? ` • ${t.detail}` : ""}
+                                  </p>
+                                ))}
+                                {act.timeline.length === 0 && <p>Signed up but no tracked activity yet.</p>}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   {filteredUsers.length === 0 && <p className="text-[13px] text-slate-500">No members yet — share /login to get the first signup.</p>}
                 </div>
               </GlassCard>
@@ -530,6 +848,54 @@ export default function AdminPage() {
               </div>
               {saving ? <p className="mt-2 text-xs text-slate-500"><Loader2 size={12} className="inline animate-spin" /> Saving…</p> : savedTick ? <p className="mt-2 text-xs text-emerald-500"><Check size={12} className="inline" /> Saved</p> : null}
             </GlassCard>
+          )}
+
+          {section === "study" && (
+            <AdminStudy config={config} save={save} />
+          )}
+
+          {section === "media" && (
+            <div className="grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Files</p><p className="mt-1 text-3xl font-black">{media?.count ?? "…"}</p></GlassCard>
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Storage used</p><p className="mt-1 text-3xl font-black">{media ? `${(media.totalBytes / 1048576).toFixed(1)} MB` : "…"}</p></GlassCard>
+                <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Orphaned</p><p className="mt-1 text-3xl font-black">{media ? `${(media.orphanBytes / 1048576).toFixed(1)} MB` : "…"}</p></GlassCard>
+              </div>
+              <GlassCard>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">Uploaded files</h3>
+                  <button onClick={refreshMedia} className="glass hover-glow rounded-full px-3 py-1.5 text-[12px] font-bold">Refresh</button>
+                </div>
+                <p className="mt-1 text-[12px] text-slate-500">Orphan = no catalog item references this file — safe to delete. On Vercel this reflects the current instance only; use external URLs for production files.</p>
+                <div className="mt-3 space-y-2">
+                  {(media?.files ?? []).map((f) => (
+                    <div key={f.url} className="grid items-center gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[1fr_auto_auto_auto] dark:bg-white/5">
+                      <span className="min-w-0">
+                        <span className="block max-w-full truncate font-mono text-[12px]">{f.url}</span>
+                        <span className="text-[11.5px] text-slate-500">{f.kind} • {(f.bytes / 1024).toFixed(1)} KB • {new Date(f.mtime).toLocaleDateString()}</span>
+                      </span>
+                      <span className={f.referenced ? "rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-300" : "rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-300"}>
+                        {f.referenced ? "in use" : "orphan"}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete ${f.url}? Items linking to it will break.`)) return;
+                          await fetch("/api/admin/uploads", {
+                            method: "DELETE", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ url: f.url }),
+                          }).catch(() => {});
+                          refreshMedia();
+                        }}
+                        className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                  {(!media || media.files.length === 0) && <p className="text-[13px] text-slate-500">{media ? "No uploaded files yet." : "Loading…"}</p>}
+                </div>
+              </GlassCard>
+            </div>
           )}
 
           {section === "pdftools" && (
@@ -624,6 +990,100 @@ export default function AdminPage() {
           {section === "catalog" && (
             <div className="grid gap-4">
               <GlassCard>
+                <h3 className="text-sm font-bold">Add a font — link or upload</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  Paste a direct download link <b>or</b> upload from your computer (.ttf/.otf/.woff/.woff2/.zip, max 30 MB).
+                  Premium fonts go through checkout; you deliver the file after verifying payment (Orders tab).
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <input aria-label="New font name" value={nfName} onChange={(e) => setNfName(e.target.value)} placeholder="Font name *" className={field} />
+                  <input aria-label="New font designer" value={nfDesigner} onChange={(e) => setNfDesigner(e.target.value)} placeholder="Designer (optional)" className={field} />
+                  <select aria-label="New font encoding" value={nfType} onChange={(e) => setNfType(e.target.value as FontType)} className={field}>
+                    <option value="Unicode">Unicode</option>
+                    <option value="ANSI">ANSI (Bijoy)</option>
+                    <option value="Dual">Dual</option>
+                  </select>
+                  <select aria-label="New font category" value={nfCat} onChange={(e) => setNfCat(e.target.value as FontCategory)} className={field}>
+                    <option value="Serif">Serif</option>
+                    <option value="Sans-Serif">Sans-Serif</option>
+                    <option value="Display">Display</option>
+                    <option value="Stylized">Stylized</option>
+                  </select>
+                  <input aria-label="New font download link" value={nfLink} onChange={(e) => setNfLink(e.target.value)} placeholder="Direct download link https://… (or upload below)" className={cn(field, "font-mono")} />
+                  <input aria-label="New font fallback page" value={nfFallback} onChange={(e) => setNfFallback(e.target.value)} placeholder="Fallback/foundry page https://… (optional)" className={cn(field, "font-mono")} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 font-semibold dark:bg-white/5">
+                    <input type="checkbox" checked={nfBangla} onChange={(e) => setNfBangla(e.target.checked)} className="h-4 w-4 accent-cyan-500" /> বাংলা font
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 font-semibold dark:bg-white/5">
+                    <input type="checkbox" checked={nfPremium} onChange={(e) => setNfPremium(e.target.checked)} className="h-4 w-4 accent-purple-500" /> Premium
+                  </label>
+                  {nfPremium && (
+                    <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={nfPrice} onChange={(e) => setNfPrice(e.target.value)} className={cn(field, "w-24")} aria-label="New font price" /></label>
+                  )}
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
+                    {nfUploading ? "Uploading…" : nfUploadedUrl ? "✓ File attached — replace?" : "⬆ Upload file"}
+                    <input
+                      type="file" accept=".ttf,.otf,.woff,.woff2,.zip" className="hidden"
+                      disabled={nfUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void uploadCatalogFile("font", f, setNfUploading, setNfUploadedUrl, setNfError);
+                      }}
+                    />
+                  </label>
+                  {nfUploadedUrl && (
+                    <span className="max-w-full truncate font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{nfUploadedUrl}</span>
+                  )}
+                </div>
+                {nfError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nfError}</p>}
+                <button onClick={addCustomFont} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish font</button>
+                <FontBulkImporter
+                  onPublish={(fonts) => void save({ customFonts: [...(config.customFonts ?? []), ...fonts] })}
+                />
+              </GlassCard>
+
+              {(config.customFonts ?? []).length > 0 && (
+                <GlassCard>
+                  <h3 className="text-sm font-bold">Your uploaded fonts ({(config.customFonts ?? []).length})</h3>
+                  <CsvBulkTools
+                    kind="font"
+                    items={(config.customFonts ?? []) as unknown as Record<string, unknown>[]}
+                    onImport={(built) => void save({ customFonts: [...(config.customFonts ?? []), ...(built as unknown as BanglaFont[])] })}
+                  />
+                  <div className="mt-3 space-y-2">
+                    {(config.customFonts ?? []).map((f) => {
+                      const ov = config.fontOverrides[f.id] ?? {};
+                      const premium = ov.premium ?? f.premium ?? f.license === "Paid";
+                      const vOpen = varOpen[f.id] === true;
+                      return (
+                        <div key={f.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                        <div className="grid items-center gap-2 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto_auto_auto]">
+                          <span className="min-w-0"><b>{f.name}</b> <span className="text-slate-500">• {f.type} • {f.bangla ? "বাংলা" : "English"}{(f.variants?.length ?? 0) > 0 ? ` • ${f.variants!.length} variants` : ""}</span>
+                            <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{f.fileUrl}</span></span>
+                          <label className="flex items-center gap-1.5">Premium <input type="checkbox" checked={premium} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, premium: !premium } } })} className="h-4 w-4 accent-purple-500" /></label>
+                          <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? f.priceBDT ?? 0} onChange={(e) => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
+                          <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ fontOverrides: { ...config.fontOverrides, [f.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
+                          <button onClick={() => setVarOpen((v) => ({ ...v, [f.id]: !vOpen }))} aria-expanded={vOpen} className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", vOpen ? "bg-cyan-500 text-white" : "text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300")}>Variants</button>
+                          <button onClick={() => void save({ customFonts: [...(config.customFonts ?? []), duplicateCustom("font", f)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
+                          <button onClick={() => deleteCustomFont(f.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                        </div>
+                        {vOpen && (
+                          <FontVariantsEditor
+                            font={f}
+                            onChange={(variants) => void save({ customFonts: (config.customFonts ?? []).map((x) => (x.id === f.id ? { ...x, variants } : x)) })}
+                          />
+                        )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              )}
+
+              <GlassCard>
                 <h3 className="text-sm font-bold">Font catalog overrides</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Toggle premium / set ৳ price / hide fonts. Applies on the Fonts page immediately.</p>
                 <div className="mt-3 space-y-2">
@@ -641,6 +1101,86 @@ export default function AdminPage() {
                   })}
                 </div>
               </GlassCard>
+              <GlassCard>
+                <h3 className="text-sm font-bold">Add software — link or upload</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  Paste a direct download link <b>or</b> upload from your computer (.zip/.exe/.msi/.dmg/.pkg/.apk, max 300 MB).
+                  Price ৳0 = Free. Paid apps go through checkout; you deliver after verifying payment.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <input aria-label="New software name" value={nsName} onChange={(e) => setNsName(e.target.value)} placeholder="Software name *" className={field} />
+                  <input aria-label="New software tagline" value={nsTagline} onChange={(e) => setNsTagline(e.target.value)} placeholder="Tagline (optional)" className={field} />
+                  <input aria-label="New software platform" value={nsPlatform} onChange={(e) => setNsPlatform(e.target.value)} placeholder="Platform (e.g. Windows 10/11)" className={field} />
+                  <input aria-label="New software version" value={nsVersion} onChange={(e) => setNsVersion(e.target.value)} placeholder="Version (e.g. 1.0.0)" className={cn(field, "font-mono")} />
+                  <input aria-label="New software size" value={nsSize} onChange={(e) => setNsSize(e.target.value)} placeholder="Size (e.g. 48 MB)" className={field} />
+                  <label className="flex items-center gap-1.5 text-[13px] font-semibold">৳ Price (0 = Free) <input type="number" min={0} value={nsPrice} onChange={(e) => setNsPrice(e.target.value)} className={cn(field, "w-28")} aria-label="New software price" /></label>
+                  <input aria-label="New software download link" value={nsLink} onChange={(e) => setNsLink(e.target.value)} placeholder="Direct download link https://… (or upload below)" className={cn(field, "font-mono")} />
+                  <input aria-label="New software fallback page" value={nsFallback} onChange={(e) => setNsFallback(e.target.value)} placeholder="Fallback/info page https://… (optional)" className={cn(field, "font-mono")} />
+                  <textarea aria-label="Setup and install guide" value={nsGuide} onChange={(e) => setNsGuide(e.target.value)} placeholder="Setup / install guide — steps, license activation notes (shown on the app page)" rows={2} className={cn(field, "sm:col-span-2")} />
+                  <input aria-label="Screenshot image URLs" value={nsShots} onChange={(e) => setNsShots(e.target.value)} placeholder="Screenshot URLs, comma separated (upload via Media first)" className={cn(field, "font-mono sm:col-span-2")} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
+                  <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-cyan-500/15 px-3 py-2 font-bold text-cyan-700 dark:text-cyan-200">
+                    {nsUploading ? "Uploading…" : nsUploadedUrl ? "✓ File attached — replace?" : "⬆ Upload file"}
+                    <input
+                      type="file" accept=".zip,.exe,.msi,.dmg,.pkg,.apk" className="hidden"
+                      disabled={nsUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void uploadCatalogFile("software", f, setNsUploading, setNsUploadedUrl, setNsError);
+                      }}
+                    />
+                  </label>
+                  {nsUploadedUrl && (
+                    <span className="max-w-full truncate font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{nsUploadedUrl}</span>
+                  )}
+                </div>
+                {nsError && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{nsError}</p>}
+                <button onClick={addCustomSoftware} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish software</button>
+                <SoftwareBulkImporter
+                  onPublish={(apps) => void save({ customSoftware: [...(config.customSoftware ?? []), ...apps] })}
+                />
+              </GlassCard>
+
+              {(config.customSoftware ?? []).length > 0 && (
+                <GlassCard>
+                  <h3 className="text-sm font-bold">Your uploaded software ({(config.customSoftware ?? []).length})</h3>
+                  <CsvBulkTools
+                    kind="software"
+                    items={(config.customSoftware ?? []) as unknown as Record<string, unknown>[]}
+                    onImport={(built) => void save({ customSoftware: [...(config.customSoftware ?? []), ...(built as unknown as Software[])] })}
+                  />
+                  <div className="mt-3 space-y-2">
+                    {(config.customSoftware ?? []).map((s) => {
+                      const ov = config.softwareOverrides[s.id] ?? {};
+                      const vOpen = verOpen[s.id] === true;
+                      return (
+                        <div key={s.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                        <div className="grid items-center gap-2 text-[13px] sm:grid-cols-[1fr_auto_auto_auto_auto]">
+                          <span className="min-w-0"><b>{s.name}</b> <span className="text-slate-500">• {s.platform} • v{s.version}{(s.versions?.length ?? 0) > 0 ? ` • ${s.versions!.length} more` : ""}</span>
+                            <span className="block max-w-full truncate font-mono text-[11px] text-slate-500">{s.fileUrl}</span></span>
+                          <label className="flex items-center gap-1.5">৳ <input type="number" min={0} value={ov.priceBDT ?? s.priceBDT} onChange={(e) => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, priceBDT: Number(e.target.value) } } })} className={cn(field, "w-24")} /></label>
+                          <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={ov.enabled ?? true} onChange={() => save({ softwareOverrides: { ...config.softwareOverrides, [s.id]: { ...ov, enabled: !(ov.enabled ?? true) } } })} className="h-4 w-4 accent-cyan-500" /></label>
+                          <button onClick={() => setVerOpen((v) => ({ ...v, [s.id]: !vOpen }))} aria-expanded={vOpen} className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", vOpen ? "bg-cyan-500 text-white" : "text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300")}>Versions</button>
+                          <span className="flex gap-1">
+                            <button onClick={() => void save({ customSoftware: [...(config.customSoftware ?? []), duplicateCustom("software", s)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
+                            <button onClick={() => deleteCustomSoftware(s.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
+                          </span>
+                        </div>
+                        {vOpen && (
+                          <SoftwareVersionsEditor
+                            app={s}
+                            onChange={(versions) => void save({ customSoftware: (config.customSoftware ?? []).map((x) => (x.id === s.id ? { ...x, versions } : x)) })}
+                          />
+                        )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              )}
+
               <GlassCard>
                 <h3 className="text-sm font-bold">Software store overrides</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Set ৳ prices (0 = Free) or hide items from the Software page.</p>
@@ -662,18 +1202,105 @@ export default function AdminPage() {
 
           {section === "orders" && (
             <GlassCard>
-              <h3 className="text-sm font-bold">Manual-payment orders ({orders.length})</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold">Manual-payment orders ({filteredOrders.length})</h3>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="flex gap-1" role="tablist" aria-label="Order kind">
+                    {(["all", "purchase", "request"] as const).map((k) => (
+                      <button key={k} role="tab" aria-selected={orderKind === k} onClick={() => setOrderKind(k)}
+                        className={orderKind === k ? "rounded-full bg-slate-900 px-3 py-1.5 text-[12px] font-bold text-white dark:bg-white dark:text-slate-900" : "glass rounded-full px-3 py-1.5 text-[12px] font-bold capitalize"}>
+                        {k === "all" ? "All" : k === "purchase" ? "Purchases" : "Requests"}
+                      </button>
+                    ))}
+                  </span>
+                  <input value={orderQuery} onChange={(e) => setOrderQuery(e.target.value)} placeholder="Search id, item, sender…" aria-label="Search orders" className={cn(field, "sm:w-56")} />
+                </span>
+              </div>
               <div className="mt-3 space-y-2">
-                {orders.map((o) => (
-                  <div key={o.id} className="grid gap-1 rounded-xl bg-slate-900/[.04] p-3 text-[13px] sm:grid-cols-[auto_1fr_auto] sm:items-center dark:bg-white/5">
-                    <span className="font-mono font-black">{o.id}</span>
-                    <span>{o.itemName} • ৳{o.amountBDT} • {o.method} • from <code>{o.sender}</code>{o.txn && <> • txn <code>{o.txn}</code></>} • {new Date(o.at).toLocaleString()}{o.note && <span className="block text-slate-500">Note: {o.note}</span>}<span className="block text-slate-500">Fulfill: verify payment in your {o.method} app, then deliver the download/license to the buyer.</span></span>
-                    <select aria-label={`Status for ${o.id}`} value={o.status} onChange={(e) => setOrderStatus(o.id, e.target.value)} className={cn(field, "sm:w-36")}>
-                      {["pending", "paid", "delivered", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                {filteredOrders.map((o) => {
+                  const open = orderOpen === o.id;
+                  return (
+                  <div key={o.id} className="rounded-xl bg-slate-900/[.04] p-3 dark:bg-white/5">
+                    <div className="grid gap-1 text-[13px] sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-mono font-black">{o.id}</span>
+                        <span className={(o.kind ?? "purchase") === "request" ? "rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-black text-purple-700 dark:text-purple-300" : "rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-black text-cyan-700 dark:text-cyan-200"}>
+                          {(o.kind ?? "purchase") === "request" ? "REQUEST" : "PURCHASE"}
+                        </span>
+                      </span>
+                      <span>{o.itemName} • ৳{o.amountBDT} • {o.method} • from <code>{o.sender}</code>{o.txn && <> • txn <code>{o.txn}</code></>} • {new Date(o.at).toLocaleString()}{o.note && <span className="block text-slate-500">Note: {o.note}</span>}
+                      {(o.items?.length ?? 0) > 1 && <span className="block text-slate-500">Lines: {o.items!.map((l) => `${l.itemName} (৳${l.amountBDT})`).join(" • ")}</span>}
+                      <span className="block text-slate-500">Fulfill: verify payment in your {o.method} app, then deliver the download/license to the buyer.</span>
+                      {o.method === "bkash" && (
+                        <span className="mt-1 flex flex-wrap items-center gap-2">
+                          <span className="text-slate-500">Verify against personal:</span>
+                          <code className="font-bold text-slate-700 dark:text-slate-200">{config.payments.bkashPersonal || config.payments.bkash}</code>
+                          <BkashQrButton number={config.payments.bkashPersonal || config.payments.bkash} qrUrl={config.payments.bkashQrUrl} size="sm" />
+                        </span>
+                      )}</span>
+                      <span className="flex flex-wrap gap-1.5">
+                        <select aria-label={`Status for ${o.id}`} value={o.status} onChange={(e) => setOrderStatus(o.id, e.target.value, orderNotes[o.id])} className={cn(field, "sm:w-36")}>
+                          {["pending", "paid", "delivered", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <button
+                          onClick={() => setOrderOpen(open ? null : o.id)}
+                          aria-expanded={open}
+                          className="rounded-full px-3 py-2 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
+                        >
+                          {open ? "Hide trail" : `Trail (${(o.history ?? []).length})`}
+                        </button>
+                      </span>
+                    </div>
+                    {open && (
+                      <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                        <input
+                          aria-label={`Verification note for ${o.id}`}
+                          value={orderNotes[o.id] ?? ""}
+                          onChange={(e) => setOrderNotes((ns) => ({ ...ns, [o.id]: e.target.value }))}
+                          placeholder="Verification note (e.g. bKash txn matched ৳990) — saved with the next status change"
+                          className={cn(field, "font-mono")}
+                        />
+                        <div className="mt-2 space-y-1 font-mono text-[11.5px] text-slate-600 dark:text-slate-400">
+                          {(o.history ?? []).slice().reverse().map((h, i) => (
+                            <p key={`${h.at}-${i}`} className="rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 dark:bg-white/5">
+                              {new Date(h.at).toLocaleString()} • {h.actor} • {h.from}→{h.to}{h.note ? ` • ${h.note}` : ""}
+                            </p>
+                          ))}
+                          {(o.history ?? []).length === 0 && <p>No status changes recorded yet.</p>}
+                        </div>
+                        <div className="mt-2 border-t border-slate-900/10 pt-2 dark:border-white/10">
+                          <p className="text-[12px] font-bold">Delivery links / licenses ({(o.delivery ?? []).length})</p>
+                          <div className="mt-1.5 space-y-1">
+                            {(o.delivery ?? []).map((d, i) => (
+                              <p key={`${d.url}-${i}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-900/[.04] px-2.5 py-1.5 font-mono text-[11.5px] dark:bg-white/5">
+                                <span className="min-w-0"><b>{d.label || "Download"}</b> <span className="block truncate text-slate-500">{d.url}</span></span>
+                                <button onClick={() => saveDelivery(o.id, (o.delivery ?? []).filter((_, j) => j !== i))} className="rounded-full px-2 py-1 text-[11px] font-bold text-red-500 hover:bg-red-500/10">Remove</button>
+                              </p>
+                            ))}
+                          </div>
+                          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-[1fr_1fr_auto]">
+                            <input aria-label={`Delivery label for ${o.id}`} value={delLabel[o.id] ?? ""} onChange={(e) => setDelLabel((m) => ({ ...m, [o.id]: e.target.value }))} placeholder="Label (e.g. Installer v2.1)" className={cn(field, "font-mono")} />
+                            <input aria-label={`Delivery URL for ${o.id}`} value={delUrl[o.id] ?? ""} onChange={(e) => setDelUrl((m) => ({ ...m, [o.id]: e.target.value }))} placeholder="https://… download/license URL" className={cn(field, "font-mono")} />
+                            <button
+                              onClick={() => {
+                                const url = (delUrl[o.id] ?? "").trim();
+                                if (!url) return;
+                                saveDelivery(o.id, [...(o.delivery ?? []), { label: (delLabel[o.id] ?? "").trim() || "Download", url }]);
+                                setDelLabel((m) => ({ ...m, [o.id]: "" }));
+                                setDelUrl((m) => ({ ...m, [o.id]: "" }));
+                              }}
+                              className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-3.5 py-2 text-[12px] font-bold text-white"
+                            >
+                              + Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-                {orders.length === 0 && <p className="text-[13px] text-slate-500">No orders yet.</p>}
+                  );
+                })}
+                {filteredOrders.length === 0 && <p className="text-[13px] text-slate-500">No orders match.</p>}
               </div>
             </GlassCard>
           )}
@@ -693,7 +1320,30 @@ export default function AdminPage() {
                 {config.ads.enabled === false && <p role="status" className="mt-2 rounded-xl bg-amber-500/10 p-2.5 text-[12.5px] font-bold text-amber-700 dark:text-amber-200">Ads are OFF — the storefront renders zero ad markup.</p>}
               </GlassCard>
               <GlassCard>
-                <h3 className="text-sm font-bold">Google AdSense</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">ads.txt status</h3>
+                  <button
+                    onClick={() => fetch("/api/admin/ads-check").then((r) => r.json()).then(setAdsCheck).catch(() => {})}
+                    className="glass hover-glow rounded-full px-3 py-1.5 text-[12px] font-bold"
+                  >
+                    Recheck
+                  </button>
+                </div>
+                {!adsCheck ? (
+                  <p className="mt-2 text-[13px] text-slate-500">Checking…</p>
+                ) : !adsCheck.exists ? (
+                  <p className="mt-2 text-[13px] font-semibold text-rose-500">public/ads.txt not found — AdSense approval requires it.</p>
+                ) : adsCheck.placeholderOnly ? (
+                  <p className="mt-2 text-[13px] font-semibold text-amber-600 dark:text-amber-300">ads.txt has no seller lines yet — paste your publisher line after AdSense approval.</p>
+                ) : adsCheck.match ? (
+                  <p className="mt-2 text-[13px] font-semibold text-emerald-600 dark:text-emerald-300">✓ Publisher ID {adsCheck.pubId} declared ({adsCheck.sellerLines} seller line{adsCheck.sellerLines === 1 ? "" : "s"}).</p>
+                ) : (
+                  <p className="mt-2 text-[13px] font-semibold text-rose-500">
+                    Mismatch — ads.txt declares [{(adsCheck.foundIds ?? []).join(", ") || "none"}] but SEO client is {adsCheck.client || "(empty)"}. Fix public/ads.txt.
+                  </p>
+                )}
+              </GlassCard>
+              <GlassCard>
                 <h3 className="text-sm font-bold">Google AdSense</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Publisher ID used by every ad unit below. Find it in AdSense → Account → Settings.</p>
                 <label htmlFor="adsense-client" className="mt-2 block text-xs font-bold">AdSense client (ca-pub-…)</label>
@@ -789,18 +1439,67 @@ export default function AdminPage() {
                   </div>
                 </div>
               </GlassCard>
+              <GlassCard>
+                <h3 className="text-sm font-bold">bKash Personal — Send Money</h3>
+                <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                  This personal number (not the merchant account) is shown at checkout and in order verification, with a QR button.
+                  Upload the official QR from your bKash app for in-app scanning — otherwise buyers get a generated number QR.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="pay-bkash-personal" className="text-xs font-bold">Personal number</label>
+                    <input id="pay-bkash-personal" value={config.payments.bkashPersonal ?? ""} onChange={(e) => save({ payments: { ...config.payments, bkashPersonal: e.target.value } })} className={cn(field, "mt-1 font-mono")} placeholder="+8801XXXXXXXXX" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold">Official QR image (optional)</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-pink-500/15 px-3 py-2 text-[13px] font-bold text-pink-700 dark:text-pink-300">
+                        {qrUploading ? "Uploading…" : config.payments.bkashQrUrl ? "✓ QR attached — replace?" : "⬆ Upload QR (.png/.jpg)"}
+                        <input
+                          type="file" accept=".png,.jpg,.jpeg,.webp" className="hidden"
+                          disabled={qrUploading}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (!f) return;
+                            setQrUploading(true);
+                            setQrError("");
+                            const form = new FormData();
+                            form.append("kind", "media");
+                            form.append("file", f);
+                            fetch("/api/admin/uploads", { method: "POST", body: form })
+                              .then(async (res) => {
+                                const j = await res.json();
+                                if (!res.ok) throw new Error(j.error || "Upload failed");
+                                void save({ payments: { ...config.payments, bkashQrUrl: j.url } });
+                              })
+                              .catch((err: Error) => setQrError(err.message))
+                              .finally(() => setQrUploading(false));
+                          }}
+                        />
+                      </label>
+                      {config.payments.bkashQrUrl && (
+                        <button onClick={() => save({ payments: { ...config.payments, bkashQrUrl: "" } })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Remove</button>
+                      )}
+                    </div>
+                    {qrError && <p role="alert" className="mt-1 text-[12px] font-semibold text-rose-500">{qrError}</p>}
+                  </div>
+                </div>
+              </GlassCard>
             </div>
           )}
 
           {section === "seo" && (
+            <div className="grid gap-4">
             <GlassCard>
               <h3 className="text-sm font-bold">SEO & analytics integrations</h3>
               <div className="mt-3 grid gap-3">
-                {(["title", "description", "keywords", "gaId", "adsenseClient", "headerScripts", "footerScripts"] as const).map((k) => (
+                {(["title", "description", "keywords", "gaId", "adsenseClient", "googleSiteVerification", "headerScripts", "footerScripts"] as const).map((k) => (
                   <div key={k}>
                     <label htmlFor={`seo-${k}`} className="text-xs font-bold">{
-                      k === "gaId" ? "Google Analytics ID (G-…)"
+                      k === "gaId" ? "Google ID — GTM-XXXXXXX or G-XXXXXXXX"
                       : k === "adsenseClient" ? "AdSense client (ca-pub-…)"
+                      : k === "googleSiteVerification" ? "Google site-verification code"
                       : k === "headerScripts" ? "Header scripts (injected after AdSense)"
                       : k === "footerScripts" ? "Footer scripts (lazy-loaded)"
                       : k
@@ -808,13 +1507,90 @@ export default function AdminPage() {
                     {(k === "description" || k === "headerScripts" || k === "footerScripts") ? (
                       <textarea id={`seo-${k}`} rows={k === "description" ? 2 : 3} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1", k !== "description" && "font-mono")} placeholder={k === "description" ? undefined : "<script>…</script>"} />
                     ) : (
-                      <input id={`seo-${k}`} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
+                      <input id={`seo-${k}`} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} placeholder={k === "googleSiteVerification" ? "googleXXXX… (Search Console → Settings)" : undefined} />
                     )}
                   </div>
                 ))}
                 <p className="text-[12px] text-slate-500">GA script + AdSense meta auto-inject on every page once saved. Injected scripts are sanitized (inline event handlers + <code>javascript:</code> URLs stripped) and can never break hydration. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
               </div>
             </GlassCard>
+            <GlassCard>
+              <h3 className="text-sm font-bold">Per-page overrides ({Object.keys(config.seoPages ?? {}).length})</h3>
+              <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                Custom title / description / noindex per route. Exact path wins; a parent path also covers its sub-pages (e.g. <code>/study</code> covers <code>/study/…</code>).
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[180px_1fr]">
+                <select aria-label="Override route" value={seoRoute} onChange={(e) => { setSeoRoute(e.target.value); setSeoCustom(""); }} className={field}>
+                  {SEO_ROUTE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  <option value="__custom">Custom path…</option>
+                </select>
+                {seoRoute === "__custom" ? (
+                  <input aria-label="Custom route path" value={seoCustom} onChange={(e) => setSeoCustom(e.target.value)} placeholder="/some/path" className={cn(field, "font-mono")} />
+                ) : (
+                  <input aria-label="Override title" value={seoPTitle} onChange={(e) => setSeoPTitle(e.target.value)} placeholder="Page title (blank = use global)" className={field} />
+                )}
+              </div>
+              {seoRoute === "__custom" && (
+                <input aria-label="Override title" value={seoPTitle} onChange={(e) => setSeoPTitle(e.target.value)} placeholder="Page title (blank = use global)" className={cn(field, "mt-2")} />
+              )}
+              <textarea aria-label="Override description" rows={2} value={seoPDesc} onChange={(e) => setSeoPDesc(e.target.value)} placeholder="Meta description ~155 chars (blank = use global)" className={cn(field, "mt-2")} />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 text-[13px] font-semibold dark:bg-white/5">
+                  <input type="checkbox" checked={seoPNoindex} onChange={(e) => setSeoPNoindex(e.target.checked)} className="h-4 w-4 accent-rose-500" /> noindex this page
+                </label>
+                <button
+                  onClick={() => {
+                    const raw = seoRoute === "__custom" ? seoCustom : seoRoute;
+                    const path = raw.trim() ? (raw.trim().startsWith("/") ? raw.trim() : `/${raw.trim()}`) : "";
+                    if (!path) return;
+                    const next = { ...(config.seoPages ?? {}) };
+                    if (!seoPTitle.trim() && !seoPDesc.trim() && !seoPNoindex) delete next[path];
+                    else next[path] = { title: seoPTitle.trim() || undefined, description: seoPDesc.trim() || undefined, noindex: seoPNoindex || undefined };
+                    void save({ seoPages: next });
+                    setSeoPTitle(""); setSeoPDesc(""); setSeoPNoindex(false); setSeoCustom("");
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white"
+                >
+                  Save override
+                </button>
+              </div>
+              {Object.keys(config.seoPages ?? {}).length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {Object.entries(config.seoPages ?? {}).map(([path, ov]) => (
+                    <div key={path} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-900/[.04] p-3 text-[13px] dark:bg-white/5">
+                      <span className="min-w-0">
+                        <code className="font-bold">{path}</code>
+                        {ov.noindex && <span className="ml-2 rounded-full bg-rose-500/15 px-2 py-0.5 text-[10.5px] font-bold text-rose-600">noindex</span>}
+                        <span className="block truncate text-slate-500">{ov.title || <i>global title</i>} • {(ov.description || "global description").slice(0, 90)}</span>
+                      </span>
+                      <span className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSeoRoute((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? path : "__custom");
+                            setSeoCustom((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? "" : path);
+                            setSeoPTitle(ov.title ?? ""); setSeoPDesc(ov.description ?? ""); setSeoPNoindex(ov.noindex === true);
+                          }}
+                          className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            const next = { ...(config.seoPages ?? {}) };
+                            delete next[path];
+                            void save({ seoPages: next });
+                          }}
+                          className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+            </div>
           )}
 
           {section === "aiseo" && (
@@ -953,7 +1729,8 @@ export default function AdminPage() {
           )}
 
           {section === "settings" && (
-            <GlassCard>
+          <div className="grid gap-4">
+          <GlassCard>
               <h3 className="text-sm font-bold">Brand & customization</h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
@@ -977,6 +1754,81 @@ export default function AdminPage() {
               <input aria-label="Announcement text" value={config.announcement.text} onChange={(e) => save({ announcement: { ...config.announcement, text: e.target.value } })} className={cn(field, "mt-2")} />
               <p className="mt-3 flex items-center gap-1.5 text-[12px] text-slate-500"><Save size={12} /> All changes save instantly to the live site. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
             </GlassCard>
+            <GlassCard>
+              <h3 className="text-sm font-bold">Backup & restore</h3>
+              <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
+                Dashboard edits live in <code>data/site-config.json</code> (ephemeral on Vercel). Export a backup, or copy the seed below into Vercel&apos;s <code>SITE_CONFIG_JSON</code> env var to make settings durable in production. Site config holds no secrets — those stay in env vars.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `bornolab-config-${new Date().toISOString().slice(0, 10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 4000);
+                    setCfgMsg("Backup downloaded.");
+                  }}
+                  className="glass hover-glow rounded-xl px-4 py-2.5 text-[13px] font-bold"
+                >
+                  ⬇ Export JSON
+                </button>
+                <label className="glass hover-glow cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-bold">
+                  {cfgBusy ? "Restoring…" : "⬆ Import JSON"}
+                  <input
+                    type="file" accept="application/json" className="hidden"
+                    disabled={cfgBusy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      if (!confirm("Replace ALL site settings with this file? This cannot be undone (export first).")) return;
+                      setCfgBusy(true);
+                      setCfgMsg("");
+                      f.text().then(async (text) => {
+                        try {
+                          const parsed = JSON.parse(text) as unknown;
+                          if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                            throw new Error("File must contain a JSON object.");
+                          }
+                          const res = await fetch("/api/admin/config", {
+                            method: "PUT", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ __replace: true, config: parsed }),
+                          });
+                          if (!res.ok) throw new Error("Restore failed.");
+                          setConfig({ ...DEFAULT_CONFIG, ...(await res.json()) });
+                          setCfgMsg("✓ Settings restored from file.");
+                        } catch (err) {
+                          setCfgMsg(`Restore failed: ${(err as Error).message}`);
+                        } finally {
+                          setCfgBusy(false);
+                        }
+                      }).catch((err: Error) => { setCfgMsg(`Restore failed: ${err.message}`); setCfgBusy(false); });
+                    }}
+                  />
+                </label>
+                <button
+                  onClick={() => {
+                    const seed = JSON.stringify(config);
+                    const done = () => setCfgMsg("✓ SITE_CONFIG_JSON copied — paste it into Vercel env, then redeploy.");
+                    if (navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(seed).then(done).catch(() => setCfgMsg("Copy failed — export JSON instead."));
+                    } else {
+                      window.prompt("Copy your SITE_CONFIG_JSON seed:", seed);
+                    }
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white"
+                >
+                  Copy SITE_CONFIG_JSON seed
+                </button>
+              </div>
+              {cfgMsg && <p role="status" className="mt-2 text-[12.5px] font-semibold text-slate-600 dark:text-slate-300">{cfgMsg}</p>}
+            </GlassCard>
+            </div>
           )}
         </div>
       </div>

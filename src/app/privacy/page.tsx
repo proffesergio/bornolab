@@ -30,6 +30,7 @@ export default function PrivacyPage() {
           <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
             <li><b>Anonymous page-view counts</b> (URL + timestamp) to understand which tools are popular. No IP fingerprinting, no cross-site tracking.</li>
             <li><b>Member accounts (optional login):</b> if you sign in with Google, Facebook, email code or magic link, we store your email, display name, avatar URL, login provider and plan — solely to keep you signed in, remember your purchases and show your orders. OAuth profile data comes directly from the provider you choose; we never see your provider password.</li>
+            <li><b>Signed-in activity:</b> when you are logged in, page views, PDF-tool usage and study downloads are linked to your account ID so we can provide download access and support. Logged-out usage stays anonymous. You may request deletion of this record at any time.</li>
             <li><b>Manual-payment orders:</b> when you buy a premium font or software, we store the item, amount, payment method, sender number and transaction ID you submit — solely to verify and deliver your order.</li>
             <li><b>Admin settings</b> you configure in the dashboard (kept in a JSON store / environment seed).</li>
           </ul>

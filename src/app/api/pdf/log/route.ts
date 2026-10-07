@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readJson, writeJson } from "@/lib/store";
 import type { PdfOp } from "@/lib/site-config-shared";
+import { USER_COOKIE, sessionUser } from "@/lib/users";
 import { requireAdmin } from "../../admin/me/route";
 
 const MAX_OPS = 500;
@@ -17,7 +18,7 @@ function throttled(ip: string): boolean {
   return window.length > 120; // 120 beacons/min/IP
 }
 
-/** POST /api/pdf/log — client beacon after each PDF job (no PII, counts only). */
+/** POST /api/pdf/log — client beacon after each PDF job (counts only; member id attached when signed in, for admin analytics). */
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   if (throttled(ip)) return NextResponse.json({ error: "rate limited" }, { status: 429 });
@@ -27,6 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unknown tool" }, { status: 400 });
   }
   const clamp = (n: unknown, max: number) => Math.min(max, Math.max(0, Math.floor(Number(n) || 0)));
+  let uid: string | undefined;
+  try {
+    uid = (await sessionUser(req.cookies.get(USER_COOKIE)?.value ?? ""))?.id;
+  } catch { /* anonymous */ }
   const op: PdfOp = {
     at: Date.now(),
     tool,
@@ -35,6 +40,7 @@ export async function POST(req: NextRequest) {
     ms: clamp(body.ms, 3600000),
     ok: body.ok !== false,
     err: typeof body.err === "string" ? body.err.slice(0, 300) : undefined,
+    ...(uid ? { uid } : {}),
   };
   const ops = await readJson<PdfOp[]>("pdf-ops.json", []);
   ops.push(op);

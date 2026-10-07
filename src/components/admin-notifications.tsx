@@ -40,11 +40,13 @@ export function useNotifications() {
   const [unread, setUnread] = useState(0);
   const [fresh, setFresh] = useState<AdminNotification[]>([]);
   const seenRef = useRef<Set<string> | null>(null);
-  const [muted, setMuted] = useState(false);
-
-  useEffect(() => {
-    try { setMuted(localStorage.getItem(MUTE_KEY) === "1"); } catch { /* private mode */ }
-  }, []);
+  const [muted, setMuted] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(MUTE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {

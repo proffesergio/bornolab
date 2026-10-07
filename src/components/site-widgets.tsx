@@ -17,10 +17,11 @@ export function useSiteConfig(): { config: SiteConfig; loading: boolean } {
   return { config, loading };
 }
 
-/** Page-view beacon + GA4 injection (when admin sets a measurement ID). */
+/** Page-view beacon for the admin traffic dashboard.
+ * Analytics scripts (GA4 / GTM) are injected server-side in layout.tsx from
+ * Admin → SEO settings — never here, so the library never double-loads. */
 export function Tracker() {
   const path = usePathname();
-  const { config } = useSiteConfig();
 
   useEffect(() => {
     fetch("/api/track", {
@@ -29,20 +30,6 @@ export function Tracker() {
       body: JSON.stringify({ path }),
     }).catch(() => {});
   }, [path]);
-
-  useEffect(() => {
-    const gaId = config.seo.gaId.trim();
-    if (!gaId || document.getElementById("bornolab-ga")) return;
-    const s1 = document.createElement("script");
-    s1.id = "bornolab-ga";
-    s1.async = true;
-    s1.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
-    document.head.appendChild(s1);
-    const s2 = document.createElement("script");
-    s2.id = "bornolab-ga-init";
-    s2.innerHTML = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${gaId}')`;
-    document.head.appendChild(s2);
-  }, [config.seo.gaId]);
 
   return null;
 }

@@ -1,0 +1,3 @@
+# Admin-uploaded catalog files land here (public/uploads/fonts/, public/uploads/software/).
+# Contents are git-ignored by design — user content, often large or licensed.
+# On Vercel use direct download links instead (serverless FS is ephemeral).

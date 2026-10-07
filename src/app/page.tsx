@@ -8,6 +8,7 @@ import {
 import { GlassCard } from "@/components/ui";
 import { HeroRotator } from "@/components/hero-rotator";
 import { AdSlot, useSiteConfig } from "@/components/site-widgets";
+import { AdUnits } from "@/components/ads";
 import type { ToolKey } from "@/lib/site-config-shared";
 
 const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
@@ -16,6 +17,7 @@ const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; ti
   { key: "styler", href: "/styler", icon: Sparkles, title: "Decorator & Styler", desc: "Facebook-ready fancy text.", points: ["Neon, outline, gradient, glitch", "Bracket frames & symbol wings", "One-click copy per style"], grad: "from-fuchsia-500 to-pink-600" },
   { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Direct PDF download + print flow", "Scanned pages flagged automatically"], grad: "from-emerald-500 to-teal-600" },
   { key: "split", href: "/split", icon: Scissors, title: "PDF Splitter", desc: "Slice & export anywhere.", points: ["Visual thumbnails + checkboxes", "Ranges like 1-3, 5, 7-12", "Export PDF, JPG/PNG zip, DOCX"], grad: "from-amber-500 to-orange-600" },
+  { key: "study", href: "/study", icon: GraduationCap, title: "Study Hub", desc: "Guides + step-by-step practice.", points: ["Admission, SSC, HSC, Bachelor, Masters", "BUET PG admission prep guides", "Flashcards & exam mode with progress"], grad: "from-sky-500 to-indigo-600" },
   { key: "software", href: "/software", icon: MonitorDown, title: "Software Store", desc: "Desktop tools for DTP pros.", points: ["Free OCR, font manager, templates", "Paid pro tools with license", "Local payment methods"], grad: "from-slate-500 to-slate-700" },
 ];
 
@@ -82,6 +84,7 @@ export default function Home() {
       </div>
 
       <AdSlot slot="header" className="mt-4" />
+      <AdUnits slot="header" className="mt-4" />
 
       {/* TOOLS with usefulness points */}
       <h2 className="mb-3 mt-8 text-lg font-black">Everything you need, one hub</h2>
@@ -138,6 +141,7 @@ export default function Home() {
       </GlassCard>
 
       <AdSlot slot="inFeed" className="mt-4" />
+      <AdUnits slot="inFeed" className="mt-4" />
 
       {/* FAQ */}
       <script
@@ -177,6 +181,7 @@ export default function Home() {
       </GlassCard>
 
       <AdSlot slot="footer" className="mt-4" />
+      <AdUnits slot="footer" className="mt-4" />
     </div>
   );
 }

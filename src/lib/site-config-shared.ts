@@ -4,10 +4,13 @@ import {
   type AdUnit,
   type AuthProviderConfig,
 } from "./members-shared";
+import type { BanglaFont } from "./fonts-data";
+import type { Software } from "./software-data";
+import type { StudyMaterial } from "./study-data";
 
 export type { AdUnit, AuthProviderConfig };
 
-export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software";
+export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software" | "study";
 
 /** Per-tool caps + ops telemetry for the PDF Tools suite (Admin CRM managed). */
 export type PdfToolKey =
@@ -29,6 +32,7 @@ export interface PdfOp {
   ms: number; // client-measured processing time
   ok: boolean;
   err?: string;
+  uid?: string; // signed-in member id when the job was logged (admin analytics only)
 }
 
 export interface AdSlotConfig {
@@ -36,6 +40,13 @@ export interface AdSlotConfig {
   network: string; // e.g. AdSense, Media.net, custom
   code: string; // raw HTML/JS snippet
   fallbackCode: string; // Ezoic / Adsterra pixel shown when primary is blocked
+}
+
+/** Per-page SEO override (Admin → SEO). Path is the route, e.g. "/study". */
+export interface SeoPageOverride {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
 }
 
 export type PaymentMethod = "bkash" | "nagad" | "bank" | "binance" | "card";
@@ -51,17 +62,29 @@ export interface SiteConfig {
   pdfTools: Record<PdfToolKey, PdfToolCaps>;
   fontOverrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>;
   softwareOverrides: Record<string, { priceBDT?: number; enabled?: boolean }>;
+  /** Admin-added catalog entries (Admin → Catalog). Stored + served like overrides. */
+  customFonts: BanglaFont[];
+  customSoftware: Software[];
+  /** Admin-added study materials (Admin → Study). Stored + served like overrides. */
+  customStudy: StudyMaterial[];
+  studyOverrides: Record<string, { enabled?: boolean }>;
   ads: { enabled: boolean } & Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
-  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; headerScripts: string; footerScripts: string };
+  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; headerScripts: string; footerScripts: string; googleSiteVerification: string };
+  /** Per-route SEO overrides keyed by path ("/study"). Falls back to global seo. */
+  seoPages: Record<string, SeoPageOverride>;
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
     processors: Record<PaymentMethod, ProcessorState>;
+    /** Personal bKash number shown at checkout/verification (Send Money). */
+    bkashPersonal: string;
+    /** Official bKash QR image URL (uploaded by admin) — falls back to a generated number QR. */
+    bkashQrUrl: string;
   };
   auth: AuthProviderConfig;
 }
 
 export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite", email: "" },
   announcement: { enabled: false, text: "নতুন: প্রিমিয়াম ফন্ট এখন বিকাশ/নগদে কিনুন!" },
-  tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true },
+  tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true, study: true },
   pdfTools: {
     merge: { enabled: true, maxMB: 25, maxFiles: 20 },
     split: { enabled: true, maxMB: 25, maxFiles: 1 },
@@ -77,6 +100,10 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
   },
   fontOverrides: {},
   softwareOverrides: {},
+  customFonts: [],
+  customSoftware: [],
+  customStudy: [],
+  studyOverrides: {},
   ads: {
     enabled: true,
     header: { enabled: false, network: "AdSense", code: "", fallbackCode: "" },
@@ -92,18 +119,22 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
     adsenseClient: "",
     headerScripts: "",
     footerScripts: "",
+    googleSiteVerification: "",
   },
+  seoPages: {},
   payments: {
     bkash: "01XXXXXXXXX",
     nagad: "01XXXXXXXXX",
     bank: "Bank Name • A/C 000-000-000 • Branch",
     binance: "Binance Pay ID / UID",
     cardKey: "",
+    bkashPersonal: "+8801842168117",
+    bkashQrUrl: "",
     processors: {
       bkash: { enabled: true },
-      nagad: { enabled: true },
-      bank: { enabled: true },
-      binance: { enabled: true },
+      nagad: { enabled: false },
+      bank: { enabled: false },
+      binance: { enabled: false },
       card: { enabled: false },
     },
   },

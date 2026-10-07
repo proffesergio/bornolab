@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FileUp, FileDown, Loader2, Printer } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { AdUnits } from "@/components/ads";
 import { downloadBlob } from "@/lib/doc-utils";
 import { useSiteConfig } from "@/components/site-widgets";
 import { pdfCaps } from "@/lib/site-config-shared";
@@ -251,6 +252,7 @@ export default function TranslatePage() {
           {log.map((l, i) => <li key={i}>{l}</li>)}
         </ul>
       </GlassCard>
+      <AdUnits slot="inFeed" className="mt-4" />
     </div>
   );
 }
