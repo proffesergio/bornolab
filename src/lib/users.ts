@@ -101,6 +101,24 @@ export async function upsertUser(input: {
   };
   users.push(user);
   await saveUsers(users);
+  try {
+    const { pushNotification } = await import("./notifications");
+    await pushNotification({
+      type: "user.registered",
+      title: `New member: ${user.email}`,
+      detail: `${user.name} joined via ${user.providers.join("+")}`,
+      userId: user.id,
+      email: user.email,
+      provider: user.providers[user.providers.length - 1] ?? "unknown",
+    });
+  } catch {
+    // Notifications must never break registration.
+  }
+  try {
+    await logAudit(`user:${user.id}`, "user.registered", `${user.email} via ${user.providers.join("+")}`);
+  } catch {
+    // Audit must never break registration.
+  }
   return user;
 }
 

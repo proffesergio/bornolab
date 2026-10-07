@@ -136,7 +136,7 @@ export default function SplitPage() {
           const text = (tc.items as Array<{ str: string }>).map((i) => i.str).join(" ").replace(/\s+/g, " ").trim();
           if (!text) emptyPages++;
           children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(`Page ${pi + 1}`)] }));
-          children.push(new Paragraph({ children: [new TextRun({ text: text || "[no extractable text — scanned page; use OCR via n8n]", size: 24 })] }));
+          children.push(new Paragraph({ children: [new TextRun({ text: text || "[no extractable text — scanned page]", size: 24 })] }));
           children.push(new Paragraph({ text: "" }));
         }
         const blob = await Packer.toBlob(new Document({ sections: [{ children }] }));
@@ -183,9 +183,7 @@ export default function SplitPage() {
         {error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-red-600 dark:text-red-300">{error}</p>}
         {showOcrHint && (
           <p className="mt-2 rounded-xl bg-amber-500/10 p-3 text-[12.5px] text-amber-700 dark:text-amber-200">
-            Some pages had no extractable text (scanned images). For OCR, send the file to your n8n
-            <code className="mx-1 rounded bg-black/10 px-1">translate-doc</code>
-            workflow — see <code>docs/plans.md §2.3</code>.
+            Some pages had no extractable text (scanned images). Run those pages through any OCR app first, then import the text here.
           </p>
         )}
         {thumbs.length > 0 && (

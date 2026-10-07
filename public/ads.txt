@@ -1,0 +1,3 @@
+# BornoLab ads.txt — static fallback (dynamic route /ads.txt serves the live publisher ID).
+# Replace pub-0000000000000000 with your AdSense publisher ID (Admin → Ads → AdSense client).
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

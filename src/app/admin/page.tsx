@@ -7,6 +7,8 @@ import {
   Users, CreditCard, ShieldCheck, ClipboardList, KeyRound, Menu, X, Building2, Layers,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { NotificationBell, NotificationFeed, NotificationToasts, useNotifications } from "@/components/admin-notifications";
+import type { AdminNotification } from "@/lib/notifications";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
 import { FONTS } from "@/lib/fonts-data";
@@ -92,6 +94,12 @@ const PDF_TOOL_LABELS: Record<PdfToolKey, string> = {
   translate: "PDF to DOCX",
   compress: "Compress PDF",
   images: "Images to PDF",
+  html: "HTML to PDF",
+  protect: "Protect PDF",
+  unlock: "Unlock PDF",
+  summarize: "AI Summarizer",
+  aitranslate: "AI Translator",
+  edit: "PDF Editor",
 };
 
 interface PdfStats {
@@ -190,6 +198,13 @@ export default function AdminPage() {
   const [planName, setPlanName] = useState("");
   const [planPrice, setPlanPrice] = useState("199");
   const [roleName, setRoleName] = useState("");
+
+  // Realtime admin notifications (new members, new orders) — 15s polling.
+  const notif = useNotifications();
+  const jumpToNotification = (n: AdminNotification) => {
+    setSection(n.type === "order.placed" ? "orders" : "users");
+    setNavOpen(false);
+  };
 
   useEffect(() => {
     fetch("/api/admin/me").then(async (r) => {
@@ -307,6 +322,14 @@ export default function AdminPage() {
           <span className="block text-[14px] font-extrabold tracking-tight text-white">BornoLab Admin</span>
           <span className="block max-w-[150px] truncate text-[11px] text-slate-400">{email || "…"}</span>
         </span>
+        <NotificationBell
+          unread={notif.unread}
+          onOpen={() => {
+            setSection("dashboard");
+            setNavOpen(false);
+            setTimeout(() => document.getElementById("ntf-feed")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+          }}
+        />
       </div>
       <div className="px-3 pb-2">
         <div className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
@@ -411,6 +434,16 @@ export default function AdminPage() {
                   {(!analytics || analytics.topPages.length === 0) && <li className="text-slate-500">No traffic yet — browse the site to record views.</li>}
                 </ul>
               </GlassCard>
+              <NotificationFeed
+                className="lg:col-span-3"
+                items={notif.items}
+                unread={notif.unread}
+                muted={notif.muted}
+                onToggleMute={notif.toggleMute}
+                onMarkAll={() => void notif.markAll()}
+                onMarkOne={(id) => void notif.markOne(id)}
+                onJump={jumpToNotification}
+              />
             </div>
           )}
 
@@ -648,6 +681,19 @@ export default function AdminPage() {
           {section === "ads" && (
             <div className="grid gap-4">
               <GlassCard>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold">Global ad switch</h3>
+                    <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Master kill-switch: off removes every slot, unit and the AdSense script instantly — use for policy reviews or incidents.</p>
+                  </div>
+                  <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[13px] font-bold">Ads on
+                    <input type="checkbox" checked={config.ads.enabled !== false} onChange={() => save({ ads: { ...config.ads, enabled: !(config.ads.enabled !== false) } })} className="h-5 w-5 accent-cyan-500" aria-label="Toggle all ads" />
+                  </label>
+                </div>
+                {config.ads.enabled === false && <p role="status" className="mt-2 rounded-xl bg-amber-500/10 p-2.5 text-[12.5px] font-bold text-amber-700 dark:text-amber-200">Ads are OFF — the storefront renders zero ad markup.</p>}
+              </GlassCard>
+              <GlassCard>
+                <h3 className="text-sm font-bold">Google AdSense</h3>
                 <h3 className="text-sm font-bold">Google AdSense</h3>
                 <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">Publisher ID used by every ad unit below. Find it in AdSense → Account → Settings.</p>
                 <label htmlFor="adsense-client" className="mt-2 block text-xs font-bold">AdSense client (ca-pub-…)</label>
@@ -691,9 +737,18 @@ export default function AdminPage() {
                       <input type="checkbox" checked={config.ads[slot].enabled} onChange={() => save({ ads: { ...config.ads, [slot]: { ...config.ads[slot], enabled: !config.ads[slot].enabled } } })} className="h-5 w-5 accent-cyan-500" />
                     </label>
                   </div>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-[200px_1fr]">
+                  <div className="mt-2 grid gap-2">
                     <input aria-label={`${slot} network`} value={config.ads[slot].network} onChange={(e) => save({ ads: { ...config.ads, [slot]: { ...config.ads[slot], network: e.target.value } } })} className={field} placeholder="AdSense" />
-                    <textarea aria-label={`${slot} code`} rows={3} value={config.ads[slot].code} onChange={(e) => save({ ads: { ...config.ads, [slot]: { ...config.ads[slot], code: e.target.value } } })} className={cn(field, "font-mono")} placeholder='<ins class="adsbygoogle" ...></ins>' />
+                    <div className="flex items-baseline justify-between">
+                      <label htmlFor={`${slot}-code`} className="text-xs font-bold">Primary code</label>
+                      <span className="text-[11px] text-slate-500">{(config.ads[slot].code ?? "").length} chars</span>
+                    </div>
+                    <textarea id={`${slot}-code`} rows={3} value={config.ads[slot].code} onChange={(e) => save({ ads: { ...config.ads, [slot]: { ...config.ads[slot], code: e.target.value } } })} className={cn(field, "font-mono")} placeholder='<ins class="adsbygoogle" ...></ins>' />
+                    <div className="flex items-baseline justify-between">
+                      <label htmlFor={`${slot}-fallback`} className="text-xs font-bold">Fallback code <span className="font-normal text-slate-500">(Ezoic / Adsterra — shown when the primary is blocked)</span></label>
+                      <span className="text-[11px] text-slate-500">{(config.ads[slot].fallbackCode ?? "").length} chars</span>
+                    </div>
+                    <textarea id={`${slot}-fallback`} rows={2} value={config.ads[slot].fallbackCode ?? ""} onChange={(e) => save({ ads: { ...config.ads, [slot]: { ...config.ads[slot], fallbackCode: e.target.value } } })} className={cn(field, "font-mono")} placeholder='<a href="https://…"><img src="https://…" alt="Sponsor"></a>' />
                   </div>
                 </GlassCard>
               ))}
@@ -741,17 +796,23 @@ export default function AdminPage() {
             <GlassCard>
               <h3 className="text-sm font-bold">SEO & analytics integrations</h3>
               <div className="mt-3 grid gap-3">
-                {(["title", "description", "keywords", "gaId", "adsenseClient"] as const).map((k) => (
+                {(["title", "description", "keywords", "gaId", "adsenseClient", "headerScripts", "footerScripts"] as const).map((k) => (
                   <div key={k}>
-                    <label htmlFor={`seo-${k}`} className="text-xs font-bold">{k === "gaId" ? "Google Analytics ID (G-…)" : k === "adsenseClient" ? "AdSense client (ca-pub-…)" : k}</label>
-                    {k === "description" ? (
-                      <textarea id={`seo-${k}`} rows={2} value={config.seo[k]} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
+                    <label htmlFor={`seo-${k}`} className="text-xs font-bold">{
+                      k === "gaId" ? "Google Analytics ID (G-…)"
+                      : k === "adsenseClient" ? "AdSense client (ca-pub-…)"
+                      : k === "headerScripts" ? "Header scripts (injected after AdSense)"
+                      : k === "footerScripts" ? "Footer scripts (lazy-loaded)"
+                      : k
+                    }</label>
+                    {(k === "description" || k === "headerScripts" || k === "footerScripts") ? (
+                      <textarea id={`seo-${k}`} rows={k === "description" ? 2 : 3} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1", k !== "description" && "font-mono")} placeholder={k === "description" ? undefined : "<script>…</script>"} />
                     ) : (
-                      <input id={`seo-${k}`} value={config.seo[k]} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
+                      <input id={`seo-${k}`} value={config.seo[k] ?? ""} onChange={(e) => save({ seo: { ...config.seo, [k]: e.target.value } })} className={cn(field, "mt-1")} />
                     )}
                   </div>
                 ))}
-                <p className="text-[12px] text-slate-500">GA script + AdSense meta auto-inject on every page once saved. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
+                <p className="text-[12px] text-slate-500">GA script + AdSense meta auto-inject on every page once saved. Injected scripts are sanitized (inline event handlers + <code>javascript:</code> URLs stripped) and can never break hydration. {saving ? "Saving…" : savedTick ? "✓ Saved" : ""}</p>
               </div>
             </GlassCard>
           )}
@@ -904,6 +965,11 @@ export default function AdminPage() {
                   <input id="brand-tag" value={config.brand.tagline} onChange={(e) => save({ brand: { ...config.brand, tagline: e.target.value } })} className={cn(field, "mt-1")} />
                 </div>
               </div>
+              <div className="mt-3">
+                <label htmlFor="brand-email" className="text-xs font-bold">Support email (shown on /contact)</label>
+                <input id="brand-email" type="email" value={config.brand.email ?? ""} onChange={(e) => save({ brand: { ...config.brand, email: e.target.value } })} className={cn(field, "mt-1")} placeholder="support@example.com" />
+                <p className="mt-1 text-[11.5px] text-slate-500">Tip: set CONTACT_EMAIL in server env for a durable address on Vercel (it wins over this field).</p>
+              </div>
               <div className="mt-3 flex items-center gap-2">
                 <input id="ann-on" type="checkbox" checked={config.announcement.enabled} onChange={() => save({ announcement: { ...config.announcement, enabled: !config.announcement.enabled } })} className="h-5 w-5 accent-cyan-500" />
                 <label htmlFor="ann-on" className="text-[13px] font-bold">Show announcement bar</label>
@@ -914,6 +980,7 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      <NotificationToasts fresh={notif.fresh} onDismiss={notif.dismissFresh} onJump={jumpToNotification} />
     </div>
   );
 }

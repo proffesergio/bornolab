@@ -3,7 +3,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   FileText, Scissors, Combine, Minimize2, Image as ImageIcon,
-  Globe, ShieldCheck, Unlock, Sparkles, Languages, ArrowRight,
+  Globe, ShieldCheck, Unlock, Sparkles, Languages, ArrowRight, Pencil,
 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { useSiteConfig } from "@/components/site-widgets";
@@ -19,17 +19,18 @@ interface Tool {
   anchor?: string;
 }
 
-const TOOLS: (Tool & { pdfTool?: "merge" | "split" | "translate" | "compress" | "images" })[] = [
+const TOOLS: (Tool & { pdfTool?: "merge" | "split" | "translate" | "compress" | "images" | "html" | "protect" | "unlock" | "summarize" | "aitranslate" | "edit" })[] = [
+  { href: "/edit-pdf", icon: Pencil, title: "Edit PDF", desc: "Read, zoom and navigate — text, highlight, shapes and signing land here next.", grad: "from-cyan-500 to-violet-600", status: "live", pdfTool: "edit" },
   { href: "/merge", icon: Combine, title: "Merge PDF", desc: "Combine many PDFs into one file in your custom sequence — drag order, then merge.", grad: "from-orange-500 to-red-500", status: "live", pdfTool: "merge" },
   { href: "/translate", icon: FileText, title: "PDF to DOCX", desc: "Text nodes become editable paragraphs — never textbox soup. Tables and reading order preserved.", grad: "from-emerald-500 to-teal-600", status: "live", pdfTool: "translate" },
   { href: "/split", icon: Scissors, title: "Split PDF", desc: "Visual thumbnails, ranges like 1-3, 5, 7-12. Export PDF, JPG/PNG zip, or DOCX.", grad: "from-amber-500 to-orange-600", status: "live", pdfTool: "split" },
   { href: "/compress", icon: Minimize2, title: "Compress PDF", desc: "Shrink file size with Extreme / Recommended / Custom quality levels. Before/after sizes included.", grad: "from-lime-500 to-green-600", status: "live", pdfTool: "compress" },
   { href: "/images-to-pdf", icon: ImageIcon, title: "Images to PDF", desc: "JPG/PNG photos to one PDF — reorder, page size, orientation and margin controls.", grad: "from-yellow-500 to-amber-600", status: "live", pdfTool: "images" },
-  { href: "/pdf-tools", icon: Globe, title: "HTML to PDF", desc: "Paste a URL, get a snapshot PDF of the page.", grad: "from-sky-500 to-blue-600", status: "soon" },
-  { href: "/pdf-tools", icon: ShieldCheck, title: "Protect PDF", desc: "Password-protect and encrypt documents against unauthorized access.", grad: "from-blue-500 to-indigo-600", status: "soon" },
-  { href: "/pdf-tools", icon: Unlock, title: "Unlock PDF", desc: "Remove password restrictions you own the rights to.", grad: "from-slate-500 to-slate-700", status: "soon" },
-  { href: "/pdf-tools", icon: Sparkles, title: "AI Summarizer", desc: "Key points and bulleted summaries extracted from long documents.", grad: "from-purple-500 to-fuchsia-600", status: "soon" },
-  { href: "/pdf-tools", icon: Languages, title: "AI Translator", desc: "Translate document content while keeping the layout intact.", grad: "from-cyan-500 to-sky-600", status: "soon" },
+  { href: "/html-to-pdf", icon: Globe, title: "HTML to PDF", desc: "Fetch a URL or paste HTML, preview it, then Print → Save as PDF. Fully in-browser.", grad: "from-sky-500 to-blue-600", status: "live", pdfTool: "html" },
+  { href: "/protect-pdf", icon: ShieldCheck, title: "Protect PDF", desc: "Lock a PDF with a password (AES-256-GCM, client-side). Reopen with Unlock PDF.", grad: "from-blue-500 to-indigo-600", status: "live", pdfTool: "protect" },
+  { href: "/unlock-pdf", icon: Unlock, title: "Unlock PDF", desc: "Open a BornoLab-locked PDF with its password and download the original.", grad: "from-slate-500 to-slate-700", status: "live", pdfTool: "unlock" },
+  { href: "/summarize", icon: Sparkles, title: "AI Summarizer", desc: "Key points extracted offline from long documents — PDF or pasted text, nothing uploaded.", grad: "from-purple-500 to-fuchsia-600", status: "live", pdfTool: "summarize" },
+  { href: "/ai-translate", icon: Languages, title: "AI Translator", desc: "Translate document text paragraph-by-paragraph — right in your browser.", grad: "from-cyan-500 to-sky-600", status: "live", pdfTool: "aitranslate" },
 ];
 
 export default function PdfToolsPage() {
@@ -40,7 +41,7 @@ export default function PdfToolsPage() {
       <SectionTitle
         kicker="PDF Suite"
         title="PDF Tools — merge, split, compress & convert"
-        desc="Free in-browser PDF utilities: merge PDFs, split out the pages you need, compress for sharing, turn photos into PDFs, and convert PDF to editable Word — plus protect, unlock and AI tools on the way. Your files never leave your browser."
+        desc="Free in-browser PDF utilities: merge, split, compress, photos to PDF, PDF to Word, HTML snapshots, password locking, offline summaries and translation. Your files never leave your browser."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {TOOLS.filter((t) => {
@@ -86,8 +87,7 @@ export default function PdfToolsPage() {
         <h2 className="text-lg font-black">Private by design</h2>
         <p className="mt-1.5 max-w-3xl text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
           Merging, splitting and converting run 100% in your browser with open libraries — no uploads,
-          no waiting rooms, no watermarks. Large print-shop jobs (OCR on scanned pages, batch
-          publishing pipelines) can be offloaded to your own n8n workflows. Every tool in this suite is
+          no waiting rooms, no watermarks. Every tool in this suite is
           individually switchable from the Admin dashboard, with per-tool upload caps and usage logs.
         </p>
       </GlassCard>

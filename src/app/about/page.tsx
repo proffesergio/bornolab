@@ -41,9 +41,8 @@ export default function AboutPage() {
             (PDF to DOCX, splitter, merger, compressor) — all running 100% in your browser.
           </p>
           <p className="mt-2 text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
-            Heavy publishing pipelines — book formatting, journal templates, OCR on scanned pages — are
-            handled through self-hosted n8n automation, so your documents stay yours. No uploads, no
-            waiting rooms, no watermarks on free tools.
+            Book presets, journal templates and batch helpers all run the same way — client-side, so
+            your documents stay yours. No uploads, no waiting rooms, no watermarks on free tools.
           </p>
         </GlassCard>
         <GlassCard>

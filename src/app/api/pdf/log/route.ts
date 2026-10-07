@@ -5,7 +5,7 @@ import { requireAdmin } from "../../admin/me/route";
 
 const MAX_OPS = 500;
 /** Known client tools — anything else is rejected (typo/spam guard). */
-const KNOWN_TOOLS = new Set(["merge", "split", "translate", "compress", "images"]);
+const KNOWN_TOOLS = new Set(["merge", "split", "translate", "compress", "images", "html", "protect", "unlock", "summarize", "aitranslate", "edit"]);
 
 /** In-memory per-IP throttle (best-effort; resets on cold start). */
 const hits = new Map<string, number[]>();

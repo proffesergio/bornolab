@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { getSiteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -8,7 +9,19 @@ export const metadata: Metadata = {
     "Contact BornoLab: support for the Bijoy converter, fonts, PDF tools, order help and feedback. We reply within 2 business days.",
 };
 
-export default function ContactPage() {
+/** Support email precedence: CONTACT_EMAIL env (durable on serverless) → Admin → Settings → brand email. */
+async function supportEmail(): Promise<string> {
+  const env = (process.env.CONTACT_EMAIL ?? "").trim();
+  if (env) return env;
+  try {
+    return ((await getSiteConfig()).brand.email ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+export default async function ContactPage() {
+  const email = await supportEmail();
   return (
     <div>
       <SectionTitle
@@ -24,12 +37,18 @@ export default function ContactPage() {
             enquiries or takedown requests, write to:
           </p>
           <p className="mt-3">
-            <a
-              href="mailto:support@bornolab.example"
-              className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white hover:brightness-110"
-            >
-              support@bornolab.example
-            </a>
+            {email ? (
+              <a
+                href={`mailto:${email}`}
+                className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white hover:brightness-110"
+              >
+                {email}
+              </a>
+            ) : (
+              <span className="block rounded-xl bg-amber-500/10 p-3 text-[13px] font-semibold text-amber-700 dark:text-amber-200">
+                Support email is being set up — please check back soon.
+              </span>
+            )}
           </p>
           <p className="mt-3 text-[12.5px] leading-6 text-slate-500 dark:text-slate-400">
             Tip: include the tool name (e.g. “Split PDF”), your browser, and — for order help — your sender
@@ -40,7 +59,7 @@ export default function ContactPage() {
           <h2 className="text-lg font-black">Before you write</h2>
           <ul className="mt-2 space-y-2 text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
             <li><b>Bijoy looks like English?</b> Install SutonnyMJ, or keep the live Bangla preview on — see the <Link className="underline" href="/bijoy-unicode-converter">converter FAQ</Link>.</li>
-            <li><b>Scanned PDF has no text?</b> Image-only pages need OCR — our guides explain the free n8n route.</li>
+            <li><b>Scanned PDF has no text?</b> Image-only pages need OCR — run them through any free OCR app first, then convert the text here.</li>
             <li><b>Order pending?</b> Manual bKash/Nagad verification takes up to 24 hours; check the txn ID first.</li>
             <li><b>Found a bug?</b> Tell us the exact steps and file type — anonymous reports welcome.</li>
           </ul>

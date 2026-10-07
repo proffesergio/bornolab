@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home,
+  Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home, Globe, ShieldCheck, Unlock, Pencil,
   FileText, Scissors, Combine, Minimize2, Image as ImageIcon, LayoutGrid, ChevronDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -11,7 +11,7 @@ import { useTheme } from "./theme";
 import { UserMenu } from "./user-menu";
 import { useSiteConfig } from "./site-widgets";
 import { cn } from "@/lib/cn";
-import type { PdfToolKey, ToolKey } from "@/lib/site-config-shared";
+import { pdfCaps, type PdfToolKey, type ToolKey } from "@/lib/site-config-shared";
 
 const LINKS: { href: string; label: string; icon: typeof Home; tool?: ToolKey }[] = [
   { href: "/", label: "Home", icon: Home },
@@ -23,24 +23,40 @@ const LINKS: { href: string; label: string; icon: typeof Home; tool?: ToolKey }[
 
 const PDF_TOOLS: { href: string; label: string; icon: typeof FileText; tool?: ToolKey; pdfTool?: PdfToolKey; badge?: string }[] = [
   { href: "/pdf-tools", label: "All PDF Tools", icon: LayoutGrid },
+  { href: "/edit-pdf", label: "Edit PDF", icon: Pencil, pdfTool: "edit", badge: "New" },
   { href: "/merge", label: "Merge PDF", icon: Combine, pdfTool: "merge" },
   { href: "/translate", label: "PDF to DOCX", icon: FileText, tool: "translate" },
   { href: "/split", label: "Split PDF", icon: Scissors, tool: "split" },
   { href: "/compress", label: "Compress PDF", icon: Minimize2, pdfTool: "compress" },
   { href: "/images-to-pdf", label: "Images to PDF", icon: ImageIcon, pdfTool: "images" },
+  { href: "/html-to-pdf", label: "HTML to PDF", icon: Globe, pdfTool: "html" },
+  { href: "/protect-pdf", label: "Protect PDF", icon: ShieldCheck, pdfTool: "protect" },
+  { href: "/unlock-pdf", label: "Unlock PDF", icon: Unlock, pdfTool: "unlock" },
+  { href: "/summarize", label: "AI Summarizer", icon: Sparkles, pdfTool: "summarize", badge: "AI" },
+  { href: "/ai-translate", label: "AI Translator", icon: Languages, pdfTool: "aitranslate", badge: "AI" },
 ];
 
-const PDF_ROUTES = ["/pdf-tools", "/translate", "/split", "/merge", "/compress", "/images-to-pdf"];
+const PDF_ROUTES = ["/pdf-tools", "/translate", "/split", "/merge", "/compress", "/images-to-pdf", "/html-to-pdf", "/protect-pdf", "/unlock-pdf", "/summarize", "/ai-translate", "/edit-pdf"];
 
 export function Navbar() {
   const path = usePathname();
   const { dark, toggle } = useTheme();
   const { config } = useSiteConfig();
   const [pdfOpen, setPdfOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openMenu = () => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setPdfOpen(true);
+  };
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setPdfOpen(false), 180);
+  };
 
   const visibleLinks = LINKS.filter((l) => !l.tool || config.tools[l.tool]);
   const visiblePdfTools = PDF_TOOLS.filter(
-    (t) => (!t.tool || config.tools[t.tool]) && (!t.pdfTool || config.pdfTools[t.pdfTool].enabled)
+    (t) => (!t.tool || config.tools[t.tool]) && (!t.pdfTool || pdfCaps(config, t.pdfTool).enabled)
   );
   const pdfActive = PDF_ROUTES.some((r) => path === r || path.startsWith(r + "/") || path.startsWith(r + "#"));
 
@@ -79,14 +95,15 @@ export function Navbar() {
           {visiblePdfTools.length > 0 && (
             <div
               className="relative"
-              onMouseEnter={() => setPdfOpen(true)}
-              onMouseLeave={() => setPdfOpen(false)}
+              onMouseEnter={openMenu}
+              onMouseLeave={scheduleClose}
             >
               <button
                 type="button"
                 aria-haspopup="true"
                 aria-expanded={pdfOpen}
-                onClick={() => setPdfOpen((v) => !v)}
+                onClick={() => (pdfOpen ? scheduleClose() : openMenu())}
+                onFocus={openMenu}
                 onKeyDown={(e) => { if (e.key === "Escape") setPdfOpen(false); }}
                 className={cn(pill, pdfActive ? "text-white" : idle)}
               >
@@ -105,8 +122,11 @@ export function Navbar() {
                 <div
                   role="menu"
                   aria-label="PDF Tools"
-                  className="glass absolute left-1/2 top-full z-50 mt-2 w-60 -translate-x-1/2 rounded-2xl p-2 shadow-2xl"
+                  onMouseEnter={openMenu}
+                  onMouseLeave={scheduleClose}
+                  className="absolute left-1/2 top-full z-50 w-60 -translate-x-1/2 pt-2"
                 >
+                  <div className="glass max-h-[70vh] overflow-y-auto rounded-2xl p-2 shadow-2xl">
                   {visiblePdfTools.map(({ href, label, icon: Icon, badge }) => (
                     <Link
                       key={href + label}
@@ -124,6 +144,7 @@ export function Navbar() {
                       )}
                     </Link>
                   ))}
+                  </div>
                 </div>
               )}
             </div>

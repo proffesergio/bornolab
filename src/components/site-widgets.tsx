@@ -47,17 +47,39 @@ export function Tracker() {
   return null;
 }
 
-/** Renders an admin-managed ad slot (header / inFeed / footer). */
+/** Renders an admin-managed ad slot (header / inFeed / footer) — CLS-safe. */
 export function AdSlot({ slot, className }: { slot: "header" | "inFeed" | "footer"; className?: string }) {
   const { config } = useSiteConfig();
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    // If AdSense never fills the slot (adblock), swap to the fallback pixel after 2.5s.
+    if (!blocked) {
+      const t = setTimeout(() => {
+        const filled = document.querySelector(`[data-adslot="${slot}"] ins[data-ad-status="filled"]`);
+        if (!filled) setBlocked(true);
+      }, 2500);
+      return () => clearTimeout(t);
+    }
+  }, [slot, blocked, config.ads[slot]?.code]);
+  const minHeights: Record<string, string> = { header: "90px", inFeed: "250px", footer: "90px" };
+  const minHeight = minHeights[slot] ?? "90px";
+  // No ad configured: render nothing (no blank gaps pre-AdSense).
+  // Live slot: always reserve layout space first to avoid CLS when the creative fills late.
+  // `enabled !== false` keeps pre-upgrade stored configs (no `enabled` key) serving ads.
+  if (config.ads.enabled === false || !adEnabled(config, slot)) return null;
   const ad = config.ads[slot];
-  if (!ad?.enabled || !ad.code.trim()) return null;
+  const html = blocked && ad.fallbackCode.trim() ? ad.fallbackCode : ad.code;
+  if (!html.trim()) return null;
   return (
-    <div className={className} aria-label={`Advertisement (${ad.network})`}>
+    <div className={className} style={{ minHeight }} aria-label={`Advertisement (${ad.network})`} data-adslot={slot}>
       <p className="mb-1 text-center text-[10px] uppercase tracking-widest text-slate-500">Advertisement • {ad.network}</p>
-      <div className="glass overflow-hidden rounded-2xl p-2 text-center" dangerouslySetInnerHTML={{ __html: ad.code }} />
+      <div className="glass min-h-[inherit] overflow-hidden rounded-2xl p-2 text-center" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
+}
+
+function adEnabled(config: SiteConfig, slot: "header" | "inFeed" | "footer"): boolean {
+  return Boolean(config.ads[slot]?.enabled && config.ads[slot]?.code.trim());
 }
 
 /** Announcement bar managed from Admin → Settings. */

@@ -13,7 +13,7 @@ export const HERO_PHRASES = [
   "Merge PDFs in your custom order",
   "Compress, protect & unlock PDFs",
   "JPG → PDF and HTML → PDF",
-  "AI summaries + n8n print automation",
+  "AI summaries + translation",
 ];
 
 const INTERVAL_MS = 2800;

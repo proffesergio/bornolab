@@ -29,6 +29,7 @@ export default function PrivacyPage() {
           <h2 className="font-extrabold">2. What we do collect</h2>
           <ul className="mt-1.5 list-disc space-y-1.5 pl-5 text-[13.5px] leading-7 text-slate-600 dark:text-slate-400">
             <li><b>Anonymous page-view counts</b> (URL + timestamp) to understand which tools are popular. No IP fingerprinting, no cross-site tracking.</li>
+            <li><b>Member accounts (optional login):</b> if you sign in with Google, Facebook, email code or magic link, we store your email, display name, avatar URL, login provider and plan — solely to keep you signed in, remember your purchases and show your orders. OAuth profile data comes directly from the provider you choose; we never see your provider password.</li>
             <li><b>Manual-payment orders:</b> when you buy a premium font or software, we store the item, amount, payment method, sender number and transaction ID you submit — solely to verify and deliver your order.</li>
             <li><b>Admin settings</b> you configure in the dashboard (kept in a JSON store / environment seed).</li>
           </ul>
@@ -56,7 +57,8 @@ export default function PrivacyPage() {
             deletion of your order record at any time via the{" "}
             <Link className="font-bold text-cyan-700 underline dark:text-cyan-300" href="/contact">contact page</Link>.
             Children under 13 should use BornoLab with a guardian — the tools are general-audience utilities
-            with no accounts, chats or user-generated public content.
+            with no public profiles, chats or user-generated public content. Signed-in members may request
+            deletion of their account record via the contact page.
           </p>
         </GlassCard>
         <GlassCard>

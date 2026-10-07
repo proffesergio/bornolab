@@ -10,7 +10,10 @@ export type { AdUnit, AuthProviderConfig };
 export type ToolKey = "convert" | "fonts" | "styler" | "translate" | "split" | "software";
 
 /** Per-tool caps + ops telemetry for the PDF Tools suite (Admin CRM managed). */
-export type PdfToolKey = "merge" | "split" | "translate" | "compress" | "images";
+export type PdfToolKey =
+  | "merge" | "split" | "translate" | "compress" | "images"
+  | "html" | "protect" | "unlock" | "summarize" | "aitranslate"
+  | "edit";
 
 export interface PdfToolCaps {
   enabled: boolean;
@@ -32,6 +35,7 @@ export interface AdSlotConfig {
   enabled: boolean;
   network: string; // e.g. AdSense, Media.net, custom
   code: string; // raw HTML/JS snippet
+  fallbackCode: string; // Ezoic / Adsterra pixel shown when primary is blocked
 }
 
 export type PaymentMethod = "bkash" | "nagad" | "bank" | "binance" | "card";
@@ -41,21 +45,21 @@ export interface ProcessorState {
 }
 
 export interface SiteConfig {
-  brand: { name: string; tagline: string };
+  brand: { name: string; tagline: string; email: string };
   announcement: { enabled: boolean; text: string };
   tools: Record<ToolKey, boolean>;
   pdfTools: Record<PdfToolKey, PdfToolCaps>;
   fontOverrides: Record<string, { premium?: boolean; priceBDT?: number; enabled?: boolean }>;
   softwareOverrides: Record<string, { priceBDT?: number; enabled?: boolean }>;
-  ads: Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
-  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string };
+  ads: { enabled: boolean } & Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
+  seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; headerScripts: string; footerScripts: string };
   payments: { bkash: string; nagad: string; bank: string; binance: string; cardKey: string } & {
     processors: Record<PaymentMethod, ProcessorState>;
   };
   auth: AuthProviderConfig;
 }
 
-export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite" },
+export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline: "বাংলা Font & Document Suite", email: "" },
   announcement: { enabled: false, text: "নতুন: প্রিমিয়াম ফন্ট এখন বিকাশ/নগদে কিনুন!" },
   tools: { convert: true, fonts: true, styler: true, translate: true, split: true, software: true },
   pdfTools: {
@@ -64,21 +68,30 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
     translate: { enabled: true, maxMB: 25, maxFiles: 1 },
     compress: { enabled: true, maxMB: 25, maxFiles: 5 },
     images: { enabled: true, maxMB: 15, maxFiles: 30 },
+    html: { enabled: true, maxMB: 5, maxFiles: 1 },
+    protect: { enabled: true, maxMB: 25, maxFiles: 1 },
+    unlock: { enabled: true, maxMB: 25, maxFiles: 1 },
+    summarize: { enabled: true, maxMB: 25, maxFiles: 1 },
+    aitranslate: { enabled: true, maxMB: 25, maxFiles: 1 },
+    edit: { enabled: true, maxMB: 25, maxFiles: 1 },
   },
   fontOverrides: {},
   softwareOverrides: {},
   ads: {
-    header: { enabled: false, network: "AdSense", code: "" },
-    inFeed: { enabled: false, network: "AdSense", code: "" },
-    footer: { enabled: false, network: "AdSense", code: "" },
+    enabled: true,
+    header: { enabled: false, network: "AdSense", code: "", fallbackCode: "" },
+    inFeed: { enabled: false, network: "AdSense", code: "", fallbackCode: "" },
+    footer: { enabled: false, network: "AdSense", code: "", fallbackCode: "" },
     units: [],
   },
   seo: {
     title: "BornoLab — বাংলা Font & Document Suite",
-    description: "Unicode⇆Bijoy converter, Bangla font directory, text styler, PDF⇆DOCX translator, PDF splitter. n8n-ready.",
+    description: "Unicode⇆Bijoy converter, Bangla font directory, text styler, PDF⇆DOCX translator, PDF splitter. Private, in-browser.",
     keywords: "bijoy converter, unicode to bijoy, bangla fonts, sutonnymj, pdf to docx, bangla styler",
     gaId: "",
     adsenseClient: "",
+    headerScripts: "",
+    footerScripts: "",
   },
   payments: {
     bkash: "01XXXXXXXXX",

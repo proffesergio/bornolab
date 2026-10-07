@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Languages, Type, Sparkles, FileText, Scissors, MonitorDown, Workflow, Zap,
+  Languages, Type, Sparkles, FileText, Scissors, MonitorDown, Zap,
   ShieldCheck, Newspaper, BookOpen, PenLine, GraduationCap, Check, HelpCircle,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui";
@@ -14,7 +14,7 @@ const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; ti
   { key: "convert", href: "/bijoy-unicode-converter", icon: Languages, title: "Bijoy <> Unicode", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },
   { key: "fonts", href: "/fonts", icon: Type, title: "Font Directory", desc: "Free + premium Bangla faces.", points: ["Live preview with size slider", "Bangla / English / Premium filters", "Buy with bKash, Nagad, Bank, Binance"], grad: "from-violet-500 to-purple-600" },
   { key: "styler", href: "/styler", icon: Sparkles, title: "Decorator & Styler", desc: "Facebook-ready fancy text.", points: ["Neon, outline, gradient, glitch", "Bracket frames & symbol wings", "One-click copy per style"], grad: "from-fuchsia-500 to-pink-600" },
-  { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Direct PDF download + print flow", "Scanned pages flagged with n8n OCR path"], grad: "from-emerald-500 to-teal-600" },
+  { key: "translate", href: "/translate", icon: FileText, title: "PDF ⇆ DOCX", desc: "Editable docs, layout intact.", points: ["No absolute text-box soup", "Direct PDF download + print flow", "Scanned pages flagged automatically"], grad: "from-emerald-500 to-teal-600" },
   { key: "split", href: "/split", icon: Scissors, title: "PDF Splitter", desc: "Slice & export anywhere.", points: ["Visual thumbnails + checkboxes", "Ranges like 1-3, 5, 7-12", "Export PDF, JPG/PNG zip, DOCX"], grad: "from-amber-500 to-orange-600" },
   { key: "software", href: "/software", icon: MonitorDown, title: "Software Store", desc: "Desktop tools for DTP pros.", points: ["Free OCR, font manager, templates", "Paid pro tools with license", "Local payment methods"], grad: "from-slate-500 to-slate-700" },
 ];
@@ -28,9 +28,9 @@ const AUDIENCES = [
 
 const FAQS = [
   { q: "Why does Bijoy text look like English letters?", a: "Bijoy (ANSI) fonts reuse Latin character slots for Bangla glyphs. Without SutonnyMJ installed your browser shows the raw Latin codes. BornoLab detects this and shows a live auto-converted Bangla preview, plus one-click copy for Word." },
-  { q: "Is my document uploaded to a server?", a: "No. Converting, splitting and translating run 100% in your browser. Only heavy print-automation jobs and manual-payment orders touch the server (or your own n8n)." },
+  { q: "Is my document uploaded to a server?", a: "No. Converting, splitting and translating run 100% in your browser. Only manual-payment orders touch the server." },
   { q: "How do I buy a premium font or software?", a: "Hit Buy, pick bKash / Nagad / Bank / Binance, send the amount to the merchant account shown, and submit your sender number + transaction ID. Admin verifies and delivers your download + license." },
-  { q: "What is the n8n print automation?", a: "For books and journals: upload a messy .docx plus a reference template, and an n8n workflow applies page sizes, heading styles, BN/EN font rules, table borders and merges — returning a print-ready PDF. Spec in docs/plans.md." },
+  { q: "Which tools are free?", a: "All 10 PDF tools, the Bijoy converter, font previews and the text styler are free and run in your browser. Premium fonts and pro software are paid via bKash, Nagad, bank or Binance." },
 ];
 
 export default function Home() {
@@ -52,8 +52,7 @@ export default function Home() {
         <HeroRotator />
         <p className="relative mx-auto mt-4 max-w-2xl text-sm text-slate-600 dark:text-slate-300 sm:text-base">
           Bijoy to Unicode converter, premium Bangla fonts, fancy text styler, PDF to DOCX translator,
-          PDF splitter and merger, software store — fast in your browser, with{" "}
-          <span className="font-semibold text-cyan-700 dark:text-cyan-200">n8n workflows</span> for heavy print jobs.
+          PDF splitter and merger, software store — fast and private, entirely in your browser.
         </p>
         <div className="relative mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/bijoy-unicode-converter" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(34,211,238,.35)] hover:brightness-110">Start Converting</Link>
@@ -62,7 +61,7 @@ export default function Home() {
         </div>
         <div className="relative mt-6 flex flex-wrap justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <span className="glass rounded-full px-3 py-1.5"><Zap size={12} className="mr-1 inline" />Client-first, instant</span>
-          <span className="glass rounded-full px-3 py-1.5"><Workflow size={12} className="mr-1 inline" />n8n automation-ready</span>
+          <span className="glass rounded-full px-3 py-1.5"><Zap size={12} className="mr-1 inline" />10 free PDF tools</span>
           <span className="glass rounded-full px-3 py-1.5"><ShieldCheck size={12} className="mr-1 inline" />Files stay in browser</span>
         </div>
       </motion.div>
@@ -167,9 +166,9 @@ export default function Home() {
 
       {/* CTA */}
       <GlassCard className="mt-8 border-cyan-500/30 text-center">
-        <h2 className="text-xl font-black">Print-ready books & journals, on autopilot</h2>
+          <h2 className="text-xl font-black">Books, journals & everyday documents</h2>
         <p className="mx-auto mt-1.5 max-w-xl text-[13.5px] text-slate-600 dark:text-slate-400">
-          Messy .docx in → formatted Journal/Book out (separate EN/BN font pipelines, reference templates, smart tables) via n8n. Try the <Link href="/format" className="font-bold text-cyan-700 underline dark:text-cyan-300">live formatter</Link> — spec in <code>docs/plans.md</code>.
+          Messy .docx in → clean print-ready file out (page sizes, heading styles, separate EN/BN fonts). Try the <Link href="/format" className="font-bold text-cyan-700 underline dark:text-cyan-300">auto-formatter</Link> — free, in your browser.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Link href="/translate" className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 text-sm font-bold text-white hover:brightness-110">Try DOCX Tools</Link>

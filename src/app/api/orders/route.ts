@@ -42,5 +42,15 @@ export async function POST(req: NextRequest) {
   };
   orders.push(order);
   await writeJson("orders.json", orders.slice(-1000));
+  try {
+    const { pushNotification } = await import("@/lib/notifications");
+    await pushNotification({
+      type: "order.placed",
+      title: `New order ${order.id}: ${order.itemName}`,
+      detail: `৳${order.amountBDT} via ${order.method} — ${order.sender}`,
+    });
+  } catch {
+    // Notifications must never break order creation.
+  }
   return NextResponse.json({ ok: true, orderId: order.id });
 }

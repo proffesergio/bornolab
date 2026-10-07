@@ -26,9 +26,16 @@ import { cn } from "@/lib/cn";
 
 interface Providers { google: boolean; facebook: boolean; otp: boolean; magicLink: boolean }
 
+function safeNext(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) return "/";
+  return raw.slice(0, 200);
+}
+
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
+  const next = safeNext(params.get("next"));
   const [providers, setProviders] = useState<Providers | null>(null);
   const [email, setEmail] = useState("");
   const [mode, setMode] = useState<"otp" | "link">("otp");
@@ -76,7 +83,7 @@ function LoginInner() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error ?? "Verification failed.");
-      router.push("/");
+      router.push(next);
       router.refresh();
     } catch (e) {
       setError((e as Error).message);
@@ -94,7 +101,7 @@ function LoginInner() {
         {error && <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-[13px] font-semibold text-red-600 dark:text-red-300">{error}</p>}
 
         <div className="grid gap-2">
-          <form action="/api/auth/oauth/google" method="GET" onSubmit={(e) => { if (!providers?.google) e.preventDefault(); }}>
+          <form action={`/api/auth/oauth/google${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`} method="GET" onSubmit={(e) => { if (!providers?.google) e.preventDefault(); }}>
             <button
               type="submit"
               disabled={!providers?.google}
@@ -104,7 +111,7 @@ function LoginInner() {
               <GoogleMark /> Continue with Google {!providers?.google && <span className="text-[11px] font-semibold opacity-60">• not configured</span>}
             </button>
           </form>
-          <form action="/api/auth/oauth/facebook" method="GET" onSubmit={(e) => { if (!providers?.facebook) e.preventDefault(); }}>
+          <form action={`/api/auth/oauth/facebook${next !== "/" ? `?next=${encodeURIComponent(next)}` : ""}`} method="GET" onSubmit={(e) => { if (!providers?.facebook) e.preventDefault(); }}>
             <button
               type="submit"
               disabled={!providers?.facebook}

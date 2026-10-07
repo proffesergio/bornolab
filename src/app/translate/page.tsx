@@ -99,11 +99,11 @@ export default function TranslatePage() {
       const blob = await Packer.toBlob(doc);
       downloadBlob(blob, pdfFile.name.replace(/\.pdf$/i, "") + ".converted.docx");
       push(`✔ DOCX saved — editable paragraphs, tables→lines (MVP).`);
-      if (emptyPages > 0) push(`⚠ ${emptyPages} page(s) had no text (scanned?) — OCR via your n8n translate-doc workflow (docs/plans.md §2.3).`);
+      if (emptyPages > 0) push(`⚠ ${emptyPages} page(s) had no text (scanned images — run OCR first, then convert).`);
       void logOp({ tool: "translate", files: 1, pages: pdf.numPages, ms: Date.now() - started, ok: true });
     } catch (e) {
       const msg = (e as Error).message;
-      push(`✘ failed: ${msg}. Tip: scanned PDFs need OCR via n8n (see docs/plans.md).`);
+      push(`✘ failed: ${msg}. Tip: scanned PDFs are images — extract text with OCR first.`);
       setError(`Conversion failed: ${msg}`);
       void logOp({ tool: "translate", files: 1, pages: 0, ms: Date.now() - started, ok: false, err: msg });
     } finally { setBusy(null); }
@@ -205,12 +205,12 @@ export default function TranslatePage() {
 
   return (
     <div>
-      <SectionTitle kicker="Module 04" title="PDF ⇆ DOCX Translator" desc={`Strict layout parity: PDF text nodes → editable OOXML paragraphs (never absolute text-boxes). DOCX → direct PDF download + high-fidelity print. Client-side for small files; large/scan jobs → n8n. Cap: ${caps.maxMB} MB per file.`} />
+      <SectionTitle kicker="Module 04" title="PDF ⇆ DOCX Translator" desc={`Strict layout parity: PDF text nodes → editable OOXML paragraphs (never absolute text-boxes). DOCX → direct PDF download + high-fidelity print. All client-side. Cap: ${caps.maxMB} MB per file.`} />
       {error && <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-[12.5px] font-semibold text-red-600 dark:text-red-300">{error}</p>}
       <div className="grid gap-4 lg:grid-cols-2">
         <GlassCard>
           <h2 className="font-extrabold">PDF → DOCX</h2>
-          <p className="mt-1 text-[12px] text-slate-600 dark:text-slate-400">Parses text nodes + line flow per page. Embedded tables become line paragraphs in MVP; full grid rebuild is on the n8n roadmap.</p>
+          <p className="mt-1 text-[12px] text-slate-600 dark:text-slate-400">Parses text nodes + line flow per page. Embedded tables become line paragraphs in this version.</p>
           <label
             className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-cyan-500/50 p-4 text-sm hover:bg-cyan-500/5"
             onDragOver={(e) => e.preventDefault()}
@@ -226,7 +226,7 @@ export default function TranslatePage() {
         </GlassCard>
         <GlassCard>
           <h2 className="font-extrabold">DOCX → PDF</h2>
-          <p className="mt-1 text-[12px] text-slate-600 dark:text-slate-400">Direct download for everyday use; Print keeps system Bangla fonts pixel-perfect. Embed via n8n + LibreOffice for publishing.</p>
+          <p className="mt-1 text-[12px] text-slate-600 dark:text-slate-400">Direct download for everyday use; Print keeps system Bangla fonts pixel-perfect.</p>
           <label
             className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-purple-500/50 p-4 text-sm hover:bg-purple-500/5"
             onDragOver={(e) => e.preventDefault()}
