@@ -67,7 +67,23 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
     return () => window.removeEventListener("beforeunload", handler);
   }, [version]);
 
+  const pick = async (qid: string, optId: string) => {
+    setAnswers((a) => ({ ...a, [qid]: optId }));
+    setSaving("saving");
+    try {
+      await fetch("/api/study-platform/attempts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId, questionId: qid, optionId: optId, markedForReview: !!flags[qid] }),
+      });
+      setSaving("saved");
+    } catch {
+      setSaving("error");
+    }
+  };
+
   // Keyboard: ←/→ navigate, 1-4 pick, F flag.
+  // pick is declared above so the closure always sees the latest state.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (reviewMode || confirm) return;
@@ -83,21 +99,6 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
-
-  const pick = async (qid: string, optId: string) => {
-    setAnswers((a) => ({ ...a, [qid]: optId }));
-    setSaving("saving");
-    try {
-      await fetch("/api/study-platform/attempts", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attemptId, questionId: qid, optionId: optId, markedForReview: !!flags[qid] }),
-      });
-      setSaving("saved");
-    } catch {
-      setSaving("error");
-    }
-  };
 
   const toggleFlag = async (qid: string) => {
     const next = !flags[qid];

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     await appendAudit({ id: `aud-${Date.now().toString(36)}`, at: Date.now(), actor, action: "study.review", entity: "question", entityId: next.id, detail: `${prev.status} → ${next.status}` });
 
     // Key change after publish → mark affected attempts for recalculation (preserve originals).
-    let recalculated: string[] = [];
+    const recalculated: string[] = [];
     if (body.newKeyOptionId && prev.status === "published" && body.recalculate !== false) {
       const { listAttempts } = await import("@/lib/study-platform/store");
       const attempts = await listAttempts().catch(() => []);

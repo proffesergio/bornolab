@@ -1,5 +1,6 @@
 "use client";
 import { use, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyShell } from "@/components/study-platform/ui";
@@ -41,7 +42,7 @@ export default function ExamIntro({ params }: { params: Promise<{ slug: string }
 
   const v = slug ? VERSIONS[slug] : undefined;
   if (slug && !v) {
-    return <StudyShell><GlassCard className="p-8 text-center">সংস্করণ পাওয়া যায়নি। <a href="/study/posts" className="underline">পদ দেখুন</a></GlassCard></StudyShell>;
+    return <StudyShell><GlassCard className="p-8 text-center">সংস্করণ পাওয়া যায়নি। <Link href="/study/posts" className="underline">পদ দেখুন</Link></GlassCard></StudyShell>;
   }
   if (!v) return <StudyShell><GlassCard className="p-8 text-center text-sm text-slate-500">লোড হচ্ছে…</GlassCard></StudyShell>;
 
