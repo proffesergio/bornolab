@@ -37,6 +37,7 @@ The module ships **disabled** (`studyPlatform.enabled: false`). Old `/study` hub
 - [ ] Submit → `/study/results/[id]` shows raw/penalty/net/%, breakdowns, provisional pill.
 - [ ] `/study/progress` requires login; after a submitted attempt, wrong queue populates.
 - [ ] Admin → Study Platform: import a 1-row JSON draft → appears in review queue → Approve → Publish (or 422 with issue codes when incomplete).
+- [ ] Export questions CSV + attempts CSV from the admin panel; re-score flow: change a key → attempt flagged ↻ → Re-score → original kept in history.
 - [ ] `node --test tests/task13-study-fixes.test.mjs tests/task21-study-gating.test.mjs tests/task22-study-platform.test.mjs` green.
 
 ## 5. Rollback plan

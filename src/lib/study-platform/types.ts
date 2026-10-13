@@ -232,9 +232,13 @@ export interface Attempt {
   autoSubmitted: boolean;
   leavePolicy: LeavePolicy;
   score?: AttemptScore;
+  /** Preserved earlier scores (recalculation never deletes history). */
+  previousScores?: { at: number; score: AttemptScore; note?: string }[];
   keySnapshot: KeyStatus;
   needsRecalculation?: boolean;
   correctionNote?: string;
+  /** Per-question section id resolved at attempt creation (chapter→subject→section). */
+  sectionOf?: Record<string, string>;
 }
 
 export interface AttemptScore {

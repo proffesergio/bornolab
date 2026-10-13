@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui";
 import { CyanButton, EmptyState } from "./ui";
+import { CodeText } from "./code-text";
 import type { Question } from "@/lib/study-platform/types";
 
 interface Filters {
@@ -120,7 +121,7 @@ export function PracticeBuilder({ initial }: { initial?: Partial<Filters> }) {
       {card && idx < items.length && (
         <GlassCard className="mt-3">
           <p className="text-[12px] font-bold text-slate-500">প্রশ্ন {idx + 1}/{items.length} • ✓ {score.right} • ✗ {score.wrong} {card.key.status === "provisional" && <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-amber-700">⚠ provisional</span>}</p>
-          <p className="mt-2 text-[15px] font-bold leading-8">{card.locale[lang].stem}</p>
+          <p className="mt-2 text-[15px] font-bold leading-8"><CodeText text={card.locale[lang].stem} /></p>
           <div className="mt-3 grid gap-2" role="radiogroup" aria-label="Options">
             {(lang === "en" ? card.locale.en.options : card.locale.bn.options).map((text, i) => {
               const optId = card.options[i]?.id ?? "";
@@ -136,14 +137,14 @@ export function PracticeBuilder({ initial }: { initial?: Partial<Filters> }) {
                   className={`rounded-xl border p-3 text-left text-[13.5px] leading-7 transition ${picked ? (isKey ? "border-emerald-500 bg-emerald-500/10 font-bold" : isPick ? "border-rose-500 bg-rose-500/10" : "opacity-70") : "hover:border-cyan-500/50"}`}
                 >
                   <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-slate-900/[.06] text-[12px] font-black dark:bg-white/10">{["ক", "খ", "গ", "ঘ"][i] ?? i + 1}</span>
-                  {text}
+                  <CodeText text={text} />
                 </button>
               );
             })}
           </div>
           {picked && (
             <div className="mt-3" aria-live="polite">
-              <p className="text-[13px] leading-7 text-slate-600 dark:text-slate-300">{card.locale[lang].explanation}</p>
+              <p className="text-[13px] leading-7 text-slate-600 dark:text-slate-300"><CodeText text={card.locale[lang].explanation} /></p>
               <div className="mt-2 flex gap-2">
                 {idx + 1 < items.length
                   ? <button onClick={next} className="rounded-full bg-slate-900 px-5 py-2 text-[13px] font-bold text-white dark:bg-white dark:text-slate-900">পরেরটি →</button>

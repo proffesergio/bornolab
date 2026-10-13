@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedSeedQuestions, mergeQuestions, versionBySlug } from "@/lib/study-platform/catalog";
 import { getProgress, listBookmarks, listQuestions } from "@/lib/study-platform/store";
+import { clientIp, throttle } from "@/lib/study-platform/ratelimit";
 import { USER_COOKIE, sessionUser } from "@/lib/users";
 
 /** POST /api/study-platform/practice — build an instant-feedback set from filters. */
 export async function POST(req: NextRequest) {
+  const rl = throttle(`practice:${clientIp(req)}`, 60, 3600);
+  if (!rl.ok) return NextResponse.json({ error: `too many requests — retry in ${rl.retryAfterSec}s` }, { status: 429 });
   const body = (await req.json().catch(() => ({}))) as {
     version?: string; difficulty?: string; chapter?: string; subject?: string;
     lang?: string; qtype?: string; mode?: string; count?: number;

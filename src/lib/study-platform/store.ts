@@ -108,6 +108,15 @@ export async function upsertAttempt(next: Attempt): Promise<void> {
   await saveAttempts(all);
 }
 
+/** Cancel (delete) an unsubmitted attempt. Callers must enforce ownership. */
+export async function removeAttempt(id: string): Promise<boolean> {
+  const all = await listAttempts();
+  const next = all.filter((a) => a.id !== id);
+  if (next.length === all.length) return false;
+  await saveAttempts(next);
+  return true;
+}
+
 /* ---------- Progress / bookmarks / flags ---------- */
 export async function getProgress(userId: string): Promise<UserProgress | null> {
   const all = await kvRead<UserProgress[]>("progress", []);

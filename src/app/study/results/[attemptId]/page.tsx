@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyShell, StatusPill } from "@/components/study-platform/ui";
+import { CodeText } from "@/components/study-platform/code-text";
 import { getPublishedSeedQuestions, mergeQuestions } from "@/lib/study-platform/catalog";
 import { getAttempt, listQuestions } from "@/lib/study-platform/store";
 
@@ -47,9 +48,9 @@ export default async function ResultPage({ params }: { params: Promise<{ attempt
           const ok = ans !== null && ans === qItem.key.optionId;
           return (
             <GlassCard key={qid} className="p-4">
-              <p className="text-[13.5px] font-bold leading-7">Q{i + 1}. {qItem.locale.bn.stem}</p>
+              <p className="text-[13.5px] font-bold leading-7">Q{i + 1}. <CodeText text={qItem.locale.bn.stem} /></p>
               <p className="mt-1 text-[12.5px] font-bold">{ans ? (ok ? "✓ সঠিক" : "✗ ভুল") : "○ অনুত্তরিত"} {qItem.key.status === "provisional" && <span className="ml-1 text-amber-600">⚠ provisional</span>}</p>
-              <p className="mt-1.5 text-[13px] leading-7 text-slate-600 dark:text-slate-300">{qItem.locale.bn.explanation}</p>
+              <p className="mt-1.5 text-[13px] leading-7 text-slate-600 dark:text-slate-300"><CodeText text={qItem.locale.bn.explanation} /></p>
               {qItem.citations.length > 0 && (
                 <p className="mt-1 text-[12px]">📚 {qItem.citations.map((c) => c.title).join(" • ")}</p>
               )}

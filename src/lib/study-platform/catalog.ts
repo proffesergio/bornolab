@@ -35,6 +35,24 @@ export function mergeQuestions(seed: Question[], stored: Question[]): Question[]
   return [...byId.values()];
 }
 
+/** Chapter id → subject id (for section resolution). Pure. */
+export function chapterSubjectMap(): Record<string, string> {
+  const m: Record<string, string> = {};
+  for (const c of PLATFORM_CHAPTERS) m[c.id] = c.subjectId;
+  return m;
+}
+
+/** Resolve a question's chapter to its ExamVersion section (chapter→subject→section). */
+export function resolveSection(
+  version: ExamVersion,
+  chapterId: string | undefined,
+  map: Record<string, string> = chapterSubjectMap()
+): string {
+  const subj = chapterId ? map[chapterId] : undefined;
+  const sec = subj ? version.sections.find((s) => s.subjectIds.includes(subj)) : undefined;
+  return sec?.id ?? version.sections[0]?.id ?? "general";
+}
+
 export function questionsForVersion(versionSlug: string, all: Question[]): Question[] {
   const v = versionBySlug(versionSlug);
   if (!v) return [];

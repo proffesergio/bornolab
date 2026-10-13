@@ -8,14 +8,18 @@ import { GlassCard } from "@/components/ui";
  */
 export function AdminStudyPlatform() {
   const [flags, setFlags] = useState<{ enabled?: boolean } | null>(null);
-  const [queue, setQueue] = useState<{ id: string; chapterId: string; status: string; keyStatus: string; issues: string[] }[]>([]);
+  const [queue, setQueue] = useState<{
+    id: string; chapterId: string; status: string; keyStatus: string; confidence: string;
+    citations: number; version: number; issues: string[]; previewBn: string; historyVersions: number[];
+  }[]>([]);
+  const [duplicates, setDuplicates] = useState<{ key: string; ids: string[] }[]>([]);
   const [audit, setAudit] = useState<{ at: number; actor: string; action: string; entityId: string; detail?: string }[]>([]);
   const [importText, setImportText] = useState('[{"stemBn":"ডেমো প্রশ্ন?","stemEn":"Demo question?","optionsBn":["ক","খ","গ","ঘ"],"optionsEn":["A","B","C","D"],"answerIndex":0,"chapterId":"ch-net-ip"}]');
   const [msg, setMsg] = useState("");
 
   const load = () => {
     fetch("/api/study-platform/flags").then((r) => r.json()).then((j) => setFlags(j.studyPlatform ?? {})).catch(() => {});
-    fetch("/api/study-platform/review").then((r) => r.json()).then((j) => setQueue(j.queue ?? [])).catch(() => {});
+    fetch("/api/study-platform/review").then((r) => r.json()).then((j) => { setQueue(j.queue ?? []); setDuplicates(j.duplicates ?? []); }).catch(() => {});
     fetch("/api/study-platform/audit").then((r) => r.json()).then((j) => setAudit(j.entries ?? [])).catch(() => {});
   };
 
@@ -57,6 +61,30 @@ export function AdminStudyPlatform() {
     load();
   };
 
+  const rollback = async (id: string, v: number) => {
+    if (!confirm(`Restore ${id} to v${v}? Current content becomes a new version (history kept).`)) return;
+    const res = await fetch("/api/study-platform/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: id, rollbackTo: v }),
+    });
+    const j = await res.json();
+    setMsg(res.ok ? `↩ ${id} rolled back to v${v}` : `Rollback failed: ${j.error}`);
+    load();
+  };
+
+  const recalcAll = async () => {
+    if (!confirm("Re-score all flagged attempts with current keys? Originals stay in history.")) return;
+    const res = await fetch("/api/study-platform/recalculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    });
+    const j = await res.json();
+    setMsg(res.ok ? `↻ Re-scored ${j.rescored} attempts.` : `Recalculate failed: ${j.error}`);
+    load();
+  };
+
   const field = "focus-glow w-full rounded-xl bg-slate-100 p-2.5 font-mono text-[12px] outline-none dark:bg-black/30";
 
   return (
@@ -85,20 +113,49 @@ export function AdminStudyPlatform() {
 
       <GlassCard>
         <h3 className="text-sm font-bold">🧑‍⚖️ Review queue ({queue.length}) — two-person approval</h3>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button onClick={recalcAll} className="rounded-xl bg-amber-500/15 px-3 py-1.5 text-[12.5px] font-bold text-amber-700 dark:text-amber-300">↻ Re-score flagged attempts</button>
+          <a href="/api/study-platform/export?kind=questions&format=csv" className="glass rounded-xl px-3 py-1.5 text-[12.5px] font-bold">⬇ Questions CSV</a>
+          <a href="/api/study-platform/export?kind=attempts&format=csv" className="glass rounded-xl px-3 py-1.5 text-[12.5px] font-bold">⬇ Attempts CSV</a>
+        </div>
         {queue.length === 0 && <p className="mt-1 text-[12.5px] text-slate-500">Queue empty — all published items pass blockers. 🎉</p>}
         <div className="mt-2 space-y-2">
           {queue.slice(0, 20).map((qItem) => (
             <div key={qItem.id} className="rounded-xl bg-slate-900/[.04] p-3 text-[12.5px] dark:bg-white/5">
-              <p><b className="font-mono">{qItem.id}</b> • {qItem.status} • key:{qItem.keyStatus} • {qItem.chapterId}</p>
+              <p><b className="font-mono">{qItem.id}</b> • {qItem.status} • key:{qItem.keyStatus} ({qItem.confidence}) • 📚{qItem.citations} • v{qItem.version} • {qItem.chapterId}</p>
+              <p className="mt-0.5 text-slate-600 dark:text-slate-400">{qItem.previewBn}</p>
               {qItem.issues.length > 0 && <p className="mt-0.5 text-amber-600 dark:text-amber-300">⛔ {qItem.issues.join(", ")}</p>}
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <button onClick={() => review(qItem.id, "reviewer_approved")} className="rounded-full bg-cyan-500/15 px-3 py-1 font-bold text-cyan-700 dark:text-cyan-200">Approve</button>
                 <button onClick={() => review(qItem.id, "published")} className="rounded-full bg-emerald-500/15 px-3 py-1 font-bold text-emerald-700 dark:text-emerald-200">Publish</button>
                 <button onClick={() => review(qItem.id, "retired")} className="rounded-full bg-red-500/10 px-3 py-1 font-bold text-red-500">Retire</button>
+                {qItem.historyVersions.length > 0 && (
+                  <select
+                    aria-label={`Rollback ${qItem.id}`}
+                    defaultValue=""
+                    onChange={(e) => { const v = Number(e.target.value); e.target.value = ""; if (v) void rollback(qItem.id, v); }}
+                    className="rounded-full bg-slate-900/[.06] px-3 py-1 font-bold dark:bg-white/10"
+                  >
+                    <option value="">↩ Rollback…</option>
+                    {qItem.historyVersions.map((v) => <option key={v} value={v}>to v{v}</option>)}
+                  </select>
+                )}
               </div>
             </div>
           ))}
         </div>
+        {duplicates.length > 0 && (
+          <div className="mt-3">
+            <h4 className="text-[13px] font-extrabold">👯 Possible duplicates ({duplicates.length}) — merge candidates</h4>
+            <div className="mt-1.5 space-y-1.5">
+              {duplicates.slice(0, 10).map((d) => (
+                <p key={d.key} className="rounded-xl bg-amber-500/10 px-3 py-2 font-mono text-[11.5px]">
+                  {d.ids.join(" ⇄ ")}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
       </GlassCard>
 
       <GlassCard>

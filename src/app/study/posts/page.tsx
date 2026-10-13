@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { PostBrowser } from "@/components/study-platform/post-browser";
 import { getChapters, getPosts, getSubjects, getVersions } from "@/lib/study-platform/catalog";
 import { getStudyPlatformConfig } from "@/lib/study-platform/config";
 import { StudyShell } from "@/components/study-platform/ui";
@@ -19,17 +20,8 @@ export default async function PostsPage() {
           প্রিভিউ মোড — নতুন প্ল্যাটফর্ম ফ্ল্যাগের আড়ালে চলছে। পুরোনো <Link href="/study" className="underline">Study Hub</Link> আগের মতোই কাজ করছে।
         </GlassCard>
       )}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {posts.map((p) => (
-          <Link key={p.id} href={`/study/posts/${p.slug}`}>
-            <GlassCard className="p-5 transition hover:border-cyan-500/40">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-700 dark:text-cyan-300">{p.org.bn} • গ্রেড {p.grade ?? "—"}</p>
-              <h2 className="mt-1 font-extrabold leading-7">{p.title.bn} <span className="font-semibold text-slate-500">({p.title.en})</span></h2>
-              <p className="mt-1 text-[12.5px] text-slate-500">{p.eligibilityNote?.bn}</p>
-              <span className="mt-2 inline-block text-[13px] font-bold text-cyan-700 dark:text-cyan-300">সিলেবাস ও প্যাটার্ন →</span>
-            </GlassCard>
-          </Link>
-        ))}
+      <div className="mt-4">
+        <PostBrowser posts={posts} />
       </div>
       <h2 className="mb-2 mt-8 font-black">📋 ExamVersions ({versions.length})</h2>
       <div className="grid gap-2">

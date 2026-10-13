@@ -40,6 +40,13 @@ export function validateForPublication(q: Question): ValidationIssue[] {
   if (!q.license || q.license.status === "pending" || q.license.status === "blocked") {
     issues.push({ code: "rights-unresolved", messageBn: "স্বত্ব/লাইসেন্স অমীমাংসিত", messageEn: "Unresolved rights/license status" });
   }
+  const today = new Date().toISOString().slice(0, 10);
+  for (const c of q.citations ?? []) {
+    if (c.expiresAt && c.expiresAt < today) {
+      issues.push({ code: "citation-expired", messageBn: `মেয়াদোত্তীর্ণ উৎস: ${c.title} — পুনঃযাচাই প্রয়োজন`, messageEn: `Expired citation: ${c.title} — needs re-verification` });
+      break;
+    }
+  }
   if (q.ambiguityFlag) {
     issues.push({ code: "ambiguity", messageBn: "অস্পষ্টতা ফ্ল্যাগ রয়েছে — রিভিউ প্রয়োজন", messageEn: "Ambiguity flag is set — needs review" });
   }

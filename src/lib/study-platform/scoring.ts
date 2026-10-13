@@ -7,11 +7,15 @@ export interface ScoreInput {
   answers: Attempt["answers"];
   startedAt: number;
   submittedAt: number;
+  /** Resolve a question id to its section id (chapter→subject→section). Defaults to first section. */
+  sectionOf?: (qid: string) => string;
 }
 
 export function scoreAttempt(input: ScoreInput): AttemptScore {
   const { version, questions, answers, startedAt, submittedAt } = input;
   const byId = new Map(questions.map((q) => [q.id, q]));
+  const fallbackSection = version.sections[0]?.id ?? "general";
+  const sectionOf = input.sectionOf ?? ((): string => fallbackSection);
   let correct = 0;
   let incorrect = 0;
   let unanswered = 0;
@@ -22,16 +26,6 @@ export function scoreAttempt(input: ScoreInput): AttemptScore {
   const marksPer = version.policy.marksPerQuestion;
   const neg = version.policy.negativeMark;
   const unpen = version.policy.unansweredPenalty ?? 0;
-
-  const sectionOf = (qid: string): string => {
-    for (const s of version.sections) {
-      // section membership derived from subject link via question chapter mapping is
-      // resolved by caller into tags; here we fall back to first section.
-      void qid;
-      void s;
-    }
-    return version.sections[0]?.id ?? "general";
-  };
 
   for (const q of questions) {
     const a = answers[q.id];

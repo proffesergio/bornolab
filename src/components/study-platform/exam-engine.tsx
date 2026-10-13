@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui";
+import { CodeText } from "./code-text";
 import { cn } from "@/lib/cn";
 import type { ExamVersion, Question } from "@/lib/study-platform/types";
 
@@ -136,6 +137,20 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
         <div className="mt-3 flex flex-wrap gap-2">
           <button onClick={() => setReviewMode(false)} className="glass rounded-full px-5 py-2.5 text-[13px] font-bold">← ফিরে যান</button>
           <button onClick={() => setConfirm(true)} className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-2.5 text-[13px] font-bold text-white">জমা দিন →</button>
+          <button
+            onClick={async () => {
+              if (!window.confirm("Attempt বাতিল করবেন? সংরক্ষিত উত্তর মুছে যাবে।")) return;
+              await fetch("/api/study-platform/attempts", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ attemptId }),
+              }).catch(() => {});
+              router.push("/study/posts");
+            }}
+            className="rounded-full px-4 py-2.5 text-[12.5px] font-bold text-rose-500 hover:bg-rose-500/10"
+          >
+            ✕ বাতিল
+          </button>
         </div>
       </GlassCard>
     );
@@ -169,7 +184,7 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
           <p className="text-[12px] font-bold text-slate-500">Q{idx + 1}/{order.length}</p>
         </div>
         <GlassCard className="mt-3">
-          <p className="text-[15px] font-bold leading-8">{card.locale[lang].stem}</p>
+          <p className="text-[15px] font-bold leading-8"><CodeText text={card.locale[lang].stem} /></p>
           <div className="mt-3 grid gap-2" role="radiogroup" aria-label={`Question ${idx + 1} options`}>
             {opts.map((text, i) => {
               const optId = card.options[i]?.id ?? "";
@@ -178,7 +193,7 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
                 <button key={i} role="radio" aria-checked={sel} onClick={() => pick(card.id, optId)}
                   className={cn("rounded-xl border p-3 text-left text-[14px] leading-7", sel ? "border-cyan-500 bg-cyan-500/10 font-bold" : "hover:border-cyan-500/50")}>
                   <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-slate-900/[.06] text-[12px] font-black dark:bg-white/10">{i + 1}</span>
-                  {text}
+                  <CodeText text={text} />
                 </button>
               );
             })}

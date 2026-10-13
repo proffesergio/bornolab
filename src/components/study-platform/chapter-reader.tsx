@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { GlassCard } from "@/components/ui";
 import { LangToggle } from "./ui";
+import { CodeText } from "./code-text";
 import type { Chapter, Question } from "@/lib/study-platform/types";
 
 export function ChapterReader({ chapter, related }: { chapter: Chapter; related: Question[] }) {
@@ -54,8 +55,8 @@ export function ChapterReader({ chapter, related }: { chapter: Chapter; related:
               <dl className="mt-2 grid gap-1.5">
                 {chapter.keyTerms.map((k, i) => (
                   <div key={i} className="rounded-xl bg-slate-900/[.04] px-3.5 py-2.5 text-[13.5px] leading-7 dark:bg-white/5">
-                    <dt className="font-extrabold">{show(k.term.bn, k.term.en)}</dt>
-                    <dd className="text-slate-600 dark:text-slate-300">{show(k.def.bn, k.def.en)}</dd>
+                    <dt className="font-extrabold"><CodeText text={show(k.term.bn, k.term.en)} /></dt>
+                    <dd className="text-slate-600 dark:text-slate-300"><CodeText text={show(k.def.bn, k.def.en)} /></dd>
                   </div>
                 ))}
               </dl>
@@ -66,8 +67,8 @@ export function ChapterReader({ chapter, related }: { chapter: Chapter; related:
               <h3 className="mt-4 font-extrabold">📝 {lang === "en" ? "Worked examples" : "উদাহরণ"}</h3>
               {chapter.workedExamples.map((w, i) => (
                 <div key={i} className="mt-2 rounded-xl bg-cyan-500/10 p-3.5 text-[13.5px] leading-7">
-                  <p className="font-bold">{show(w.title.bn, w.title.en)}</p>
-                  <p className="mt-1 text-slate-600 dark:text-slate-300">{show(w.body.bn, w.body.en)}</p>
+                  <p className="font-bold"><CodeText text={show(w.title.bn, w.title.en)} /></p>
+                  <p className="mt-1 text-slate-600 dark:text-slate-300"><CodeText text={show(w.body.bn, w.body.en)} /></p>
                 </div>
               ))}
             </>
@@ -106,16 +107,16 @@ export function ChapterReader({ chapter, related }: { chapter: Chapter; related:
             <div className="grid gap-2">
               {related.slice(0, 6).map((qItem) => (
                 <GlassCard key={qItem.id} className="p-4">
-                  <p className="text-[13.5px] font-bold leading-7">{lang === "en" ? qItem.locale.en.stem : qItem.locale.bn.stem}</p>
+                  <p className="text-[13.5px] font-bold leading-7"><CodeText text={lang === "en" ? qItem.locale.en.stem : qItem.locale.bn.stem} /></p>
                   <button onClick={() => setOpen(open === qItem.id ? null : qItem.id)} className="mt-2 rounded-full bg-slate-900 px-4 py-1.5 text-[12.5px] font-bold text-white dark:bg-white dark:text-slate-900" aria-expanded={open === qItem.id}>
                     {open === qItem.id ? (lang === "en" ? "Hide" : "লুকান") : (lang === "en" ? "Show answer" : "উত্তর দেখুন")}
                   </button>
                   {open === qItem.id && (
                     <div className="mt-2 text-[13px] leading-7 text-slate-600 dark:text-slate-300" aria-live="polite">
                       <p className="rounded-xl bg-emerald-500/10 p-2.5 font-bold text-emerald-800 dark:text-emerald-200">
-                        {(lang === "en" ? qItem.locale.en.options : qItem.locale.bn.options)[qItem.options.findIndex((o) => o.id === qItem.key.optionId)] ?? ""}
+                        <CodeText text={(lang === "en" ? qItem.locale.en.options : qItem.locale.bn.options)[qItem.options.findIndex((o) => o.id === qItem.key.optionId)] ?? ""} />
                       </p>
-                      <p className="mt-1.5">{lang === "en" ? qItem.locale.en.explanation : qItem.locale.bn.explanation}</p>
+                      <p className="mt-1.5"><CodeText text={lang === "en" ? qItem.locale.en.explanation : qItem.locale.bn.explanation} /></p>
                       {qItem.key.status === "provisional" && <p className="mt-1 font-bold text-amber-600">⚠ Provisional key — যাচাই বাকি</p>}
                     </div>
                   )}

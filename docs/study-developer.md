@@ -35,13 +35,16 @@
 - `GET /api/study-platform/attempts?id=` → `{attempt, now, remainingSec}` (owner or admin).
 - `GET /api/study-platform/progress` (login) → `{progress, attempts, bookmarks, disclaimer}`.
 - `POST/DELETE /api/study-platform/bookmarks` (login).
-- Admin (`requireAdmin`): `POST /api/study-platform/import` (JSON/CSV → staging + drafts, never auto-publish); `GET/POST /api/study-platform/review` (queue + approve/publish/retire, 422 on blockers, key-change → recalculation candidates); `GET /api/study-platform/audit`; `GET/PUT /api/study-platform/flags`.
+- `DELETE /api/study-platform/attempts` `{attemptId}` — cancel an unsubmitted attempt (owner or admin; submitted attempts cannot be cancelled).
+- Admin (`requireAdmin`): `POST /api/study-platform/import` (JSON/CSV → staging + drafts, never auto-publish); `GET/POST /api/study-platform/review` (queue with content preview, key confidence, duplicate groups + approve/publish/retire/rollback, 422 on blockers, key-change → recalculation candidates); `POST /api/study-platform/recalculate` (re-score flagged attempts; originals preserved in `previousScores`); `GET /api/study-platform/export?kind=questions|attempts&format=json|csv`; `GET /api/study-platform/audit`; `GET/PUT /api/study-platform/flags`.
+- Guards: per-IP throttles on attempt-create (20/h) and practice (60/h); attempt creation resumes an active attempt and enforces `ExamVersion.attemptLimit`; expired `expiresAt` citations block publication.
 
 ## 4. Scoring rules (`scoring.ts`)
 
 - Per-question `marksPerQuestion`; wrong → `−negativeMark`; unanswered → `−unansweredPenalty` (default 0).
 - `raw` = correct × marks; `penalty` = wrong × neg + unanswered × unpen; `net = raw − penalty`; `pct = 100 × net / max`.
 - Section/topic totals + `timeUsedSec = submittedAt − startedAt`; `keyStatus = provisional` if any item provisional.
+- Section mapping is chapter→subject→section (`resolveSection`); the per-question section is frozen on the attempt at creation so later taxonomy edits never rewrite history.
 - `seededShuffle` (mulberry32) for reproducible review; `optionOrder`/`questionOrder` stored on attempt.
 - Demo: 20Q/15min/0.50 verified in `task22` + engine tests.
 
