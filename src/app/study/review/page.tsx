@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { CodeText } from "@/components/study-platform/code-text";
-import { EmptyState, StudyShell } from "@/components/study-platform/ui";
+import { StudyShell } from "@/components/study-platform/ui";
 import type { Question } from "@/lib/study-platform/types";
 import { cn } from "@/lib/cn";
 
