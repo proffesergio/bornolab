@@ -31,21 +31,7 @@ export default function ProgressPage() {
     }).catch(() => setError("load"));
   }, []);
 
-  if (error === "login") {
-    return (
-      <StudyShell>
-        <GlassCard className="p-8 text-center">
-          <p className="font-extrabold">অগ্রগতি দেখতে লগইন করুন</p>
-          <Link href="/login?next=/study/progress" className="mt-3 inline-block rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white">Continue with Google →</Link>
-        </GlassCard>
-      </StudyShell>
-    );
-  }
-  if (error || !data) {
-    return <StudyShell><GlassCard className="p-8 text-center text-sm text-slate-500">{error ? "লোড ব্যর্থ — আবার চেষ্টা করুন।" : "লোড হচ্ছে…"}</GlassCard></StudyShell>;
-  }
-
-  const heat = (pct: number) => (pct >= 80 ? "শক্তিশালী" : pct >= 50 ? "মাঝারি" : "দুর্বল");
+  // Hooks stay above every early return so call order never changes.
   const chapters = useMemo(() => getChapters(), []);
   const chapterName = useMemo(() => new Map(chapters.map((c) => [c.id, c] as const)), [chapters]);
   const masteryRows = useMemo(() => {
@@ -79,6 +65,22 @@ export default function ProgressPage() {
     }
     return recs.slice(0, 5);
   }, [data, masteryRows, chapterName]);
+
+  if (error === "login") {
+    return (
+      <StudyShell>
+        <GlassCard className="p-8 text-center">
+          <p className="font-extrabold">অগ্রগতি দেখতে লগইন করুন</p>
+          <Link href="/login?next=/study/progress" className="mt-3 inline-block rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white">Continue with Google →</Link>
+        </GlassCard>
+      </StudyShell>
+    );
+  }
+  if (error || !data) {
+    return <StudyShell><GlassCard className="p-8 text-center text-sm text-slate-500">{error ? "লোড ব্যর্থ — আবার চেষ্টা করুন।" : "লোড হচ্ছে…"}</GlassCard></StudyShell>;
+  }
+
+  const heat = (pct: number) => (pct >= 80 ? "শক্তিশালী" : pct >= 50 ? "মাঝারি" : "দুর্বল");
   return (
     <StudyShell>
       <SectionTitle kicker="Study • Progress" title="আপনার অগ্রগতি" desc="ইতিহাস, দুর্বল-টপিক সারি, বুকমার্ক ও নির্দেশনা।" />
