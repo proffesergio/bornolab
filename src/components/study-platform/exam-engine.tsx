@@ -24,7 +24,7 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [remaining, setRemaining] = useState(() => Math.max(0, Math.round((deadline - Date.now()) / 1000)));
   const [saving, setSaving] = useState<"saved" | "saving" | "error" | "offline">("saved");
-  const [queued, setQueued] = useState(0);
+  const [queued, setQueued] = useState(() => outboxCount(attemptId));
   const [reviewMode, setReviewMode] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,8 +60,8 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
   }, [attemptId, router, submitting]);
 
   // Flush the offline outbox on reconnect + on mount (resume path).
+  // Initial count comes from lazy state init above — no sync setState here.
   useEffect(() => {
-    setQueued(outboxCount(attemptId));
     const onOnline = () => {
       void flushOutbox(attemptId).then((left) => {
         setQueued(left);
