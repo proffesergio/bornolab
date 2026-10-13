@@ -2,15 +2,46 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe } from "lucide-react";
+import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe, Target, NotebookText, Timer, BarChart3 } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyPractice } from "@/components/study-practice";
 import { AdUnits } from "@/components/ads";
 import { useLogin } from "@/components/use-login";
 import { STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
+import { PLATFORM_SUBJECTS, getChapters } from "@/lib/study-platform/catalog";
 import { cn } from "@/lib/cn";
 
 type CatFilter = "all" | StudyCategory;
+
+/** Preparation modules — the card-view entry to the IT job-prep platform. */
+const PREP_MODULES = [
+  { href: "/study/posts", icon: Target, grad: "from-cyan-500 to-blue-600", bn: "লক্ষ্য-পদ", en: "Target posts", desc: "১২টি IT-পদ ও পরীক্ষা-প্যাটার্ন", stat: "১২টি পদ" },
+  { href: "/study/chapters", icon: NotebookText, grad: "from-emerald-500 to-teal-600", bn: "স্টাডি নোট", en: "Notes", desc: "বিষয়ভিত্তিক নোট, পরিভাষা ও উদাহরণ", stat: "২১টি অধ্যায়" },
+  { href: "/study/practice", icon: GraduationCap, grad: "from-amber-500 to-orange-600", bn: "অনুশীলন", en: "Practice", desc: "কাস্টম সেট, সঙ্গে সঙ্গে ফিডব্যাক", stat: "Practice now" },
+  { href: "/study/exams/demo-20q-15min-v1", icon: Timer, grad: "from-purple-500 to-pink-600", bn: "টাইমড পরীক্ষা", en: "Timed exams", desc: "সার্ভার-টাইমার, নেগেটিভ মার্কিংসহ", stat: "২০প্রশ্ন/১৫মিনিট" },
+  { href: "/study/progress", icon: BarChart3, grad: "from-rose-500 to-red-600", bn: "অগ্রগতি", en: "Progress", desc: "ভুল-সারি, ইতিহাস ও নির্দেশনা", stat: "ট্র্যাক করুন" },
+];
+
+/** Compact progress rail for signed-in learners (neutral while checking). */
+function ProgressRail() {
+  const { loggedIn } = useLogin();
+  const [data, setData] = useState<{ attempts: unknown[]; progress: { wrongQueue: string[] } } | null>(null);
+  useEffect(() => {
+    if (loggedIn !== true) return;
+    fetch("/api/study-platform/progress").then((r) => (r.ok ? r.json() : null)).then((j) => j && setData(j)).catch(() => {});
+  }, [loggedIn]);
+  if (loggedIn !== true || !data) return null;
+  return (
+    <Link href="/study/progress" className="glass flex items-center gap-3 rounded-2xl px-4 py-3 transition hover:border-cyan-500/40">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white"><BarChart3 size={18} /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-extrabold">আপনার অগ্রগতি</span>
+        <span className="block text-[12px] text-slate-500 dark:text-slate-400">{(data.attempts ?? []).length}টি পরীক্ষা • {(data.progress?.wrongQueue ?? []).length}টি ভুল-সারিতে</span>
+      </span>
+      <span className="text-[12.5px] font-bold text-cyan-700 dark:text-cyan-300">দেখুন →</span>
+    </Link>
+  );
+}
 
 export default function StudyPage() {
   const router = useRouter();
@@ -226,19 +257,42 @@ export default function StudyPage() {
       <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
         <GraduationCap size={19} /> IT Job Preparation — নতুন প্ল্যাটফর্ম
       </h2>
-      <div className="glass flex flex-wrap items-center gap-2 rounded-2xl p-4">
-        <Link href="/study/posts" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
-          🎯 লক্ষ্য-পদ দেখুন →
-        </Link>
-        <Link href="/study/practice" className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
-          ✍️ Practice now →
-        </Link>
-        <Link href="/study/exams/demo-20q-15min-v1" className="glass hover-glow rounded-full px-5 py-2.5 text-[13px] font-bold">
-          ⏱️ ডেমো পরীক্ষা (২০ প্রশ্ন/১৫ মিনিট)
-        </Link>
-        <Link href="/study/progress" className="glass hover-glow rounded-full px-5 py-2.5 text-[13px] font-bold">
-          📊 অগ্রগতি
-        </Link>
+      {/* preparation modules — card view */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Preparation modules">
+        {PREP_MODULES.map((m) => (
+          <Link key={m.href + m.bn} href={m.href} role="listitem">
+            <GlassCard className="group flex h-full items-center gap-3 p-4 transition hover:border-cyan-500/40">
+              <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white", m.grad)}>
+                <m.icon size={20} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-extrabold leading-6">{m.bn} <span className="font-semibold text-slate-500">({m.en})</span></span>
+                <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{m.desc}</span>
+              </span>
+              <span className="shrink-0 rounded-full bg-slate-900/[.06] px-2.5 py-1 text-[10.5px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">{m.stat}</span>
+            </GlassCard>
+          </Link>
+        ))}
+        <ProgressRail />
+      </div>
+      {/* subject rail — browse notes by subject */}
+      <h3 className="mb-2 mt-5 flex items-center gap-1.5 text-[15px] font-black">
+        <BookOpen size={16} /> বিষয়ভিত্তিক নোট
+      </h3>
+      <div className="flex gap-2 overflow-x-auto pb-2" role="list" aria-label="Subjects">
+        {PLATFORM_SUBJECTS.map((s) => {
+          const n = getChapters().filter((c) => c.subjectId === s.id).length;
+          return (
+            <Link
+              key={s.id} href={`/study/chapters?subject=${s.slug}`} role="listitem"
+              className="glass hover-glow w-40 shrink-0 rounded-2xl p-3.5 transition hover:border-emerald-500/40"
+            >
+              <span className="block truncate text-[13px] font-extrabold leading-6">{s.title.bn}</span>
+              <span className="block truncate text-[11px] font-semibold text-slate-500">{s.title.en}</span>
+              <span className="mt-1.5 inline-block rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-black text-emerald-700 dark:text-emerald-300">{n}টি অধ্যায়</span>
+            </Link>
+          );
+        })}
       </div>
       <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">
         দ্বিভাষিক (বাংলা/English) অধ্যায়, প্রশ্ন-ব্যাংক ও টাইমড পরীক্ষা — পুরোনো গাইড ও ডাউনলোড নিচে আগের মতোই আছে।

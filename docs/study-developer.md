@@ -14,9 +14,10 @@
 
 | Route | Purpose |
 |---|---|
-| `/study` | Hub (preserved) + new rails: posts, practice, demo exam, progress |
+| `/study` | Hub (preserved) + preparation-module cards, subject rail, progress rail |
 | `/study/posts` | Browse posts + versions |
 | `/study/posts/[slug]` | Syllabus map, patterns, practice path |
+| `/study/chapters` | Browsable notes index: BN/EN search, subject filter, cards |
 | `/study/chapters/[slug]` | BN/EN/split reader, glossary, examples, quick checks, bookmarks |
 | `/study/practice` | Builder: version, difficulty, lang, queue (all/wrong/unanswered/bookmarked), count; instant feedback |
 | `/study/exams/[slug]` | Instructions, config, leave policy, sample, confirm |

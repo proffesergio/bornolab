@@ -89,7 +89,323 @@ export const SEED_QUESTIONS: Question[] = [
   q({ id: "seed-current-01", chapterId: "ch-gk-lib", difficulty: "easy", cognitive: "recall", tags: ["current-affairs"], bnStem: "ডেমো সাম্প্রতিক: উৎস, তারিখ ও মেয়াদসহ পড়ুন — BPSC নোটিশ কোথায় পাবেন?", enStem: "Demo current-affairs: read with dated source — where are BPSC notices published?", bnOpts: ["bpsc.gov.bd", "অযাচাইকৃত ফেসবুক পোস্ট", "পুরোনো গাইডের ফটোকপি", "উৎসহীন মিম"], enOpts: ["bpsc.gov.bd", "Unverified social post", "Old guide photocopy", "Unsourced meme"], answer: 0, bnExp: "সাম্প্রতিক দাবিতে তারিখসহ কর্তৃপক্ষের উৎস ও মেয়াদ লাগে।", enExp: "Current-affairs claims need a dated authoritative source plus expiry.", citations: [{ url: "http://bpsc.gov.bd/", title: "BPSC official site", retrievalDate: "2026-10-13", provenance: "official", licenseOrPermission: "link-only", expiresAt: "2027-04-13" }] }),
 ];
 
-/** Deep-chapter enrichment for two chapters (objectives, terms, examples). */
+/** Chapter notes for every chapter — original BN/EN study material (objectives, terms, examples, traps, revision). */
+const NOTES: Record<string, Partial<Chapter>> = {
+  "ch-bangla-spelling": {
+    objectives: [
+      { bn: "ণ-ত্ব/ষ-ত্ব ও হ্রস্ব-দীর্ঘের নিয়ম প্রয়োগ করা", en: "Apply na-tva/sha-tva and vowel-length rules" },
+      { bn: "ভুল-প্রবণ শব্দ যুক্তি দিয়ে শেখা, মুখস্থ নয়", en: "Learn error-prone words by rule, not rote" },
+    ],
+    keyTerms: [
+      { term: { bn: "ণ-ত্ব", en: "Na-tva" }, def: { bn: "ট-বর্গের আগে দন্ত্য-ন → মূর্ধন্য-ণ", en: "Dental-n becomes retroflex-n before ta-class letters" } },
+      { term: { bn: "ষ-ত্ব", en: "Sha-tva" }, def: { bn: "নির্দিষ্ট প্রত্যয়/সন্ধিতে স → ষ", en: "S becomes sh in specific suffixes/sandhi" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: মুমূর্ষু", en: "Example: mumurshu" }, body: { bn: "দ্বিতীয় স্বর দীর্ঘ-ঊ, শেষে মূর্ধন্য-ষ — ষ-ত্বের নিয়মে।", en: "Second vowel is long-u, final sh is retroflex by rule." } },
+    ],
+    commonTraps: [
+      { bn: "ফটোকপি-গাইডের ভিন্ন বানান মুখস্থ করা", en: "Memorizing conflicting printed-guide spellings" },
+      { bn: "ণ/ন ও ষ/স গুলিয়ে ফেলা", en: "Mixing na/na and sha/sa" },
+    ],
+    revisionNotes: [{ bn: "ট-বর্গ + ঋ/র/ষ-এর পর ণ; ই/উ-প্রত্যয়ে ষ", en: "Na after ta-class/r-sounds; sha in i/u suffixes" }],
+  },
+  "ch-bangla-sandhi": {
+    objectives: [
+      { bn: "স্বর/ব্যঞ্জন/বিসর্গ সন্ধি চেনা ও বিচ্ছেদ করা", en: "Identify and split vowel/consonant/visarga sandhi" },
+    ],
+    keyTerms: [
+      { term: { bn: "স্বরসন্ধি", en: "Vowel sandhi" }, def: { bn: "স্বর + স্বর মিলে নতুন স্বর", en: "Vowel + vowel merge into a new vowel" } },
+      { term: { bn: "সন্ধি-বিচ্ছেদ", en: "Sandhi split" }, def: { bn: "যুক্ত রূপকে মূল দুই অংশে ভাঙা", en: "Splitting the joined form into its two roots" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: বিদ্যালয়", en: "Example: bidyaloy" }, body: { bn: "বিদ্যা + আলয়; আ + আ = আ (দীর্ঘ)।", en: "Bidya + aloy; a + a = long a." } },
+    ],
+    commonTraps: [
+      { bn: "সন্ধি ও সমাস গুলিয়ে ফেলা", en: "Confusing sandhi with compound (samas)" },
+      { bn: "যুক্তবর্ণকে সন্ধি ভাবা", en: "Mistaking conjuncts for sandhi" },
+    ],
+    revisionNotes: [{ bn: "সমান স্বর মিলে দীর্ঘ: আ+আ=আ, ই+ই=ঈ, উ+উ=ঊ", en: "Like vowels lengthen: a+a=A, i+i=I, u+u=U" }],
+  },
+  "ch-eng-tense": {
+    objectives: [
+      { bn: "since/for সঠিক ব্যবহার ও voice/narration রূপান্তর", en: "Correct since/for use and voice/narration conversion" },
+    ],
+    keyTerms: [
+      { term: { bn: "since বনাম for", en: "Since vs for" }, def: { bn: "since + নির্দিষ্ট সময়; for + সময়ের পরিমাণ", en: "Since + point of time; for + duration" } },
+      { term: { bn: "Present perfect continuous", en: "Present perfect continuous" }, def: { bn: "has/have been + V-ing — since/for-এর সাথে", en: "Has/have been + V-ing — used with since/for" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "He has been working here since 2020. (since + সাল → has been + V-ing)", en: "He has been working here since 2020. (since + year → has been + V-ing)" } },
+    ],
+    commonTraps: [
+      { bn: "since-এর সাথে from বসানো", en: "Using from with since" },
+      { bn: "Present continuous + since", en: "Present continuous with since" },
+    ],
+    revisionNotes: [{ bn: "since + point, for + duration; passive = be + V3", en: "Since + point, for + duration; passive = be + V3" }],
+  },
+  "ch-gk-lib": {
+    objectives: [
+      { bn: "মুক্তিযুদ্ধের ধারাবাহিকতা ও সংবিধান-কাঠামো ব্যাখ্যা", en: "Explain the liberation timeline and constitution structure" },
+      { bn: "প্রতিটি তারিখ উৎসসহ যাচাই করে পড়া", en: "Study each date with its source verified" },
+    ],
+    keyTerms: [
+      { term: { bn: "স্বাধীনতা ঘোষণা", en: "Declaration of independence" }, def: { bn: "২৬ মার্চ ১৯৭১", en: "26 March 1971" } },
+      { term: { bn: "সংবিধান", en: "Constitution" }, def: { bn: "গৃহীত ৪ নভেম্বর ১৯৭২; কার্যকর ১৬ ডিসেম্বর ১৯৭২", en: "Adopted 4 Nov 1972; effective 16 Dec 1972" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: তারিখ-ক্রম", en: "Example: date order" }, body: { bn: "২৬ মার্চ ১৯৭১ (ঘোষণা) → ১৬ ডিসেম্বর ১৯৭১ (বিজয়) → ৪ নভেম্বর ১৯৭২ (সংবিধান গৃহীত)।", en: "26 Mar 1971 (declaration) → 16 Dec 1971 (victory) → 4 Nov 1972 (constitution adopted)." } },
+    ],
+    commonTraps: [
+      { bn: "পুরোনো গাইডের বিতর্কিত দাবি যাচাই ছাড়া মুখস্থ", en: "Memorizing disputed printed claims without checking BPSC/official sources" },
+      { bn: "সাম্প্রতিক তথ্যে তারিখ/মেয়াদ না দেখা", en: "Ignoring date/expiry on current-affairs items" },
+    ],
+    revisionNotes: [{ bn: "তারিখ + উৎস + মেয়াদ — তিনটিই লিখে পড়ুন", en: "Write date + source + expiry together" }],
+  },
+  "ch-math-percent": {
+    objectives: [
+      { bn: "ক্যালকুলেটর ছাড়া দ্রুত শতকরা ও লাভ-ক্ষতি", en: "Fast calculator-free percent and profit-loss" },
+    ],
+    keyTerms: [
+      { term: { bn: "১০%-ভাঙন", en: "10% split" }, def: { bn: "15% = 10% + 5%; 10% = দশমিক এক ঘর বামে", en: "15% = 10% + 5%; 10% = shift decimal one place" } },
+      { term: { bn: "ক্রয়/বিক্রয়মূল্য", en: "Cost/selling price" }, def: { bn: "লাভ = বিক্রয় − ক্রয়", en: "Profit = selling − cost" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: ১২০-এর ১৫%", en: "Example: 15% of 120" }, body: { bn: "10% = 12, 5% = 6 → মোট 18।", en: "10% = 12, 5% = 6 → total 18." } },
+    ],
+    commonTraps: [
+      { bn: "x% বৃদ্ধির পর x% হ্রাস = আগের মান ভাবা (আসলে x²/100% কমে)", en: "Thinking x% up then x% down returns to start (it drops by x²/100%)" },
+    ],
+    revisionNotes: [{ bn: "ক্রমিক পরিবর্তন: net = −(x²/100)%", en: "Successive change: net = −(x²/100)%" }],
+  },
+  "ch-csf-number": {
+    objectives: [
+      { bn: "বাইনারি↔হেক্স ও two's complement আয়ত্ত", en: "Master binary↔hex and two's complement" },
+    ],
+    keyTerms: [
+      { term: { bn: "Two's complement", en: "Two's complement" }, def: { bn: "−N = (~N) + 1; MSB=1 মানে ঋণাত্মক", en: "−N = (~N) + 1; MSB 1 means negative" } },
+      { term: { bn: "8-বিট রেঞ্জ", en: "8-bit range" }, def: { bn: "−128 … +127", en: "−128 … +127" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: −13", en: "Example: −13" }, body: { bn: "13 = 00001101 → invert 11110010 → +1 = 11110011।", en: "13 = 00001101 → invert 11110010 → +1 = 11110011." } },
+    ],
+    commonTraps: [
+      { bn: "sign-magnitude-কে complement ভাবা", en: "Confusing sign-magnitude with complement" },
+      { bn: "+1 করতে ভুলে যাওয়া (one's-এ থেমে থাকা)", en: "Stopping at one's complement without +1" },
+    ],
+    revisionNotes: [{ bn: "−N = (~N)+1; MSB দেখে চিহ্ন", en: "−N = (~N)+1; read sign from MSB" }],
+  },
+  "ch-prog-c": {
+    objectives: [
+      { bn: "পয়েন্টার/sequence-point ও UB চেনা", en: "Recognize pointers, sequence points and UB" },
+    ],
+    keyTerms: [
+      { term: { bn: "Undefined behavior", en: "Undefined behavior" }, def: { bn: "এক statement-এ একই variable দুবার বদল", en: "Two modifications of one variable in a single statement" } },
+      { term: { bn: "Sequence point", en: "Sequence point" }, def: { bn: "; , && || ?: ও ফাংশন-কলের সীমানা", en: "Boundaries at ; , && || ?: and function calls" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "a++ + ++a → undefined; কোনো ‘সঠিক সংখ্যা’ নেই।", en: "a++ + ++a is undefined; there is no correct number." } },
+    ],
+    commonTraps: [
+      { bn: "নিজের কম্পাইলারের আউটপুটকে সার্বজনীন উত্তর ভাবা", en: "Treating one compiler's output as the universal answer" },
+    ],
+    revisionNotes: [{ bn: "UB অপশন থাকলে সেটিই উত্তর", en: "If UB is an option, it is the answer" }],
+  },
+  "ch-prog-oop": {
+    objectives: [
+      { bn: "Overloading বনাম overriding; virtual dispatch", en: "Overloading vs overriding; virtual dispatch" },
+    ],
+    keyTerms: [
+      { term: { bn: "Overloading", en: "Overloading" }, def: { bn: "একই ক্লাসে ভিন্ন প্যারামিটার — compile-time", en: "Same class, different params — compile-time" } },
+      { term: { bn: "Overriding", en: "Overriding" }, def: { bn: "subclass-এ পুনঃসংজ্ঞা — run-time dispatch", en: "Subclass redefinition — run-time dispatch" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "Parent-রেফারেন্স → child-এর method চলে; C++-এ virtual দরকার।", en: "Parent reference calls the child's method; C++ needs virtual." } },
+    ],
+    commonTraps: [
+      { bn: "static method-কে override ভাবা (এটা hiding)", en: "Calling static-method hiding an override" },
+    ],
+    revisionNotes: [{ bn: "overload = compile-time; override = run-time", en: "Overload = compile-time; override = run-time" }],
+  },
+  "ch-dsa-sort": {
+    objectives: [
+      { bn: "Complexity তুলনা ও Master theorem প্রয়োগ", en: "Compare complexities and apply Master theorem" },
+    ],
+    keyTerms: [
+      { term: { bn: "Θ (theta)", en: "Theta" }, def: { bn: "tight bound — উপর ও নিচ দুটোই", en: "Tight bound — both upper and lower" } },
+      { term: { bn: "Stable sort", en: "Stable sort" }, def: { bn: "সমান key-এর আগের ক্রম বজায় থাকে", en: "Equal keys keep their original order" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: T(n)=2T(n/2)+n", en: "Example" }, body: { bn: "Master case 2 → Θ(n log n)।", en: "Master case 2 → Θ(n log n)." } },
+    ],
+    commonTraps: [
+      { bn: "Quicksort-কে সবসময় O(n log n) ভাবা (worst O(n²))", en: "Assuming quicksort is always O(n log n) (worst O(n²))" },
+    ],
+    revisionNotes: [{ bn: "f(n)=n^log_b(a) হলে Θ(n^d log n)", en: "If f(n)=n^log_b(a) then Θ(n^d log n)" }],
+  },
+  "ch-dsa-graph": {
+    objectives: [
+      { bn: "BFS/DFS ও shortest-path অ্যালগরিদমের শর্ত", en: "BFS/DFS conditions and shortest-path choice" },
+    ],
+    keyTerms: [
+      { term: { bn: "Relaxation", en: "Relaxation" }, def: { bn: "dist[v] = min(dist[v], dist[u]+w)", en: "dist[v] = min(dist[v], dist[u]+w)" } },
+      { term: { bn: "Admissible heuristic", en: "Admissible heuristic" }, def: { bn: "কখনো overestimate করে না", en: "Never overestimates the true cost" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "Negative edge → Dijkstra ভাঙে; Bellman-Ford (V−1 relaxation)।", en: "Negative edges break Dijkstra; use Bellman-Ford (V−1 relaxations)." } },
+    ],
+    commonTraps: [
+      { bn: "সব shortest-path-এ Dijkstra চালানো", en: "Running Dijkstra on every shortest-path problem" },
+    ],
+    revisionNotes: [{ bn: "non-negative → Dijkstra; negative → Bellman-Ford", en: "Non-negative → Dijkstra; negative → Bellman-Ford" }],
+  },
+  "ch-db-sql": {
+    objectives: [
+      { bn: "JOIN বনাম cartesian; HAVING বনাম WHERE", en: "JOIN vs cartesian; HAVING vs WHERE" },
+    ],
+    keyTerms: [
+      { term: { bn: "Cartesian product", en: "Cartesian product" }, def: { bn: "WHERE-ছাড়া কমা-জয়েন: m×n সারি", en: "Comma join without WHERE: m×n rows" } },
+      { term: { bn: "HAVING", en: "HAVING" }, def: { bn: "grouping-এর পর গ্রুপ-ফিল্টার", en: "Filters groups after grouping" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: 5×15", en: "Example: 5×15" }, body: { bn: "SELECT * FROM student, takes → 75 সারি।", en: "SELECT * FROM student, takes → 75 rows." } },
+    ],
+    commonTraps: [
+      { bn: "WHERE দিয়ে group-filter করার চেষ্টা", en: "Trying to filter groups with WHERE" },
+    ],
+    revisionNotes: [{ bn: "WHERE = সারি-ফিল্টার; HAVING = গ্রুপ-ফিল্টার", en: "WHERE filters rows; HAVING filters groups" }],
+  },
+  "ch-net-tcp": {
+    objectives: [
+      { bn: "Port/protocol mapping; safe/idempotent মেথড", en: "Port/protocol mapping; safe/idempotent methods" },
+    ],
+    keyTerms: [
+      { term: { bn: "Safe", en: "Safe" }, def: { bn: "রিসোর্স বদলায় না (GET)", en: "Does not change the resource (GET)" } },
+      { term: { bn: "Idempotent", en: "Idempotent" }, def: { bn: "বারবার পাঠালেও একই ফল (GET/PUT/DELETE)", en: "Same effect on repeats (GET/PUT/DELETE)" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "HTTPS = HTTP over TLS, TCP 443; HTTP = TCP 80।", en: "HTTPS is HTTP over TLS on TCP 443; HTTP is TCP 80." } },
+    ],
+    commonTraps: [
+      { bn: "‘POST, GET-এর চেয়ে নিরাপদ’ মুখস্থ-ভুল", en: "The memorized myth that POST is safer than GET" },
+    ],
+    revisionNotes: [{ bn: "নিরাপত্তা আসে TLS থেকে, মেথড থেকে নয়", en: "Security comes from TLS, not the method" }],
+  },
+  "ch-os-deadlock": {
+    objectives: [
+      { bn: "৪ শর্ত + প্রতিরোধ/এড়ানো/শনাক্তকরণ", en: "Four conditions + prevention/avoidance/detection" },
+    ],
+    keyTerms: [
+      { term: { bn: "Circular wait", en: "Circular wait" }, def: { bn: "প্রসেস-চক্রে পরস্পরের রিসোর্স ধরে রাখা", en: "Processes holding resources in a cycle" } },
+      { term: { bn: "Banker's algorithm", en: "Banker's algorithm" }, def: { bn: "safe-state যাচাই করে বরাদ্দ (avoidance)", en: "Grants only safe-state allocations (avoidance)" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "সব রিসোর্সে global order → circular-wait ভাঙে।", en: "A global resource order breaks circular-wait." } },
+    ],
+    commonTraps: [
+      { bn: "Prevention বনাম avoidance গুলিয়ে ফেলা", en: "Confusing prevention with avoidance" },
+    ],
+    revisionNotes: [{ bn: "একটি শর্ত ভাঙলেই deadlock অসম্ভব", en: "Breaking one condition rules out deadlock" }],
+  },
+  "ch-sec-crypto": {
+    objectives: [
+      { bn: "Password hashing ও CIA ত্রিভুজ", en: "Password hashing and the CIA triad" },
+    ],
+    keyTerms: [
+      { term: { bn: "Salt + KDF", en: "Salt + KDF" }, def: { bn: "bcrypt/argon2-এর মতো slow hash", en: "Slow hashes like bcrypt/argon2" } },
+      { term: { bn: "CIA", en: "CIA" }, def: { bn: "Confidentiality, Integrity, Availability", en: "Confidentiality, Integrity, Availability" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "MD5/SHA1 দ্রুত → brute-force সহজ; password-এ slow KDF + salt।", en: "MD5/SHA1 are fast → easy brute force; use slow KDF + salt." } },
+    ],
+    commonTraps: [
+      { bn: "Base64-কে encryption ভাবা (এটা encoding)", en: "Mistaking Base64 for encryption (it is encoding)" },
+      { bn: "Plain-text/MD5-তে password রাখা", en: "Storing passwords plain or in MD5" },
+    ],
+    revisionNotes: [{ bn: "password → salt + slow KDF; কখনো plain নয়", en: "Passwords → salt + slow KDF; never plain" }],
+  },
+  "ch-sec-web": {
+    objectives: [
+      { bn: "SQLi/XSS/CSRF প্রতিরোধ-কৌশল", en: "SQLi/XSS/CSRF defenses" },
+    ],
+    keyTerms: [
+      { term: { bn: "Parameterized query", en: "Parameterized query" }, def: { bn: "bind variable — কোড ও ডেটা আলাদা", en: "Bind variables separate code from data" } },
+      { term: { bn: "Least privilege", en: "Least privilege" }, def: { bn: "DB user-কে সর্বনিম্ন অধিকার", en: "Minimum rights for the DB user" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "String-concat SQL → bind variable-এ বদলান।", en: "Replace string-concatenated SQL with bind variables." } },
+    ],
+    commonTraps: [
+      { bn: "শুধু client-side validation-ই যথেষ্ট ভাবা", en: "Relying on client-side validation alone" },
+    ],
+    revisionNotes: [{ bn: "server-side bind + least privilege", en: "Server-side binding + least privilege" }],
+  },
+  "ch-se-testing": {
+    objectives: [
+      { bn: "Testing-স্তর ক্রম ও black/white-box পার্থক্য", en: "Testing-level order and black/white-box distinction" },
+    ],
+    keyTerms: [
+      { term: { bn: "Testing levels", en: "Testing levels" }, def: { bn: "Unit → Integration → System → Acceptance", en: "Unit → Integration → System → Acceptance" } },
+      { term: { bn: "Regression", en: "Regression" }, def: { bn: "পরিবর্তনের পর পুরোনো টেস্ট পুনরায় চালানো", en: "Re-running old tests after changes" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "Black-box = আচরণ; white-box = ভেতরের পথ।", en: "Black-box = behavior; white-box = internal paths." } },
+    ],
+    commonTraps: [
+      { bn: "মুদ্রিত অতিসরল সংজ্ঞা (‘black-box সবসময় ভালো’)", en: "Oversimplified printed claims (black-box is always better)" },
+    ],
+    revisionNotes: [{ bn: "alpha = in-house; beta = real users", en: "Alpha = in-house; beta = real users" }],
+  },
+  "ch-logic-kmap": {
+    objectives: [
+      { bn: "K-map grouping দিয়ে সরলীকরণ", en: "Simplify with K-map grouping" },
+    ],
+    keyTerms: [
+      { term: { bn: "Minterm", en: "Minterm" }, def: { bn: "output=1 সারির গুণফল-পদ", en: "Product term for an output-1 row" } },
+      { term: { bn: "Quad", en: "Quad" }, def: { bn: "৪-ঘরের group ২টি variable বাদ দেয়", en: "A 4-cell group eliminates 2 variables" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ: Σm(1,3,5,7)", en: "Example" }, body: { bn: "1,3,5,7 = C=1 সারি → F = C।", en: "1,3,5,7 are exactly C=1 rows → F = C." } },
+    ],
+    commonTraps: [
+      { bn: "2^k-এর বাইরে group বানানো", en: "Grouping non-power-of-two cell counts" },
+    ],
+    revisionNotes: [{ bn: "বড় group = সহজ expression", en: "Bigger groups = simpler expressions" }],
+  },
+  "ch-ai-overfit": {
+    objectives: [
+      { bn: "Overfitting নির্ণয় ও precision/recall/F1", en: "Diagnose overfitting; compute precision/recall/F1" },
+    ],
+    keyTerms: [
+      { term: { bn: "Precision / Recall", en: "Precision / Recall" }, def: { bn: "P=TP/(TP+FP); R=TP/(TP+FN)", en: "P=TP/(TP+FP); R=TP/(TP+FN)" } },
+      { term: { bn: "Overfitting", en: "Overfitting" }, def: { bn: "train↓ কিন্তু validation↑", en: "Train error falls while validation rises" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "TP=40,FP=10,FN=20 → P=0.80, R=0.667।", en: "TP=40,FP=10,FN=20 → P=0.80, R=0.667." } },
+    ],
+    commonTraps: [
+      { bn: "Imbalanced data-তে শুধু accuracy দেখা", en: "Judging imbalanced data by accuracy alone" },
+    ],
+    revisionNotes: [{ bn: "overfit → regularization/dropout/early-stop/more data", en: "Overfit → regularization/dropout/early-stop/more data" }],
+  },
+  "ch-sci-power": {
+    objectives: [
+      { bn: "Transformer অনুপাত ও RLC বেসিক", en: "Transformer ratios and RLC basics" },
+    ],
+    keyTerms: [
+      { term: { bn: "Turns ratio", en: "Turns ratio" }, def: { bn: "আদর্শ: V2/V1 = N2/N1", en: "Ideal: V2/V1 = N2/N1" } },
+      { term: { bn: "Induction", en: "Induction" }, def: { bn: "পরিবর্তী flux → emf", en: "Changing flux induces emf" } },
+    ],
+    workedExamples: [
+      { title: { bn: "উদাহরণ", en: "Example" }, body: { bn: "N2 = 2×N1 হলে V2 = 2×V1 (আদর্শ, লসহীন)।", en: "If N2 = 2×N1 then V2 = 2×V1 (ideal, lossless)." } },
+    ],
+    commonTraps: [
+      { bn: "Ideal সূত্র real transformer-এ সরাসরি বসানো (loss আছে)", en: "Applying ideal formulas to real transformers (losses exist)" },
+    ],
+    revisionNotes: [{ bn: "ideal: V∝N, I∝1/N", en: "Ideal: V∝N, I∝1/N" }],
+  },
+};
+
+/** Deep-chapter enrichment: two flagship chapters + full notes for every other chapter. */
 export function deepChapterPatch(chapterId: string): Partial<Chapter> | null {
   if (chapterId === "ch-net-ip") {
     return {
@@ -128,7 +444,7 @@ export function deepChapterPatch(chapterId: string): Partial<Chapter> | null {
       revisionNotes: [{ bn: "3NF: X→Y-তে X সুপারকি অথবা Y প্রাইম", en: "3NF: for X→Y, X is a superkey or Y is prime" }],
     };
   }
-  return null;
+  return NOTES[chapterId] ?? null;
 }
 
 export function enrichedChapters(): Chapter[] {

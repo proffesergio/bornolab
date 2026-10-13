@@ -48,6 +48,19 @@ export function ChapterReader({ chapter, related }: { chapter: Chapter; related:
               <li key={i} className="text-[13.5px] leading-7 text-slate-600 dark:text-slate-300">• {show(o.bn, o.en)}</li>
             ))}
           </ul>
+          {chapter.keyTerms.length > 0 && (
+            <>
+              <h3 className="mt-4 font-extrabold">📖 {lang === "en" ? "Key terms" : "মূল পরিভাষা"}</h3>
+              <dl className="mt-2 grid gap-1.5">
+                {chapter.keyTerms.map((k, i) => (
+                  <div key={i} className="rounded-xl bg-slate-900/[.04] px-3.5 py-2.5 text-[13.5px] leading-7 dark:bg-white/5">
+                    <dt className="font-extrabold">{show(k.term.bn, k.term.en)}</dt>
+                    <dd className="text-slate-600 dark:text-slate-300">{show(k.def.bn, k.def.en)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
           {chapter.workedExamples.length > 0 && (
             <>
               <h3 className="mt-4 font-extrabold">📝 {lang === "en" ? "Worked examples" : "উদাহরণ"}</h3>
