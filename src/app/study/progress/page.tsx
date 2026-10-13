@@ -41,6 +41,8 @@ export default function ProgressPage() {
       .sort((a, b) => a.pct - b.pct);
   }, [data]);
   // Spaced-review recommendations: weakest chapters first, then wrong queue, then stale (>7d) chapters.
+  // `now` is captured once via lazy state init (pure render; satisfies react-hooks/purity).
+  const [now] = useState(() => Date.now());
   const recommendations = useMemo(() => {
     if (!data) return [];
     const recs: { label: string; href: string; why: string }[] = [];
@@ -57,14 +59,14 @@ export default function ProgressPage() {
     if (data.progress.wrongQueue.length > 0) {
       recs.push({ label: `ভুল-সারি (${data.progress.wrongQueue.length}টি)`, href: "/study/practice?mode=wrong", why: "ভুল প্রশ্ন ২৪ ঘণ্টার মধ্যে আবার করুন" });
     }
-    const weekAgo = Date.now() - 7 * 86400000;
+    const weekAgo = now - 7 * 86400000;
     const stale = masteryRows.filter((r) => r.updatedAt < weekAgo).slice(0, 2);
     for (const r of stale) {
       const c = chapterName.get(r.id);
       if (c) recs.push({ label: `ঝালিয়ে নিন: ${c.title.bn}`, href: `/study/chapters/${c.slug}`, why: "৭+ দিন আগে পড়া" });
     }
     return recs.slice(0, 5);
-  }, [data, masteryRows, chapterName]);
+  }, [data, masteryRows, chapterName, now]);
 
   if (error === "login") {
     return (
