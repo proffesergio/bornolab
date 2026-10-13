@@ -1,5 +1,5 @@
 /** Catalog: seed fixtures + stored overrides (KV/Postgres). Server can augment; client uses seed directly. */
-import { PLATFORM_CHAPTERS, PLATFORM_POSTS, PLATFORM_SUBJECTS, PLATFORM_VERSIONS, chapterBySlug, postBySlug, versionBySlug } from "./curriculum";
+import { PLATFORM_CHAPTERS, PLATFORM_POSTS, PLATFORM_SUBJECTS, PLATFORM_VERSIONS, postBySlug, versionBySlug } from "./curriculum";
 import { SEED_QUESTIONS, enrichedChapters } from "./seed-content";
 import type { Chapter, ExamVersion, Post, Question } from "./types";
 
@@ -44,4 +44,9 @@ export function questionsForVersion(versionSlug: string, all: Question[]): Quest
   return pool;
 }
 
-export { chapterBySlug, postBySlug, versionBySlug, PLATFORM_CHAPTERS, PLATFORM_POSTS, PLATFORM_SUBJECTS, PLATFORM_VERSIONS };
+export { postBySlug, versionBySlug, PLATFORM_CHAPTERS, PLATFORM_POSTS, PLATFORM_SUBJECTS, PLATFORM_VERSIONS };
+
+/** Chapter lookup over the enriched list (deep-chapter patches applied). */
+export function chapterBySlug(slug: string) {
+  return enrichedChapters().find((c) => c.slug === slug);
+}
