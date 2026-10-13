@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme";
 import { Navbar } from "@/components/navbar";
 import { AnnouncementBar, Tracker } from "@/components/site-widgets";
 import { ConsentBanner } from "@/components/ads";
+import { PwaRegister } from "@/components/pwa-register";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/site-url";
 import { resolvePageSeo, PATHNAME_HEADER } from "@/lib/seo-pages";
@@ -140,6 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Script id="bornolab-header-inject" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: headerScripts }} />
         ) : null}
         <ThemeProvider>
+          <PwaRegister />
           <Tracker />
           <AnnouncementBar />
           <Navbar />

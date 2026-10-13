@@ -12,6 +12,7 @@ interface ProgressData {
     unansweredQueue: string[];
     streakDays: number;
     lastActiveDay?: string;
+    percentileOptIn?: boolean;
     chapterMastery: Record<string, { seen: number; correct: number; total: number; updatedAt: number }>;
   };
   attempts: { id: string; version: string; startedAt: number; submittedAt: number | null; score: { net: number; pct: number; correct: number; incorrect: number; unanswered: number } | null; needsRecalculation?: boolean }[];
@@ -23,13 +24,28 @@ interface ProgressData {
 export default function ProgressPage() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [optIn, setOptIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/study-platform/progress").then(async (r) => {
       if (r.status === 401) { setError("login"); return; }
-      setData(await r.json());
+      const j = await r.json();
+      setData(j);
+      setOptIn(j.progress?.percentileOptIn === true);
     }).catch(() => setError("load"));
   }, []);
+
+  const toggleOptIn = async () => {
+    const next = !(optIn === true);
+    setOptIn(next);
+    try {
+      await fetch("/api/study-platform/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ optIn: next }),
+      });
+    } catch { /* keep local state */ }
+  };
 
   // Hooks stay above every early return so call order never changes.
   const chapters = useMemo(() => getChapters(), []);
@@ -87,6 +103,15 @@ export default function ProgressPage() {
     <StudyShell>
       <SectionTitle kicker="Study • Progress" title="আপনার অগ্রগতি" desc="ইতিহাস, দুর্বল-টপিক সারি, বুকমার্ক ও নির্দেশনা।" />
       <StatusPill kind="guidance">📊 Readiness/heatmap = পড়ার নির্দেশনা — অফিসিয়াল সাফল্যের ভবিষ্যদ্বাণী নয়</StatusPill>
+      <GlassCard className="mt-3">
+        <label className="flex cursor-pointer items-start gap-2.5 text-[13px]">
+          <input type="checkbox" checked={optIn === true} onChange={toggleOptIn} className="mt-1 h-4 w-4 accent-cyan-500" />
+          <span>
+            <b>👥 Cohort তুলনায় অংশ নিন (ঐচ্ছিক)</b>
+            <span className="block text-slate-500">সম্মতি দিলে আপনার জমা-স্কোর বেনামী cohort-এ গণনা হবে; ৩০+ জনের cohort-এ শুধু আপনার ব্যান্ড (যেমন শীর্ষ ২৫%) দেখাবে। কারো ব্যক্তিগত স্কোর, নাম বা র‍্যাঙ্ক কখনো প্রকাশ হয় না। যেকোনো সময় বন্ধ করতে পারেন।</span>
+          </span>
+        </label>
+      </GlassCard>
       <div className="mt-3 grid gap-3 sm:grid-cols-4">
         <GlassCard><p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">🔥 স্ট্রিক</p><p className="text-3xl font-black">{data.progress.streakDays}<span className="text-sm font-bold text-slate-500"> দিন</span></p></GlassCard>
         <GlassCard><p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Attempts</p><p className="text-3xl font-black">{data.attempts.length}</p></GlassCard>

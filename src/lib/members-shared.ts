@@ -59,6 +59,11 @@ export const PERMISSIONS = [
   "ads.manage",
   "payments.manage",
   "settings.manage",
+  "study.author",
+  "study.review",
+  "study.publish",
+  "study.exams",
+  "study.moderate",
 ] as const;
 
 export const DEFAULT_PLANS: PlanDef[] = [
@@ -84,6 +89,12 @@ export const DEFAULT_ROLES: RoleDef[] = [
   { id: "manager", name: "Manager", permissions: ["users.view", "users.manage", "orders.manage", "catalog.manage", "tools.manage"], system: true },
   { id: "support", name: "Support", permissions: ["users.view", "orders.manage"], system: true },
   { id: "member", name: "Member", permissions: [], system: true },
+  // Editorial study roles (advisory until human accounts are assigned in Admin → Customers).
+  { id: "content-author", name: "Content Author", permissions: ["study.author"], system: true },
+  { id: "subject-reviewer", name: "Subject Reviewer", permissions: ["study.author", "study.review"], system: true },
+  { id: "language-reviewer", name: "Language Reviewer", permissions: ["study.review"], system: true },
+  { id: "chief-reviewer", name: "Chief Reviewer", permissions: ["study.author", "study.review", "study.publish"], system: true },
+  { id: "exam-manager", name: "Exam Manager", permissions: ["study.exams", "study.moderate"], system: true },
 ];
 
 export interface AuthProviderConfig {

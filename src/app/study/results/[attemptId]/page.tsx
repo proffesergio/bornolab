@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyShell, StatusPill } from "@/components/study-platform/ui";
 import { CodeText } from "@/components/study-platform/code-text";
+import { PercentileCard } from "@/components/study-platform/percentile-card";
 import { getPublishedSeedQuestions, mergeQuestions } from "@/lib/study-platform/catalog";
 import { getAttempt, listQuestions } from "@/lib/study-platform/store";
 
@@ -34,6 +35,7 @@ export default async function ResultPage({ params }: { params: Promise<{ attempt
         {attempt.autoSubmitted && <StatusPill kind="demo">⏱ Auto-submitted at deadline</StatusPill>}
       </div>
       {attempt.correctionNote && <p className="mt-2 rounded-xl bg-amber-500/10 p-3 text-[13px]">📝 {attempt.correctionNote} (মূল ফলাফল সংরক্ষিত)</p>}
+      <div className="mt-3"><PercentileCard version={attempt.examVersionId} /></div>
       <div className="mt-3 grid gap-2 sm:grid-cols-4">
         {[["Raw", s.raw], ["Penalty", `−${s.penalty}`], ["Net", s.net], ["%", `${s.pct}%`]].map(([k, v]) => (
           <GlassCard key={k} className="p-4 text-center"><p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{k}</p><p className="text-2xl font-black">{v}</p></GlassCard>

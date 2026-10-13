@@ -186,6 +186,8 @@ export interface Question {
   status: ContentStatus;
   version: number;
   reviewerNotes?: string;
+  /** Advisory reviewer assignment (reviewer email or user id). No hard RBAC yet. */
+  assignee?: string;
   ambiguityFlag?: boolean;
   ocrFlags?: string[];
   history: QuestionVersion[];
@@ -262,6 +264,21 @@ export interface UserProgress {
   unansweredQueue: string[];
   streakDays: number;
   lastActiveDay?: string;
+  /** SM-2 cards keyed by question id (absent = new card; migration-safe). */
+  srCards?: Record<string, SRCard>;
+  /** Percentile opt-in (cohort comparisons only with consent). */
+  percentileOptIn?: boolean;
+}
+
+/** SM-2 (SuperMemo-2) spaced-repetition card state. */
+export interface SRCard {
+  ease: number;
+  intervalDays: number;
+  reps: number;
+  lapses: number;
+  dueAt: number;
+  lastGrade: number;
+  updatedAt: number;
 }
 
 export interface Bookmark {

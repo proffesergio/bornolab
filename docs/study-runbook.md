@@ -51,6 +51,23 @@ The module ships **disabled** (`studyPlatform.enabled: false`). Old `/study` hub
 
 Rollback never touches the legacy study module (`/api/study*`, `study-data.ts`, reader/practice components) — it is independent of the flag.
 
-## 6. Next-phase backlog (post-pilot)
+## 6. Sprint-3 features in this release (operator notes)
 
-Full OCR pipeline UI, spaced-repetition scheduler v2, percentile populations (privacy review first), Bangla TTS for chapters, offline exam pack, RBAC editorial roles (author/reviewer/chief) on top of current single-admin auth.
+- **OCR Studio** (Admin → Study): image/PDF → Tesseract `ben+eng` in the admin's browser; language data loads from CDN at runtime, so the admin machine needs internet. Output lands in the restricted evidence ledger (license `pending`) — paraphrase via import/manual entry, then review. Never publishes raw OCR.
+- **Spaced review** (`/study/review`, SM-2 classic): grades Again(0)/Hard(3)/Good(4)/Easy(5); practice auto-grades correct→4/incorrect→2; exam submit auto-grades correct→4/incorrect→2/unanswered→1. Cards live on `UserProgress.srCards` (absent = new; old records keep working).
+- **Cohort bands** (opt-in): learners toggle consent on `/study/progress` (copy: “অংশ নিন… কারো ব্যক্তিগত স্কোর কখনো দেখানো হয় না”). Bands appear at 30+ opted-in attempts per version; aggregate only — no peer scores, ids, or ranks leave the server.
+- **Offline (PWA)**: service worker caches reading shell + static assets; exam autosaves queue on-device and sync on reconnect; **submit requires connection** and the deadline stays server-authoritative (late submits are marked auto-submitted). Needs proper 192/512 PNG icons for the install prompt (currently references `logo.png` only).
+- **Editorial roles** (advisory): `content-author`, `subject-reviewer`, `language-reviewer`, `chief-reviewer`, `exam-manager` ship as system roles (auto-backfilled) with `study.*` permissions; assign humans in Admin → Customers → Role, and assign reviewers per question in the review queue. Two-person rule stays note-based until accounts exist.
+- **Bangla TTS: deferred** by decision — no engine shipped.
+
+## 7. Pilot accounts + consent (what the owner must do)
+
+1. Each reviewer/learner signs in once (Google/OTP/magic link) so a member record exists.
+2. Admin → Customers: set each human's Role (Content Author, Subject/Language Reviewer, Chief Reviewer, Exam Manager).
+3. Reviewers use Admin → Study → review queue (assignee field shows who owns what).
+4. Learners opt in to cohort comparison themselves on `/study/progress` — never pre-tick consent for anyone.
+5. Set `POSTGRES_URL` before the pilot if attempts/progress/SM-2 cards must survive redeploys.
+
+## 8. Next-phase backlog (post-pilot)
+
+Bangla TTS engine, richer OCR (table/diagram regions), FSRS scheduler option, percentile trend charts, offline practice-pack download, hard identity-based two-person enforcement.

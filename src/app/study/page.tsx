@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe, Target, NotebookText, Timer, BarChart3 } from "lucide-react";
+import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe, Target, NotebookText, Timer, BarChart3, History } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
 import { StudyPractice } from "@/components/study-practice";
 import { AdUnits } from "@/components/ads";
@@ -18,6 +18,7 @@ const PREP_MODULES = [
   { href: "/study/posts", icon: Target, grad: "from-cyan-500 to-blue-600", bn: "লক্ষ্য-পদ", en: "Target posts", desc: "১২টি IT-পদ ও পরীক্ষা-প্যাটার্ন", stat: "১২টি পদ" },
   { href: "/study/chapters", icon: NotebookText, grad: "from-emerald-500 to-teal-600", bn: "স্টাডি নোট", en: "Notes", desc: "বিষয়ভিত্তিক নোট, পরিভাষা ও উদাহরণ", stat: "২১টি অধ্যায়" },
   { href: "/study/practice", icon: GraduationCap, grad: "from-amber-500 to-orange-600", bn: "অনুশীলন", en: "Practice", desc: "কাস্টম সেট, সঙ্গে সঙ্গে ফিডব্যাক", stat: "Practice now" },
+  { href: "/study/review", icon: History, grad: "from-indigo-500 to-violet-600", bn: "ডিউ রিভিউ", en: "Spaced review", desc: "SM-2 সময়সূচিতে মনে রাখুন", stat: "প্রতিদিন" },
   { href: "/study/exams/demo-20q-15min-v1", icon: Timer, grad: "from-purple-500 to-pink-600", bn: "টাইমড পরীক্ষা", en: "Timed exams", desc: "সার্ভার-টাইমার, নেগেটিভ মার্কিংসহ", stat: "২০প্রশ্ন/১৫মিনিট" },
   { href: "/study/progress", icon: BarChart3, grad: "from-rose-500 to-red-600", bn: "অগ্রগতি", en: "Progress", desc: "ভুল-সারি, ইতিহাস ও নির্দেশনা", stat: "ট্র্যাক করুন" },
 ];

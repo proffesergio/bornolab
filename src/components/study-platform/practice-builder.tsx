@@ -66,6 +66,12 @@ export function PracticeBuilder({ initial }: { initial?: Partial<Filters> }) {
     setPicked(optId);
     const ok = optId === card.key.optionId;
     setScore((s) => ({ right: s.right + (ok ? 1 : 0), wrong: s.wrong + (ok ? 0 : 1) }));
+    // Feed the SM-2 scheduler (best-effort; anonymous users simply have no card).
+    fetch("/api/study-platform/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: card.id, grade: ok ? 4 : 2 }),
+    }).catch(() => {});
   };
   const next = () => {
     setPicked(null);

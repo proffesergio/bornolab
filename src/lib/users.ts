@@ -268,6 +268,14 @@ export async function listRoles(): Promise<RoleDef[]> {
     await writeJson("roles.json", DEFAULT_ROLES);
     return DEFAULT_ROLES;
   }
+  // Backfill newer system roles (e.g. editorial study roles) into existing installs.
+  const ids = new Set(roles.map((r) => r.id));
+  const missing = DEFAULT_ROLES.filter((r) => r.system && !ids.has(r.id));
+  if (missing.length > 0) {
+    const next = [...roles, ...missing];
+    await writeJson("roles.json", next);
+    return next;
+  }
   return roles;
 }
 

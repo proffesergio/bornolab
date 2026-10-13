@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       issues,
       ambiguity: !!q.ambiguityFlag,
       ocr: q.ocrFlags ?? [],
+      assignee: q.assignee ?? "",
       previewBn: q.locale.bn.stem.slice(0, 160),
       previewEn: q.locale.en.stem.slice(0, 160),
       optionsCount: { bn: q.locale.bn.options.length, en: q.locale.en.options.length },
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
   const actor = String(auth);
-  const body = (await req.json().catch(() => ({}))) as { questionId?: string; to?: ContentStatus; note?: string; recalculate?: boolean; newKeyOptionId?: string; rollbackTo?: number };
+  const body = (await req.json().catch(() => ({}))) as { questionId?: string; to?: ContentStatus; note?: string; recalculate?: boolean; newKeyOptionId?: string; rollbackTo?: number; assignee?: string };
   if (!body.questionId) return NextResponse.json({ error: "questionId required" }, { status: 400 });
   const stored = await listQuestions().catch(() => []);
   const i = stored.findIndex((q) => q.id === body.questionId);
@@ -61,6 +62,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (i >= 0) {
+    // Advisory reviewer assignment (no hard RBAC — enforced when human accounts exist).
+    if (typeof body.assignee === "string" && !body.to && typeof body.rollbackTo !== "number") {
+      const prev = stored[i];
+      stored[i] = { ...prev, assignee: body.assignee.slice(0, 120) || undefined, updatedAt: Date.now() };
+      await saveQuestions(stored);
+      await appendAudit({ id: `aud-${Date.now().toString(36)}`, at: Date.now(), actor, action: "study.assign", entity: "question", entityId: prev.id, detail: `assignee → ${body.assignee.slice(0, 120) || "—"}` });
+      return NextResponse.json({ ok: true, id: prev.id, assignee: stored[i].assignee ?? "" });
+    }
     // Rollback: restore a prior snapshot as a new version (history preserved).
     if (typeof body.rollbackTo === "number") {
       const prev = stored[i];

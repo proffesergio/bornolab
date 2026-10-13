@@ -38,6 +38,11 @@
 - `DELETE /api/study-platform/attempts` `{attemptId}` — cancel an unsubmitted attempt (owner or admin; submitted attempts cannot be cancelled).
 - Admin (`requireAdmin`): `POST /api/study-platform/import` (JSON/CSV → staging + drafts, never auto-publish); `GET/POST /api/study-platform/review` (queue with content preview, key confidence, duplicate groups + approve/publish/retire/rollback, 422 on blockers, key-change → recalculation candidates); `POST /api/study-platform/recalculate` (re-score flagged attempts; originals preserved in `previousScores`); `GET /api/study-platform/export?kind=questions|attempts&format=json|csv`; `GET /api/study-platform/audit`; `GET/PUT /api/study-platform/flags`.
 - Guards: per-IP throttles on attempt-create (20/h) and practice (60/h); attempt creation resumes an active attempt and enforces `ExamVersion.attemptLimit`; expired `expiresAt` citations block publication.
+- `GET /api/study-platform/schedule` (login) → SM-2 due queue + summary; `POST` `{questionId, grade 0|3|4|5}` records a grade. Grades: Again 0 / Hard 3 / Good 4 / Easy 5 (classic SM-2, ease floor 1.3, interval cap 365d); practice auto-grades correct→4/incorrect→2; exam submit auto-grades correct→4/incorrect→2/unanswered→1 into `UserProgress.srCards`.
+- `POST /api/study-platform/consent` `{optIn}` (login); `GET /api/study-platform/percentile?version=` (login + opt-in) → cohort band only at 30+ opted-in attempts; never peer scores/ids/ranks.
+- `GET/POST /api/study-platform/evidence` (admin) — restricted OCR evidence ledger; raw evidence never reaches learners.
+- PWA: `/manifest.webmanifest` (app/manifest.ts), `/sw.js` (shell + static cache, API never cached, `/offline` fallback), outbox-synced exam autosaves; submit stays online-only with server deadline (late submits marked auto-submitted).
+- Editorial roles (`content-author`, `subject-reviewer`, `language-reviewer`, `chief-reviewer`, `exam-manager` + `study.*` permissions) are advisory data; reviewer assignment via `POST /review {questionId, assignee}` + audit. Bangla TTS deferred by decision.
 
 ## 4. Scoring rules (`scoring.ts`)
 

@@ -3,6 +3,7 @@ import { getAttempt, getProgress, listAttempts, listQuestions, removeAttempt, sa
 import { chapterSubjectMap, getPublishedSeedQuestions, mergeQuestions, resolveSection, versionBySlug } from "@/lib/study-platform/catalog";
 import { scoreAttempt, seededShuffle } from "@/lib/study-platform/scoring";
 import { clientIp, throttle } from "@/lib/study-platform/ratelimit";
+import { autoQuality, gradeCard, newCard } from "@/lib/study-platform/sm2";
 import { USER_COOKIE, sessionUser } from "@/lib/users";
 import type { Attempt, Question, UserProgress } from "@/lib/study-platform/types";
 
@@ -64,9 +65,12 @@ export async function POST(req: NextRequest) {
       submittedAt: now,
       sectionOf: (qid) => a.sectionOf?.[qid] ?? resolveSection(version, qById.get(qid)?.chapterId, subjMap),
     });
-    const next: Attempt = { ...a, submittedAt: now, autoSubmitted: body.auto === true, score, keySnapshot: score.keyStatus };
+    const next: Attempt = { ...a, submittedAt: now, autoSubmitted: body.auto === true || now > a.deadline + 5000, score, keySnapshot: score.keyStatus };
+    if (now > a.deadline + 5000 && !a.autoSubmitted && body.auto !== true) {
+      next.correctionNote = "Deadline পেরিয়ে জমা — সময় শেষে স্বয়ংক্রিয় জমা হিসেবে গণ্য।";
+    }
     await upsertAttempt(next);
-    // Learner progress: wrong/unanswered queues + chapter mastery + streaks (best-effort).
+    // Learner progress: wrong/unanswered queues + chapter mastery + streaks + SM-2 (best-effort).
     try {
       const user = await sessionUser(req.cookies.get(USER_COOKIE)?.value ?? "");
       if (user) {
@@ -74,19 +78,22 @@ export async function POST(req: NextRequest) {
         const wrong = new Set(prog.wrongQueue);
         const un = new Set(prog.unansweredQueue);
         const mastery = { ...prog.chapterMastery };
+        const cards = { ...(prog.srCards ?? {}) };
         for (const qItem of questions) {
           const ans = next.answers[qItem.id]?.optionId ?? null;
           const right = ans !== null && ans === qItem.key.optionId;
+          const outcome = !ans ? "unanswered" : right ? "correct" : "incorrect";
           if (!ans) un.add(qItem.id);
           else if (!right) { wrong.add(qItem.id); un.delete(qItem.id); }
           else { wrong.delete(qItem.id); un.delete(qItem.id); }
           const m = mastery[qItem.chapterId] ?? { seen: 0, correct: 0, total: 0, updatedAt: 0 };
           mastery[qItem.chapterId] = { seen: m.seen + 1, correct: m.correct + (right ? 1 : 0), total: m.total + 1, updatedAt: now };
+          cards[qItem.id] = gradeCard(cards[qItem.id] ?? newCard(now), autoQuality(outcome), now);
         }
         const today = dayKey(now);
         const yesterday = dayKey(now - 86400000);
         const streakDays = prog.lastActiveDay === today ? prog.streakDays : prog.lastActiveDay === yesterday ? prog.streakDays + 1 : 1;
-        await saveProgress({ ...prog, chapterMastery: mastery, wrongQueue: [...wrong].slice(-200), unansweredQueue: [...un].slice(-200), streakDays, lastActiveDay: today });
+        await saveProgress({ ...prog, chapterMastery: mastery, srCards: cards, wrongQueue: [...wrong].slice(-200), unansweredQueue: [...un].slice(-200), streakDays, lastActiveDay: today });
       }
     } catch { /* progress is advisory */ }
     return NextResponse.json({ ok: true, attempt: publicAttempt(next, questions) });

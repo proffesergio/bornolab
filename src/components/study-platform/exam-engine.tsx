@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui";
 import { CodeText } from "./code-text";
+import { clear as clearOutbox, enqueue as enqueueOutbox, flush as flushOutbox, pendingCount as outboxCount } from "./outbox";
 import { cn } from "@/lib/cn";
 import type { ExamVersion, Question } from "@/lib/study-platform/types";
 
@@ -22,7 +23,8 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
   const [answers, setAnswers] = useState<Record<string, string | null>>({});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [remaining, setRemaining] = useState(() => Math.max(0, Math.round((deadline - Date.now()) / 1000)));
-  const [saving, setSaving] = useState<"saved" | "saving" | "error">("saved");
+  const [saving, setSaving] = useState<"saved" | "saving" | "error" | "offline">("saved");
+  const [queued, setQueued] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -32,20 +34,44 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
 
   const submit = useCallback(async (auto: boolean) => {
     if (submittedRef.current || submitting) return;
+    // Submit needs the server (authoritative deadline) — queue notice if offline.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setSaving("offline");
+      return;
+    }
     submittedRef.current = true;
     setSubmitting(true);
     try {
+      // Flush any queued autosaves first so the final score sees every answer.
+      await flushOutbox(attemptId).catch(() => {});
+      setQueued(outboxCount(attemptId));
       await fetch("/api/study-platform/attempts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "submit", attemptId, auto }),
       });
+      clearOutbox(attemptId);
       router.push(`/study/results/${attemptId}`);
     } catch {
       submittedRef.current = false;
       setSubmitting(false);
+      setSaving("error");
     }
   }, [attemptId, router, submitting]);
+
+  // Flush the offline outbox on reconnect + on mount (resume path).
+  useEffect(() => {
+    setQueued(outboxCount(attemptId));
+    const onOnline = () => {
+      void flushOutbox(attemptId).then((left) => {
+        setQueued(left);
+        setSaving(left > 0 ? "error" : "saved");
+      });
+    };
+    window.addEventListener("online", onOnline);
+    void flushOutbox(attemptId).then((left) => setQueued(left)).catch(() => {});
+    return () => window.removeEventListener("online", onOnline);
+  }, [attemptId]);
 
   // Countdown (display) + idempotent auto-submit at expiry.
   useEffect(() => {
@@ -79,7 +105,9 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
       });
       setSaving("saved");
     } catch {
-      setSaving("error");
+      // Offline: queue locally, sync on reconnect. Answers are never lost.
+      setQueued(enqueueOutbox(attemptId, { questionId: qid, optionId: optId, markedForReview: !!flags[qid], at: Date.now() }));
+      setSaving("offline");
     }
   };
 
@@ -110,7 +138,9 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ attemptId, questionId: qid, optionId: answers[qid] ?? null, markedForReview: next }),
       });
-    } catch { /* keep local */ }
+    } catch {
+      setQueued(enqueueOutbox(attemptId, { questionId: qid, optionId: answers[qid] ?? null, markedForReview: next, at: Date.now() }));
+    }
   };
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
@@ -180,7 +210,7 @@ export function ExamEngine({ version, questions, attemptId, deadline, lang }: Pr
       <div>
         <div className="glass flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-3" role="timer" aria-live="polite" aria-label={`Remaining ${mm} minutes ${ss} seconds`}>
           <p className={cn("text-xl font-black tabular-nums", urgent ? "text-rose-600" : "text-slate-900 dark:text-white")}>⏱ {mm}:{ss}</p>
-          <p className="text-[12px] font-bold text-slate-500">{saving === "saved" ? "✓ সংরক্ষিত" : saving === "saving" ? "…সংরক্ষণ" : "⚠ সংরক্ষণ ব্যর্থ — আবার চেষ্টা হচ্ছে"}</p>
+          <p className="text-[12px] font-bold text-slate-500">{saving === "saved" ? "✓ সংরক্ষিত" : saving === "saving" ? "…সংরক্ষণ" : saving === "offline" ? `📴 অফলাইন — ${queued}টি sync বাকি` : "⚠ সংরক্ষণ ব্যর্থ — আবার চেষ্টা হচ্ছে"}</p>
           <p className="text-[12px] font-bold text-slate-500">Q{idx + 1}/{order.length}</p>
         </div>
         <GlassCard className="mt-3">
