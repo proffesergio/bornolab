@@ -68,6 +68,12 @@ export interface SiteConfig {
   /** Admin-added study materials (Admin → Study). Stored + served like overrides. */
   customStudy: StudyMaterial[];
   studyOverrides: Record<string, { enabled?: boolean }>;
+  /** New study platform (posts/chapters/practice/exams) — flag-gated, preserves old hub. */
+  studyPlatform?: {
+    enabled?: boolean;
+    demoMode?: boolean;
+    flags?: Record<string, { id?: string; enabled?: boolean; note?: string }>;
+  };
   ads: { enabled: boolean } & Record<"header" | "inFeed" | "footer", AdSlotConfig> & { units: AdUnit[] };
   seo: { title: string; description: string; keywords: string; gaId: string; adsenseClient: string; headerScripts: string; footerScripts: string; googleSiteVerification: string };
   /** Per-route SEO overrides keyed by path ("/study"). Falls back to global seo. */

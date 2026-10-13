@@ -1,0 +1,67 @@
+# Study Platform — Developer Document
+
+> Bengali-first IT Government Job Preparation: materials, question bank, timed exams. Original content only; third-party sources are topic references, never copied.
+
+## 1. Data model (`src/lib/study-platform/types.ts`)
+
+- **Post** (role, e.g. `bank-assistant-programmer`) → **Exam** (family) → **ExamVersion** (dated pattern: `durationSec`, `totalMarks`, `sections[]`, `policy{marksPerQuestion, negativeMark, unansweredPenalty}`, `leave{allowLeave, leaveAction}`, `shuffleQuestions/Options`, `attemptLimit`, `syllabusRef`, `sources[]`, `demo?`).
+- **Subject → Chapter → Topic** with `BilingualText {bn, en}`, aliases, objectives, keyTerms, workedExamples, traps, revisionNotes, resourceLinks.
+- **Question**: `locale{bn,en:{stem, options[≥4], explanation}}`, `options[]` with per-locale text, `key{optionId, status: provisional|approved, confidence}`, `citations[]`, `license{original|licensed|link-only|pending|blocked}`, `status: draft→…→published→retired`, `version`, `history[]`, `ambiguityFlag`, `ocrFlags[]`.
+- **Attempt**: `seed`, `questionOrder`, `optionOrder`, `answers{questionId:{optionId|null, markedForReview}}`, `startedAt`, `deadline`, `submittedAt|null`, `score?`, `needsRecalculation?`, `correctionNote?`.
+- **ScorePolicy / UserProgress / Bookmark / QuestionFlag / AuditEvent / FeatureFlag** as in types.
+
+## 2. Routes
+
+| Route | Purpose |
+|---|---|
+| `/study` | Hub (preserved) + new rails: posts, practice, demo exam, progress |
+| `/study/posts` | Browse posts + versions |
+| `/study/posts/[slug]` | Syllabus map, patterns, practice path |
+| `/study/chapters/[slug]` | BN/EN/split reader, glossary, examples, quick checks, bookmarks |
+| `/study/practice` | Builder: version, difficulty, lang, queue (all/wrong/unanswered/bookmarked), count; instant feedback |
+| `/study/exams/[slug]` | Instructions, config, leave policy, sample, confirm |
+| `/study/exams/[slug]/attempt/[attemptId]` | Timed engine |
+| `/study/results/[attemptId]` | Score + breakdowns + review + citations + recalculation |
+| `/study/progress` | History, wrong/unanswered queues, guidance disclaimer |
+| `/admin` → Study | Flags, import, review queue, audit (reuses admin auth) |
+
+## 3. API contract
+
+- `GET /api/study-platform/taxonomy` → `{posts, subjects, chapters, versions, questionCount}` (published only; 404 when disabled).
+- `POST /api/study-platform/practice` `{version, difficulty, chapter, qtype, mode, count}` → `{items, total}`.
+- `POST /api/study-platform/attempts` `{action:create, versionSlug}` → `{attemptId, deadline, count}`; `{action:submit, attemptId, auto}` → idempotent `{attempt}`.
+- `PATCH /api/study-platform/attempts` `{attemptId, questionId, optionId|null, markedForReview}` → `{savedAt}` (409 if submitted, 410 if past deadline).
+- `GET /api/study-platform/attempts?id=` → `{attempt, now, remainingSec}` (owner or admin).
+- `GET /api/study-platform/progress` (login) → `{progress, attempts, bookmarks, disclaimer}`.
+- `POST/DELETE /api/study-platform/bookmarks` (login).
+- Admin (`requireAdmin`): `POST /api/study-platform/import` (JSON/CSV → staging + drafts, never auto-publish); `GET/POST /api/study-platform/review` (queue + approve/publish/retire, 422 on blockers, key-change → recalculation candidates); `GET /api/study-platform/audit`; `GET/PUT /api/study-platform/flags`.
+
+## 4. Scoring rules (`scoring.ts`)
+
+- Per-question `marksPerQuestion`; wrong → `−negativeMark`; unanswered → `−unansweredPenalty` (default 0).
+- `raw` = correct × marks; `penalty` = wrong × neg + unanswered × unpen; `net = raw − penalty`; `pct = 100 × net / max`.
+- Section/topic totals + `timeUsedSec = submittedAt − startedAt`; `keyStatus = provisional` if any item provisional.
+- `seededShuffle` (mulberry32) for reproducible review; `optionOrder`/`questionOrder` stored on attempt.
+- Demo: 20Q/15min/0.50 verified in `task22` + engine tests.
+
+## 5. Ingestion / review workflow (`ingestion.ts`, `validation.ts`)
+
+1. Import JSON/CSV/manual → `stageRow` (source URL/title/page/retrieval/fileHash/license) → `study_evidence` (admin-only).
+2. Unicode NFC cleanup; `detectOcrFlags` (garbled-bangla, broken-formula, missing-option/diagram); `findDuplicateStems`.
+3. `toDraftQuestion` → status `draft`, key `provisional/low`, license `pending` — paraphrase + independent solve required (run code/math; attach RFC/NIST/OWASP/MDN/official/dated sources; bilingual review).
+4. `validateForPublication` blocks publish on: missing BN/EN stem, <4 options per locale, missing explanation per locale, missing/unapproved key, missing citation, pending/blocked rights, ambiguity/OCR flags.
+5. Review API enforces two-person flow + 422 with issue codes; key change post-publish marks attempts `needsRecalculation`, preserves originals, logs `AuditEvent`; rollback via `QuestionVersion.history`.
+
+## 6. How to add a new post or ExamVersion
+
+1. Add `Post` to `PLATFORM_POSTS` (+ `examIds`), `Exam` to `PLATFORM_EXAMS`, `ExamVersion` to `PLATFORM_VERSIONS` in `src/lib/study-platform/curriculum.ts` with BN/EN labels, duration/marks/sections/policy/leave/shuffle/sources.
+2. Tag seed questions with `postSlugs`/`examVersionIds` (or import drafts → review → publish).
+3. Verify: `node --test tests/task22-study-platform.test.mjs`, `npm run typecheck`, `npm run lint`.
+4. Operate: Admin → Study Platform → enable flag, import, review queue, audit; monitor attempts via progress API; on key fix use review `newKeyOptionId` → recalculation candidates → notify learners via correction notes.
+
+## 7. Limitations (reported, not hidden)
+
+- Duranta/Scribd/SlideShare PDFs were research leads only; several are scans/OCR-corrupted or answer-templates (e.g. 200-slot OMR) — not ingested; counts (e.g. ~67 Duranta rows) are timestamped observations.
+- Printed/embedded keys are not trusted (POST-vs-GET, white/black-box, ARP/RARP, current-affairs) — each seed answer was independently re-derived and cited.
+- Postgres tables are created idempotently at runtime; without `POSTGRES_URL/DATABASE_URL` the KV-file fallback is authoritative (single-instance semantics on serverless).
+- Current-affairs seeds require dated citations + `expiresAt`; expired items must be re-reviewed before publish.

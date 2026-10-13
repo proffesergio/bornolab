@@ -223,6 +223,26 @@ export default function StudyPage() {
 
       {/* practice */}
       <AdUnits slot="inFeed" className="mt-8" />
+      <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
+        <GraduationCap size={19} /> IT Job Preparation — নতুন প্ল্যাটফর্ম
+      </h2>
+      <div className="glass flex flex-wrap items-center gap-2 rounded-2xl p-4">
+        <Link href="/study/posts" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
+          🎯 লক্ষ্য-পদ দেখুন →
+        </Link>
+        <Link href="/study/practice" className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2.5 text-[13px] font-bold text-white hover:brightness-110">
+          ✍️ Practice now →
+        </Link>
+        <Link href="/study/exams/demo-20q-15min-v1" className="glass hover-glow rounded-full px-5 py-2.5 text-[13px] font-bold">
+          ⏱️ ডেমো পরীক্ষা (২০ প্রশ্ন/১৫ মিনিট)
+        </Link>
+        <Link href="/study/progress" className="glass hover-glow rounded-full px-5 py-2.5 text-[13px] font-bold">
+          📊 অগ্রগতি
+        </Link>
+      </div>
+      <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">
+        দ্বিভাষিক (বাংলা/English) অধ্যায়, প্রশ্ন-ব্যাংক ও টাইমড পরীক্ষা — পুরোনো গাইড ও ডাউনলোড নিচে আগের মতোই আছে।
+      </p>
       <h2 id="practice" className="mb-3 mt-10 flex scroll-mt-24 items-center gap-1.5 text-lg font-black">
         <GraduationCap size={19} /> Step-by-step practice
       </h2>
