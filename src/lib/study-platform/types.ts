@@ -186,8 +186,6 @@ export interface Question {
   status: ContentStatus;
   version: number;
   reviewerNotes?: string;
-  /** Advisory reviewer assignment (reviewer email or user id). No hard RBAC yet. */
-  assignee?: string;
   ambiguityFlag?: boolean;
   ocrFlags?: string[];
   history: QuestionVersion[];

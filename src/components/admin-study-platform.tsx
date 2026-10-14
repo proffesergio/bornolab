@@ -12,7 +12,6 @@ export function AdminStudyPlatform() {
   const [queue, setQueue] = useState<{
     id: string; chapterId: string; status: string; keyStatus: string; confidence: string;
     citations: number; version: number; issues: string[]; previewBn: string; historyVersions: number[];
-    assignee: string;
   }[]>([]);
   const [duplicates, setDuplicates] = useState<{ key: string; ids: string[] }[]>([]);
   const [audit, setAudit] = useState<{ at: number; actor: string; action: string; entityId: string; detail?: string }[]>([]);
@@ -60,17 +59,6 @@ export function AdminStudyPlatform() {
     });
     const j = await res.json();
     setMsg(res.ok ? `✓ ${id} → ${to}` : `Blocked: ${(j.issues ?? []).map((x: { code: string }) => x.code).join(", ") || j.error}`);
-    load();
-  };
-
-  const assign = async (id: string, email: string) => {
-    const res = await fetch("/api/study-platform/review", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questionId: id, assignee: email }),
-    });
-    const j = await res.json();
-    setMsg(res.ok ? `👤 ${id} → ${j.assignee || "unassigned"}` : `Assign failed: ${j.error}`);
     load();
   };
 
@@ -139,18 +127,6 @@ export function AdminStudyPlatform() {
             <div key={qItem.id} className="rounded-xl bg-slate-900/[.04] p-3 text-[12.5px] dark:bg-white/5">
               <p><b className="font-mono">{qItem.id}</b> • {qItem.status} • key:{qItem.keyStatus} ({qItem.confidence}) • 📚{qItem.citations} • v{qItem.version} • {qItem.chapterId}</p>
               <p className="mt-0.5 text-slate-600 dark:text-slate-400">{qItem.previewBn}</p>
-              <form
-                className="mt-1 flex items-center gap-1.5"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const input = (e.target as HTMLFormElement).elements.namedItem("assignee") as HTMLInputElement | null;
-                  void assign(qItem.id, input?.value.trim() ?? "");
-                }}
-              >
-                <span className="text-[11.5px] font-bold text-slate-500">👤 {qItem.assignee || "unassigned"}</span>
-                <input name="assignee" defaultValue={qItem.assignee} placeholder="reviewer email" aria-label={`Assign reviewer for ${qItem.id}`} className="w-40 rounded-full bg-slate-900/[.06] px-2.5 py-1 text-[11.5px] outline-none dark:bg-white/10" />
-                <button type="submit" className="rounded-full px-2.5 py-1 text-[11.5px] font-bold text-cyan-700 hover:bg-cyan-500/10 dark:text-cyan-300">Assign</button>
-              </form>
               {qItem.issues.length > 0 && <p className="mt-0.5 text-amber-600 dark:text-amber-300">⛔ {qItem.issues.join(", ")}</p>}
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <button onClick={() => review(qItem.id, "reviewer_approved")} className="rounded-full bg-cyan-500/15 px-3 py-1 font-bold text-cyan-700 dark:text-cyan-200">Approve</button>

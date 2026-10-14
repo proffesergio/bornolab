@@ -57,14 +57,14 @@ Rollback never touches the legacy study module (`/api/study*`, `study-data.ts`, 
 - **Spaced review** (`/study/review`, SM-2 classic): grades Again(0)/Hard(3)/Good(4)/Easy(5); practice auto-grades correct→4/incorrect→2; exam submit auto-grades correct→4/incorrect→2/unanswered→1. Cards live on `UserProgress.srCards` (absent = new; old records keep working).
 - **Cohort bands** (opt-in): learners toggle consent on `/study/progress` (copy: “অংশ নিন… কারো ব্যক্তিগত স্কোর কখনো দেখানো হয় না”). Bands appear at 30+ opted-in attempts per version; aggregate only — no peer scores, ids, or ranks leave the server.
 - **Offline (PWA)**: service worker caches reading shell + static assets; exam autosaves queue on-device and sync on reconnect; **submit requires connection** and the deadline stays server-authoritative (late submits are marked auto-submitted). Needs proper 192/512 PNG icons for the install prompt (currently references `logo.png` only).
-- **Editorial roles** (advisory): `content-author`, `subject-reviewer`, `language-reviewer`, `chief-reviewer`, `exam-manager` ship as system roles (auto-backfilled) with `study.*` permissions; assign humans in Admin → Customers → Role, and assign reviewers per question in the review queue. Two-person rule stays note-based until accounts exist.
+- **Editorial workflow is admin-only**: the single admin authors, reviews, publishes, assembles exams and recalculates — no reviewer accounts needed. Every action is audit-logged with the admin's identity.
 - **Bangla TTS: deferred** by decision — no engine shipped.
 
-## 7. Pilot accounts + consent (what the owner must do)
+## 7. Pilot content workflow (admin only — no reviewer accounts)
 
-1. Each reviewer/learner signs in once (Google/OTP/magic link) so a member record exists.
-2. Admin → Customers: set each human's Role (Content Author, Subject/Language Reviewer, Chief Reviewer, Exam Manager).
-3. Reviewers use Admin → Study → review queue (assignee field shows who owns what).
+1. Admin → Study → OCR Studio / Import: stage evidence and drafts.
+2. Review queue: fix blockers (options, key, explanation, citations, rights), then Approve → Publish.
+3. Key corrections: change the key → affected attempts flagged ↻ → Re-score (originals preserved).
 4. Learners opt in to cohort comparison themselves on `/study/progress` — never pre-tick consent for anyone.
 5. Set `POSTGRES_URL` before the pilot if attempts/progress/SM-2 cards must survive redeploys.
 

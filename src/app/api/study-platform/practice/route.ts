@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPublishedSeedQuestions, mergeQuestions, versionBySlug } from "@/lib/study-platform/catalog";
+import { getPublishedSeedQuestions, getChapters, mergeQuestions, versionBySlug } from "@/lib/study-platform/catalog";
 import { getProgress, listBookmarks, listQuestions } from "@/lib/study-platform/store";
 import { clientIp, throttle } from "@/lib/study-platform/ratelimit";
 import { USER_COOKIE, sessionUser } from "@/lib/users";
@@ -18,8 +18,7 @@ export async function POST(req: NextRequest) {
   if (v) pool = pool.filter((q) => q.examVersionIds.includes(v.id) || q.postSlugs.some((p) => v.postSlugs.includes(p)));
   if (body.difficulty) pool = pool.filter((q) => q.difficulty === body.difficulty);
   if (body.chapter) {
-    const { PLATFORM_CHAPTERS } = await import("@/lib/study-platform/curriculum");
-    const ch = PLATFORM_CHAPTERS.find((c) => c.slug === body.chapter || c.id === body.chapter);
+    const ch = getChapters().find((c) => c.slug === body.chapter || c.id === body.chapter);
     if (ch) pool = pool.filter((q) => q.chapterId === ch.id);
   }
   if (body.qtype) pool = pool.filter((q) => q.type === body.qtype);

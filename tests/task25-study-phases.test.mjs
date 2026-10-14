@@ -81,18 +81,13 @@ test("PWA: manifest + SW (no API caching) + offline page + outbox sync + deadlin
   assert.ok(att.includes("now > a.deadline"), "late-submit honesty required");
 });
 
-test("advisory RBAC: editorial roles + permissions + backfill + assignee", () => {
+test("admin-only management: no reviewer accounts, no assignment workflow", () => {
   const m = read("src/lib/members-shared.ts");
-  for (const r of ["content-author", "subject-reviewer", "language-reviewer", "chief-reviewer", "exam-manager"]) {
-    assert.ok(m.includes(r), `role ${r} required`);
-  }
-  for (const p of ["study.author", "study.review", "study.publish", "study.exams", "study.moderate"]) {
-    assert.ok(m.includes(p), `permission ${p} required`);
-  }
-  const u = read("src/lib/users.ts");
-  assert.ok(u.includes("Backfill") || u.includes("missing"), "role backfill required");
-  const t = read("src/lib/study-platform/types.ts");
-  assert.ok(t.includes("assignee?"), "question assignee required");
+  assert.ok(!m.includes("content-author") && !m.includes("study.review"), "no editorial roles/permissions");
   const rv = read("src/app/api/study-platform/review/route.ts");
-  assert.ok(rv.includes("study.assign"), "assign audit required");
+  assert.ok(!rv.includes("study.assign") && !rv.includes("assignee"), "no assignment branch");
+  const admin = read("src/components/admin-study-platform.tsx");
+  assert.ok(!admin.includes("Assign") && !admin.includes("assignee"), "no assign UI");
+  const t = read("src/lib/study-platform/types.ts");
+  assert.ok(!t.includes("assignee"), "no assignee field");
 });

@@ -42,7 +42,7 @@
 - `POST /api/study-platform/consent` `{optIn}` (login); `GET /api/study-platform/percentile?version=` (login + opt-in) → cohort band only at 30+ opted-in attempts; never peer scores/ids/ranks.
 - `GET/POST /api/study-platform/evidence` (admin) — restricted OCR evidence ledger; raw evidence never reaches learners.
 - PWA: `/manifest.webmanifest` (app/manifest.ts), `/sw.js` (shell + static cache, API never cached, `/offline` fallback), outbox-synced exam autosaves; submit stays online-only with server deadline (late submits marked auto-submitted).
-- Editorial roles (`content-author`, `subject-reviewer`, `language-reviewer`, `chief-reviewer`, `exam-manager` + `study.*` permissions) are advisory data; reviewer assignment via `POST /review {questionId, assignee}` + audit. Bangla TTS deferred by decision.
+- Editorial workflow is admin-only by decision: the single admin authors, reviews, publishes and recalculates (every action audit-logged). No reviewer accounts. Bangla TTS deferred by decision.
 
 ## 4. Scoring rules (`scoring.ts`)
 

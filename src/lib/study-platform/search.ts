@@ -1,5 +1,6 @@
 /** Bilingual search with synonyms + chapter/post aliases. Pure + lightweight. */
-import { PLATFORM_CHAPTERS, PLATFORM_POSTS, PLATFORM_SUBJECTS } from "./curriculum";
+import { PLATFORM_POSTS, PLATFORM_SUBJECTS } from "./curriculum";
+import { getChapters } from "./catalog";
 
 const SYNONYMS: Record<string, string[]> = {
   subnet: ["subnetting", "সাবনেট", "সাবনেটিং", "cidr", "vlsm"],
@@ -68,7 +69,7 @@ export function searchPlatform(query: string, limit = 20): SearchHit[] {
     const sc = scoreText(`${s.title.bn} ${s.title.en} ${s.aliases.join(" ")} ${s.overview.bn} ${s.overview.en}`);
     if (sc > 0) hits.push({ kind: "subject", id: s.id, slug: s.slug, titleBn: s.title.bn, titleEn: s.title.en, score: sc + 1 });
   }
-  for (const c of PLATFORM_CHAPTERS) {
+  for (const c of getChapters()) {
     const sc = scoreText(`${c.title.bn} ${c.title.en} ${c.aliases.join(" ")} ${c.overview.bn} ${c.overview.en}`);
     if (sc > 0) hits.push({ kind: "chapter", id: c.id, slug: c.slug, titleBn: c.title.bn, titleEn: c.title.en, score: sc + 2 });
   }
