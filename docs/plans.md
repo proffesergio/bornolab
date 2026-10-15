@@ -1,5 +1,7 @@
 # BornoLab — Product & Automation Plans (n8n-ready)
 
+> Historical planning document. The current stack is Next.js 16.3.5 / React 19, and durable PostgreSQL storage plus additional Study/printing modules have since been implemented. Start with [README.md](../README.md), [AGENTS.md](../AGENTS.md) and [the AI handoff](ai-handoff.md) for current behavior; proposals below are not evidence of shipped functionality.
+
 > One-glance spec so any tool (human or agent) can pick up requirements.
 > Stack: **Next.js 14 App Router + TypeScript**, Tailwind v4, Framer Motion, lucide-react, pdf-lib, docx/docxtemplater, mammoth, pdfjs-dist, jszip. Client-first; heavy jobs → n8n webhooks via `/api/n8n/*` proxy.
 

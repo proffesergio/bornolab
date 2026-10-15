@@ -6,9 +6,11 @@ import { GlassCard, SectionTitle } from "@/components/ui";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { useLogin } from "@/components/use-login";
 import { clearCart, removeFromCart, useCart } from "@/lib/cart";
+import {usePrintingEnabled} from "@/components/printing/use-printing";
 
 /** Cart: persisted picks → single combined manual order (bKash Send Money). */
 export default function CartPage() {
+  const printingEnabled=usePrintingEnabled();
   const { items, total } = useCart();
   const { loggedIn } = useLogin();
   const [checkout, setCheckout] = useState(false);
@@ -20,6 +22,7 @@ export default function CartPage() {
         title="Your cart"
         desc="Bundle fonts & software into one manual order — pay once via bKash Send Money."
       />
+      {printingEnabled&&<Link href="/printing/orders" className="mb-4 inline-block text-sm text-cyan-700 underline dark:text-cyan-300">View printing drafts & order history</Link>}
       {items.length === 0 ? (
         <GlassCard className="mt-4 p-10 text-center">
           <ShoppingCart size={28} className="mx-auto text-slate-400" />

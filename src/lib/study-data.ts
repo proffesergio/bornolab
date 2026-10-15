@@ -21,6 +21,43 @@ export function studyCategoryLabel(id: string): string {
   return STUDY_CATEGORIES.find((c) => c.id === id)?.label ?? id;
 }
 
+/**
+ * Subcategory reserved for BUET PG admission guides. Materials carrying it
+ * are Masters-only: hidden from the Study root "All" view and the root
+ * featured rail, visible only when the Masters category is selected.
+ */
+export const BUET_ONLY_SUBCATEGORY = "BUET Post Graduate Admission";
+
+export function isBuetOnlyMaterial(m: Pick<StudyMaterial, "subcategory" | "department">): boolean {
+  return m.subcategory === BUET_ONLY_SUBCATEGORY || m.department === "buet-pg";
+}
+
+/**
+ * Generic department filter for the card-view Study Hub.
+ * Materials (built-in or admin-added) can tag any of these via
+ * `department`; untagged items fall under "General".
+ */
+export const STUDY_DEPARTMENTS = [
+  { id: "general", label: "General", bangla: "সাধারণ" },
+  { id: "petrobangla", label: "Petrobangla", bangla: "পেট্রোবাংলা" },
+  { id: "bank-it", label: "Bank IT", bangla: "ব্যাংক আইটি" },
+  { id: "bcs", label: "BCS", bangla: "বিসিএস" },
+  { id: "buet-pg", label: "BUET PG", bangla: "বুয়েট পিজি" },
+  { id: "ssc-hsc", label: "SSC / HSC", bangla: "এসএসসি / এইচএসসি" },
+];
+
+/** Generic subject filter chips (cross-department). */
+export const STUDY_SUBJECTS = [
+  "General Knowledge",
+  "General Math",
+  "Bangla",
+  "English",
+  "Computer Fundamentals",
+  "Programming",
+  "Database",
+  "Networks",
+];
+
 export type StudyFileType = "pdf" | "html" | "link";
 
 export interface StudyMaterial {
@@ -29,6 +66,12 @@ export interface StudyMaterial {
   category: StudyCategory;
   /** Sub-group inside a category, e.g. "BUET Post Graduate Admission". */
   subcategory?: string;
+  /** Generic department tag (e.g. "petrobangla", "bank-it", "buet-pg") — powers the card-view filters. */
+  department?: string;
+  /** Generic subject tag (e.g. "General Knowledge", "Computer Fundamentals"). */
+  subject?: string;
+  /** Education level filter (e.g. "SSC", "HSC", "Job Prep", "Masters"). */
+  level?: string;
   description: string;
   /** Direct readable URL — /uploads/study/… file or external https link. */
   fileUrl: string;
@@ -58,6 +101,9 @@ export const BUILT_IN_STUDY_MATERIALS: StudyMaterial[] = [
     title: "BUET M.Sc. CSE (Group 1) — Prep Guide",
     category: "masters",
     subcategory: "BUET Post Graduate Admission",
+    department: "buet-pg",
+    subject: "Programming",
+    level: "Masters",
     description:
       "Q&A with explanations for all 10 Group-1 topics — Programming, Discrete Math, DSA, Compiler & TOC, Database, Networks & Security, Software Engineering, Digital Logic, Architecture & OS, AI/ML — plus a 3-day study plan. Read online free, or download the PDF after login.",
     fileUrl: "/uploads/study/buet-msc-cse-group1-prep-guide.pdf",
@@ -71,6 +117,9 @@ export const BUILT_IN_STUDY_MATERIALS: StudyMaterial[] = [
     title: "BUET M.Sc. CSE (Group 1) — Interactive Practice",
     category: "masters",
     subcategory: "BUET Post Graduate Admission",
+    department: "buet-pg",
+    subject: "Programming",
+    level: "Masters",
     description:
       "The same 3-day prep guide as a step-by-step interactive module — topic walkthrough, flashcards and exam mode with progress tracking. No login needed.",
     fileUrl: "/uploads/study/buet-msc-cse-group1-prep-guide.html",

@@ -36,6 +36,8 @@ yarn-error.log*
 
 # runtime data (local analytics, dashboard edits) — never commit
 data/*.json
+data/*.tmp
+data/printing-backups/
 
 # admin-uploaded catalog files — local/self-host content, never commit
 /public/uploads/*

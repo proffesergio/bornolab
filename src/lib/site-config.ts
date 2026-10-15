@@ -42,6 +42,8 @@ function envSeed(): DeepPartial<SiteConfig> {
 export async function updateSiteConfig(patch: DeepPartial<SiteConfig>): Promise<SiteConfig> {
   const current = await readJson<DeepPartial<SiteConfig>>("site-config.json", {});
   const next = deepMerge(current, patch);
+  // The SEO editor sends the complete map; replacement also preserves field removals.
+  if(patch.seoPages!==undefined)next.seoPages=patch.seoPages;
   await writeJson("site-config.json", next);
   return deepMerge(DEFAULT_CONFIG, next);
 }

@@ -11,6 +11,7 @@ import { GlassCard, SectionTitle } from "@/components/ui";
 import { NotificationBell, NotificationFeed, NotificationToasts, useNotifications } from "@/components/admin-notifications";
 import type { AdminNotification } from "@/lib/notifications";
 import { AdminStudy } from "@/components/admin-study";
+import { AdminPrinting } from "@/components/admin-printing";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
 import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
@@ -22,7 +23,7 @@ import { cn } from "@/lib/cn";
 
 type Section =
   | "dashboard" | "users" | "subscriptions"
-  | "tools" | "pdftools" | "catalog" | "study" | "media"
+  | "tools" | "pdftools" | "catalog" | "study" | "media" | "printing"
   | "orders" | "ads" | "payments" | "seo" | "aiseo"
   | "roles" | "plans" | "audit" | "access" | "settings";
 
@@ -42,6 +43,7 @@ const GROUPS: { title: string; items: { id: Section; label: string; icon: typeof
       { id: "pdftools", label: "PDF Tools", icon: FileText },
       { id: "catalog", label: "Catalog", icon: Layers },
       { id: "study", label: "Study", icon: GraduationCap },
+      { id: "printing", label: "Printing Services", icon: Receipt },
       { id: "media", label: "Media", icon: HardDrive },
     ],
   },
@@ -74,7 +76,8 @@ const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
   tools: { title: "Site Tools", desc: "Module visibility for the storefront." },
   pdftools: { title: "PDF Tools", desc: "Availability, caps and usage telemetry." },
   catalog: { title: "Catalog", desc: "Font + software overrides." },
-  study: { title: "Study Materials", desc: "PDF/HTML guides per category + visibility." },
+  study: { title: "Study Materials", desc: "PDF/HTML guides per category + question-bank solutions + visibility." },
+  printing: { title: "Printing Services", desc: "Managed print catalog, orders, artwork, proofs and demo fulfillment." },
   media: { title: "Media Library", desc: "Uploaded files, storage usage, orphan cleanup." },
   orders: { title: "Orders", desc: "Manual-payment fulfillment." },
   ads: { title: "Ads", desc: "Slots + Google AdSense units." },
@@ -224,7 +227,7 @@ export default function AdminPage() {
   // Realtime admin notifications (new members, new orders) — 15s polling.
   const notif = useNotifications();
   const jumpToNotification = (n: AdminNotification) => {
-    setSection(n.type === "order.placed" ? "orders" : "users");
+    setSection(n.detail?.startsWith("PR-") || n.detail?.startsWith("PQ-") ? "printing" : n.type === "order.placed" ? "orders" : "users");
     setNavOpen(false);
   };
 
@@ -269,6 +272,7 @@ export default function AdminPage() {
   const [seoPTitle, setSeoPTitle] = useState("");
   const [seoPDesc, setSeoPDesc] = useState("");
   const [seoPNoindex, setSeoPNoindex] = useState(false);
+  const [seoPOg,setSeoPOg]=useState("");const [seoPCanonical,setSeoPCanonical]=useState("");const [seoPMediaError,setSeoPMediaError]=useState("");
   // Config backup state
   const [cfgMsg, setCfgMsg] = useState("");
   const [cfgBusy, setCfgBusy] = useState(false);
@@ -540,6 +544,7 @@ export default function AdminPage() {
       setNavOpen(false);
       setNavQuery("");
     };
+    if ("printing services print orders quotes proofs artwork".includes(q)) hits.push({ kind: "Module", label: "Printing Services", sub: "Catalog, print orders, quotes and proofs", go: jump("printing") });
     for (const u of users) {
       if (hits.length >= 12) break;
       if (u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)) {
@@ -560,6 +565,12 @@ export default function AdminPage() {
         hits.push({ kind: "Study", label: m.title, sub: m.category, go: jump("study") });
       }
     }
+    for (const qb of config.customQuestionBank ?? []) {
+      if (hits.length >= 12) break;
+      if (qb.title.toLowerCase().includes(q)) {
+        hits.push({ kind: "QBank", label: qb.title, sub: qb.deptId, go: jump("study") });
+      }
+    }
     for (const f of config.customFonts ?? []) {
       if (hits.length >= 12) break;
       if (f.name.toLowerCase().includes(q)) {
@@ -573,7 +584,7 @@ export default function AdminPage() {
       }
     }
     return hits;
-  }, [navQuery, users, orders, config.customStudy, config.customFonts, config.customSoftware]);
+  }, [navQuery, users, orders, config.customStudy, config.customQuestionBank, config.customFonts, config.customSoftware]);
 
   const nav = (
     <div className="flex h-full flex-col">
@@ -850,6 +861,7 @@ export default function AdminPage() {
             </GlassCard>
           )}
 
+          {section === "printing" && <AdminPrinting />}
           {section === "study" && (
             <AdminStudy config={config} save={save} />
           )}
@@ -1534,6 +1546,8 @@ export default function AdminPage() {
                 <input aria-label="Override title" value={seoPTitle} onChange={(e) => setSeoPTitle(e.target.value)} placeholder="Page title (blank = use global)" className={cn(field, "mt-2")} />
               )}
               <textarea aria-label="Override description" rows={2} value={seoPDesc} onChange={(e) => setSeoPDesc(e.target.value)} placeholder="Meta description ~155 chars (blank = use global)" className={cn(field, "mt-2")} />
+              <div className="mt-2 grid gap-2 sm:grid-cols-2"><input aria-label="Open Graph image path" value={seoPOg} onChange={e=>setSeoPOg(e.target.value)} placeholder="Open Graph image, e.g. /logo.png" className={field}/><input aria-label="Canonical path" value={seoPCanonical} onChange={e=>setSeoPCanonical(e.target.value)} placeholder="Canonical path, e.g. /printing" className={field}/></div>
+              {seoPMediaError&&<p role="alert" className="mt-2 text-xs text-red-500">{seoPMediaError}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 text-[13px] font-semibold dark:bg-white/5">
                   <input type="checkbox" checked={seoPNoindex} onChange={(e) => setSeoPNoindex(e.target.checked)} className="h-4 w-4 accent-rose-500" /> noindex this page
@@ -1543,11 +1557,13 @@ export default function AdminPage() {
                     const raw = seoRoute === "__custom" ? seoCustom : seoRoute;
                     const path = raw.trim() ? (raw.trim().startsWith("/") ? raw.trim() : `/${raw.trim()}`) : "";
                     if (!path) return;
+                    if([seoPOg.trim(),seoPCanonical.trim()].some(value=>value&&(!value.startsWith("/")||value.startsWith("//")||value.length>500))){setSeoPMediaError("Use a local image or canonical path starting with /.");return;}setSeoPMediaError("");
                     const next = { ...(config.seoPages ?? {}) };
-                    if (!seoPTitle.trim() && !seoPDesc.trim() && !seoPNoindex) delete next[path];
-                    else next[path] = { title: seoPTitle.trim() || undefined, description: seoPDesc.trim() || undefined, noindex: seoPNoindex || undefined };
+                    if (!seoPTitle.trim() && !seoPDesc.trim() && !seoPNoindex && !seoPOg.trim() && !seoPCanonical.trim()) delete next[path];
+                    else next[path] = { title: seoPTitle.trim() || undefined, description: seoPDesc.trim() || undefined, noindex: seoPNoindex || undefined,ogImage:seoPOg.trim()||undefined,canonical:seoPCanonical.trim()||undefined };
                     void save({ seoPages: next });
                     setSeoPTitle(""); setSeoPDesc(""); setSeoPNoindex(false); setSeoCustom("");
+                    setSeoPOg("");setSeoPCanonical("");
                   }}
                   className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white"
                 >
@@ -1569,6 +1585,7 @@ export default function AdminPage() {
                             setSeoRoute((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? path : "__custom");
                             setSeoCustom((SEO_ROUTE_OPTIONS as readonly string[]).includes(path) ? "" : path);
                             setSeoPTitle(ov.title ?? ""); setSeoPDesc(ov.description ?? ""); setSeoPNoindex(ov.noindex === true);
+                            setSeoPOg(ov.ogImage??"");setSeoPCanonical(ov.canonical??"");setSeoPMediaError("");
                           }}
                           className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300"
                         >

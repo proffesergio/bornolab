@@ -5,7 +5,7 @@ GitHub Actions (`/.github/workflows/ci.yml`) runs `lint → typecheck → build`
 ## 0. Prerequisites
 
 ```bash
-node --version   # 18.18+, 20.9+, or 22 (CI uses 22)
+node --version   # Next.js requires 20.9+; CI uses 22, current Vercel project uses 24.x
 npm --version
 vercel --version # 59+ recommended; install with: npm i -g vercel
 ```
@@ -13,9 +13,9 @@ vercel --version # 59+ recommended; install with: npm i -g vercel
 ## 1. Log in and link the project
 
 ```bash
-cd /home/billsbro/development
+cd /path/to/bornolab
 vercel login            # one-time, opens the browser
-vercel link             # one-time: link to existing project or create a new one
+vercel link --yes --project bornolab --scope newellx
 ```
 
 `vercel link` writes `.vercel/` (git-ignored) — it never touches the repo.
@@ -36,8 +36,11 @@ vercel env add N8N_TRANSLATE_WEBHOOK_URL production
 vercel env add N8N_SPLIT_WEBHOOK_URL production
 vercel env add N8N_API_KEY production
 
-# Durable site-config seed (recommended — dashboard edits are
-# ephemeral on serverless; see docs/admin.md §3)
+# Durable storage for accounts, settings, Study and orders
+vercel env add POSTGRES_URL production  # or DATABASE_URL; use a pooled URL
+
+# Optional bootstrap site-config seed (database-backed dashboard edits
+# are durable when the existing PostgreSQL store is configured)
 vercel env add SITE_CONFIG_JSON production
 # example value:
 # {"seo":{"gaId":"G-XXXXXXX","adsenseClient":"ca-pub-XXXX"},"payments":{"bkash":"01XXXXXXXXX"}}
@@ -59,11 +62,29 @@ You get a unique `*.vercel.app` URL per deploy. Verify: homepage, `/convert`, `/
 
 ## 4. Production deploy
 
+Run `npm run typecheck`, `npm run lint`, `node --test tests/*.test.mjs` and `npm run build` first. Verify the workspace is linked to `newellx/bornolab`, whose production alias is `https://bornolab.vercel.app`.
+
+Printing requires an explicit additive migration. Pull production settings into an ignored file and run the migration in production mode so it loads that file instead of development settings:
+
+```powershell
+vercel env pull .env.production.local --environment=production --yes
+$env:NODE_ENV = 'production'
+npm run db:migrate:printing
+npm run db:migrate:printing -- --check
+Remove-Item Env:NODE_ENV
+```
+
+In a POSIX shell, prefix each migration command with `NODE_ENV=production`. Never commit or print the downloaded environment file. Do not enable `PRINTING_LOCAL_STORAGE` on Vercel. This migration adds only `bornolab_printing`; it does not rewrite existing accounts, Study or digital orders.
+
+Sensitive production variables cannot be read back through the CLI/API ([Vercel documentation](https://vercel.com/docs/environment-variables/sensitive-environment-variables)). In this project the production database URLs are sensitive; an export can contain empty placeholders. If the migration says no database is configured, run the reviewed SQL in the production database console or supply the connection through a trusted local secret manager. Do not weaken the variables' protection or add a public migration endpoint. Until the table is available, printing stays unavailable while the other modules can deploy normally.
+
 ```bash
-npm run vercel:deploy    # == `vercel --prod`
+npm run vercel:deploy -- --yes    # == `vercel --prod --yes`
 ```
 
 This builds (`npm run build`) on Vercel and promotes the result to production. `vercel.json` pins the framework, build command, security headers, and long-lived font caching.
+
+Wait for a Ready deployment, then smoke-test the production alias: homepage, `/study`, `/study/question-bank`, `/printing`, a published service, `/printing/help`, public catalog/flags and unauthenticated member/admin API rejection. Keep printing in demo mode. Record the immutable deployment URL, revision and actual checks in [ai-handoff.md](ai-handoff.md).
 
 ## 5. Custom domain (optional)
 
@@ -96,10 +117,10 @@ vercel env ls              # audit which vars exist per environment
 
 | Symptom | Fix |
 |---|---|
-| Build fails on Vercel, passes locally | Match Node: Project → Settings → General → Node.js Version `22.x`; ensure vars are set for the right environment |
+| Build fails on Vercel, passes locally | Check the actual configured Node version (currently `24.x`; CI uses 22) and environment variables; reproduce with the same runtime |
 | `/admin/login` → `503 Admin not configured` | `ADMIN_EMAIL`/`ADMIN_PASSWORD` missing for that environment — `vercel env add …` then redeploy |
-| Dashboard edits disappear | Expected on serverless — persist via `SITE_CONFIG_JSON` (§2, `docs/admin.md` §3) |
-| `vercel link` points at the wrong project | `rm -rf .vercel && vercel link` |
+| Dashboard edits disappear | Verify PostgreSQL connectivity; the legacy store can fall back to ephemeral files/memory on failure. `SITE_CONFIG_JSON` is a bootstrap option, not a substitute for durable runtime storage |
+| `vercel link` points at the wrong project | Re-run the explicit `vercel link --yes --project bornolab --scope newellx` and verify `.vercel/project.json` before deploying |
 | CLI asks to confirm everything | `vercel --yes --prod` for non-interactive use (CI-like shells) |
 
 ## 9. File storage: local disk vs object storage

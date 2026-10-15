@@ -1,0 +1,43 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, Search, Printer, ShieldCheck, Package, Palette, FileUp } from "lucide-react";
+import { GlassCard, SectionTitle } from "../ui";
+import { money, type PrintCategory, type PrintConfig, type PrintService } from "@/lib/printing/domain";
+export const button = "inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-700 to-purple-700 px-5 py-3 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-500 disabled:opacity-50";
+export const input = "glass focus-glow w-full rounded-xl px-3 py-3 text-sm dark:bg-slate-900";
+export function PrintingStorefront({ config, categories, services }: { config: PrintConfig; categories: PrintCategory[]; services: PrintService[] }) {
+  const [search, setSearch] = useState(""); const [category, setCategory] = useState(""); const [bn, setBn] = useState(false);
+  const [maximum, setMaximum] = useState(""); const locale = bn ? "bn" : "en";
+  const visibleCategories = categories.filter(c => !c.hidden && !c.archived).sort((a,b) => a.position - b.position);
+  const visible = services.filter(s => s.published && visibleCategories.some(c => c.id === s.categoryId) && (!category || s.categoryId === category) && (!maximum || s.unitPrice <= Number(maximum) * 100) && `${s.name.en} ${s.name.bn} ${s.keywords} ${categories.find(c => c.id === s.categoryId)?.name.en} ${s.options.flatMap(o => o.values.map(v => `${v.label.en} ${v.label.bn}`)).join(" ")}`.toLowerCase().includes(search.toLowerCase()));
+  if (!config.enabled) return <SectionTitle kicker="BornoLab" title="Printing Services is currently unavailable" desc="Please check back later or contact our team." />;
+  return <div className="space-y-8">
+    <section className="glass relative overflow-hidden rounded-3xl p-6 sm:p-10">
+      <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-purple-500/10" />
+      <div className="relative grid items-center gap-8 md:grid-cols-[1.4fr_1fr]">
+        <div><div className="mb-5 flex items-center gap-3"><span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300">BORNO LAB · PRINTING</span>{config.bangla && <button className="text-sm underline" onClick={() => setBn(!bn)}>{bn ? "English" : "বাংলা"}</button>}</div>
+          <h1 className="max-w-xl text-3xl font-black leading-tight tracking-tight sm:text-5xl">{bn ? "আপনার ভাবনা, সুন্দর প্রিন্টে।" : "Your ideas. Beautifully printed."}</h1>
+          <p className="mt-4 max-w-xl text-slate-600 dark:text-slate-400">{bn ? "বিজনেস কার্ড, শিক্ষাসামগ্রী, উপহার ও প্যাকেজিং। অপশন বেছে ফাইল পাঠান, প্রুফ দেখে অনুমোদন দিন।" : "From business cards to class notes, gifts and packaging. Choose your options, send your artwork, and approve your proof before we print."}</p>
+          <div className="mt-6 flex flex-wrap gap-3"><a href="#services" className={button}>Browse services <ArrowRight size={16}/></a><Link href="/printing/quote" className="glass rounded-full px-5 py-3 text-sm font-bold">Request a quote</Link></div>
+        </div><Image src="/printing-sample.svg" width={800} height={520} priority alt="Illustration of sample printed cards" className="w-full rounded-2xl" />
+      </div>
+    </section>
+    {config.demo && <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm"><b>Demo printing service.</b> Prices and delivery estimates are examples. No money is collected and no physical products are fulfilled.</p>}
+    <nav aria-label="Printing shortcuts" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[
+      { href: "#services", icon: FileUp, title: "Upload artwork", desc: "Choose a service to get started" },
+      { href: "/printing/quote", icon: Palette, title: "Design & print", desc: "Need help preparing your design?" },
+      { href: "/printing/quote", icon: Package, title: "Business & bulk", desc: "Request a tailored quote" },
+      { href: "/printing/orders", icon: Printer, title: "My print orders", desc: "Proofs, progress & delivery" },
+    ].map(({href, icon: Icon, title, desc}) => <Link key={title} href={href} className="glass hover-glow rounded-2xl p-4"><Icon size={22} className="mb-3 text-cyan-600"/><b className="block">{title}</b><span className="text-xs text-slate-500">{desc}</span></Link>)}</nav>
+    <section id="services" className="scroll-mt-32"><SectionTitle kicker="Made for your everyday" title={bn ? "প্রিন্টিং সেবা খুঁজুন" : "Find your next print"} desc="Cards, merchandise, academic printing and custom requests — all managed by BornoLab."/>
+      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_240px_170px]"><label className="relative"><span className="sr-only">Search services</span><Search size={18} className="absolute left-3 top-3.5 text-slate-400"/><input className={`${input} pl-10`} placeholder="Search by service, material or occasion" value={search} onChange={e=>setSearch(e.target.value)}/></label><select aria-label="Category" className={input} value={category} onChange={e=>setCategory(e.target.value)}><option value="">All categories</option>{visibleCategories.map(c=><option key={c.id} value={c.id}>{c.name[locale]}</option>)}</select><input aria-label="Maximum unit price in taka" className={input} type="number" min="0" placeholder="Max unit price (৳)" value={maximum} onChange={e=>setMaximum(e.target.value)}/></div>
+      <p role="status" className="mb-3 text-xs text-slate-500">{visible.length} services · {config.nationwide ? "Bangladesh delivery available" : "Dhaka delivery"}</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{visible.map(s=><GlassCard key={s.id} className="flex flex-col overflow-hidden p-0"><Image src={s.image} width={800} height={520} alt={`${s.name[locale]} sample illustration`} className="aspect-[16/10] w-full object-cover"/><div className="flex flex-1 flex-col p-5"><p className="text-xs text-cyan-700 dark:text-cyan-300">{categories.find(c=>c.id===s.categoryId)?.name[locale]} {s.featured && "· Featured"}</p><h2 className="mt-2 text-lg font-bold">{s.name[locale]}</h2><p className="mt-2 text-xl font-black">{s.pricing === "quote" ? "Request a quote" : `From ${money(s.unitPrice * s.minimum)}`}<span className="block text-xs font-normal text-slate-500">{s.pricing !== "quote" && `For ${s.minimum} units · delivery extra`}</span></p><p className="mt-3 text-xs text-slate-500">Typically {s.days} production days · customizable<br/>Sizes & materials selected at checkout · delivery available</p><Link href={`/printing/${s.id}`} className={`${button} mt-5`}>{s.pricing === "quote" ? "Explore & request quote" : "Customize & order"}<ArrowRight size={15}/></Link></div></GlassCard>)}</div>
+      {!visible.length && <GlassCard><p>No matching services. Try a different search or request a custom quote.</p><Link href="/printing/quote" className="mt-3 inline-block underline">Request a quote</Link></GlassCard>}
+    </section>
+    <section className="grid gap-4 md:grid-cols-3">{[["Artwork reviewed", "Uploads need human review. Approval of your proof confirms the final layout."], ["Clear pricing", "Options, design help and delivery are shown before you submit."], ["Bangladesh delivery", `Allow ${config.deliveryMinDays}-${config.deliveryMaxDays} delivery days after production. Remote-area estimates are confirmed during review.`]].map(([title, desc])=><GlassCard key={title}><ShieldCheck size={20} className="mb-3 text-cyan-600"/><h2 className="font-bold">{title}</h2><p className="mt-2 text-sm text-slate-500">{desc}</p></GlassCard>)}</section>
+    <section><h2 className="mb-4 text-xl font-bold">Before you print</h2>{[["Which files can I upload?", "PDF, PNG or JPEG up to the service limit. Use 300 dpi where possible, add bleed, and check fonts. Uploaded does not mean print-ready."], ["Can you help with design?", "Yes. Choose a design-help option when ordering. Price, estimated time and included revisions are shown before submission."], ["When does production start?", "After artwork review, required proof approval and demo payment or COD confirmation."], ["How do returns work?", "Custom goods need review. Contact support before production for cancellations, or request review from your delivered order."]].map(([q,a])=><details key={q} className="glass mb-2 rounded-xl p-4"><summary className="cursor-pointer font-semibold">{q}</summary><p className="mt-3 text-sm text-slate-500">{a}</p></details>)}<Link href="/printing/help" className="inline-block py-3 text-sm underline">Printing help & file preparation</Link></section>
+  </div>;
+}

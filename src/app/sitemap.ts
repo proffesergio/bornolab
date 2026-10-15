@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site-url";
 import { GUIDES } from "@/lib/guides";
+import {readPrinting} from "@/lib/printing/repository";
+export const dynamic="force-dynamic";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   const now = new Date();
+  const printing=await readPrinting().catch(()=>null);
   const routes = [
     "/",
     "/bijoy-unicode-converter",
@@ -25,6 +28,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/format",
     "/software",
     "/study",
+    "/printing",
+    "/printing/help",
+    ...(printing?.config.enabled?printing.services.filter(s=>s.published&&printing.categories.some(c=>c.id===s.categoryId&&!c.hidden&&!c.archived)).map(s=>`/printing/${s.id}`):[]),
     "/cart",
     "/guides",
     ...GUIDES.map((g) => `/guides/${g.slug}`),

@@ -32,6 +32,7 @@ export default function PrivacyPage() {
             <li><b>Member accounts (optional login):</b> if you sign in with Google, Facebook, email code or magic link, we store your email, display name, avatar URL, login provider and plan — solely to keep you signed in, remember your purchases and show your orders. OAuth profile data comes directly from the provider you choose; we never see your provider password.</li>
             <li><b>Signed-in activity:</b> when you are logged in, page views, PDF-tool usage and study downloads are linked to your account ID so we can provide download access and support. Logged-out usage stays anonymous. You may request deletion of this record at any time.</li>
             <li><b>Manual-payment orders:</b> when you buy a premium font or software, we store the item, amount, payment method, sender number and transaction ID you submit — solely to verify and deliver your order.</li>
+            <li><b>Printing requests:</b> we store your delivery details, artwork, rights declarations, quotes, proofs and approval history to review and fulfill your request. Original files require account authorization and are not public downloads. Demo records are marked separately.</li>
             <li><b>Admin settings</b> you configure in the dashboard (kept in a JSON store / environment seed).</li>
           </ul>
         </GlassCard>

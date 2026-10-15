@@ -11,6 +11,8 @@ export const SEO_ROUTE_OPTIONS = [
   "/fonts",
   "/styler",
   "/study",
+  "/printing",
+  "/printing/help",
   "/translate",
   "/split",
   "/merge",
@@ -29,6 +31,8 @@ export interface ResolvedPageSeo {
   title: string;
   description: string;
   noindex: boolean;
+  ogImage?:string;
+  canonical?:string;
 }
 
 /** Normalize a request path to an override key ("/study/abc" → "/study/abc", trailing slash trimmed). */
@@ -50,11 +54,13 @@ export function resolvePageSeo(pathname: string, config: SiteConfig): ResolvedPa
   const pages = config.seoPages ?? {};
   const path = normalizeSeoPath(pathname);
   const exact = pages[path];
-  if (exact && (exact.title || exact.description || exact.noindex)) {
+  if (exact && (exact.title || exact.description || exact.noindex || exact.ogImage || exact.canonical)) {
     return {
       title: exact.title?.trim() || fallback.title,
       description: exact.description?.trim() || fallback.description,
       noindex: exact.noindex === true,
+      ogImage:exact.ogImage,
+      canonical:exact.canonical,
     };
   }
   let best: string | null = null;
@@ -68,6 +74,8 @@ export function resolvePageSeo(pathname: string, config: SiteConfig): ResolvedPa
       title: ov.title?.trim() || fallback.title,
       description: ov.description?.trim() || fallback.description,
       noindex: ov.noindex === true,
+      ogImage:ov.ogImage,
+      canonical:ov.canonical,
     };
   }
   return fallback;

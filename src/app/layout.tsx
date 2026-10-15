@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       keywords: cfg.seo.keywords,
       authors: [{ name: "BornoLab" }],
-      alternates: { canonical: "/" },
+      alternates: { canonical: page.canonical || "/" },
       ...(verification ? { verification: { google: verification } } : {}),
       openGraph: {
         type: "website",
@@ -47,6 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
         description,
         url: "/",
         locale: "bn_BD",
+        ...(page.ogImage?{images:[page.ogImage]}:{}),
       },
       twitter: { card: "summary_large_image", title, description },
       robots: page.noindex ? { index: false, follow: false } : { index: true, follow: true },

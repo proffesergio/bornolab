@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { GlassCard } from "@/components/ui";
 import { AdminStudyPlatform } from "@/components/admin-study-platform";
+import { AdminQuestionBank } from "@/components/admin-question-bank";
 import { BUILT_IN_STUDY_MATERIALS, STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
 import { CsvBulkTools, duplicateCustom } from "@/components/admin-bulk";
 import type { SiteConfig } from "@/lib/site-config-shared";
@@ -103,6 +104,7 @@ export function AdminStudy({ config, save }: {
   return (
     <div className="grid gap-4">
       <AdminStudyPlatform />
+      <AdminQuestionBank config={config} save={save} />
       <GlassCard>
         <h3 className="text-sm font-bold">Publish a study file — upload or link</h3>
         <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">

@@ -1,0 +1,8 @@
+"use client";
+import {money,type PrintOption} from "@/lib/printing/domain";
+import {input} from "./storefront";
+export function PrintOptionField({option,value,onChange}:{option:PrintOption;value:string;onChange:(value:string)=>void}){
+  const values=option.values.filter(v=>v.available);
+  if(option.type==="select")return <label className="block text-sm font-semibold">{option.label.en}{option.required?" *":""}<select className={`${input} mt-2`} value={value} onChange={e=>onChange(e.target.value)}>{!option.required&&<option value="">None</option>}{values.map(v=><option key={v.id} value={v.id}>{v.label.en}{v.price?` (+${money(v.price)} / unit)`:""}{v.days?` · +${v.days} day`:""}</option>)}</select><span className="mt-1 block text-xs font-normal text-slate-500">{option.help.en}</span></label>;
+  return <fieldset><legend className="text-sm font-semibold">{option.label.en}{option.required?" *":""}</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{values.map(v=><label key={v.id} className={`glass flex cursor-pointer items-center gap-3 rounded-xl p-3 text-sm ${value===v.id?"ring-2 ring-cyan-500":""}`}><input type="radio" name={`print-${option.id}`} value={v.id} checked={value===v.id} onChange={()=>onChange(v.id)}/>{option.type==="swatch"&&v.color&&<span className="h-6 w-6 shrink-0 rounded-full border border-slate-400" style={{backgroundColor:v.color}} aria-hidden="true"/>}<span>{v.label.en}<span className="block text-xs text-slate-500">{v.price?`+${money(v.price)} / unit`:"Included"}{v.days?` · +${v.days} day`:""}</span></span></label>)}</div><p className="mt-2 text-xs text-slate-500">{option.help.en}</p>{!option.required&&<button className="mt-2 text-xs underline" onClick={()=>onChange("")}>Clear selection</button>}</fieldset>;
+}

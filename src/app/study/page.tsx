@@ -2,12 +2,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe, Target, NotebookText, Timer, BarChart3, History } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { BookOpen, Download, FileText, Search, Share2, Check, GraduationCap, Lock, Sparkles, Globe, Target, NotebookText, Timer, BarChart3, History, SlidersHorizontal } from "lucide-react";
 import { GlassCard, SectionTitle } from "@/components/ui";
+import { FadeUp, StaggerGrid, StaggerItem } from "@/components/study-motion";
 import { StudyPractice } from "@/components/study-practice";
 import { AdUnits } from "@/components/ads";
 import { useLogin } from "@/components/use-login";
-import { STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
+import { STUDY_CATEGORIES, STUDY_DEPARTMENTS, STUDY_SUBJECTS, isBuetOnlyMaterial, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
+import { QB_DEPARTMENTS } from "@/lib/question-bank-data";
 import { PLATFORM_SUBJECTS, getChapters } from "@/lib/study-platform/catalog";
 import { cn } from "@/lib/cn";
 
@@ -49,6 +52,8 @@ export default function StudyPage() {
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [cat, setCat] = useState<CatFilter>("all");
   const [sub, setSub] = useState<string>("all");
+  const [dept, setDept] = useState<string>("all");
+  const [subject, setSubject] = useState<string>("all");
   const [q, setQ] = useState("");
   const { loggedIn, refresh } = useLogin();
   const [dlBusy, setDlBusy] = useState<string | null>(null);
@@ -59,10 +64,14 @@ export default function StudyPage() {
     fetch("/api/study").then((r) => r.json()).then((j) => setMaterials(j.materials ?? [])).catch(() => {});
   }, []);
 
+  /** BUET PG guides are Masters-only — never listed on the root "All" view. */
+  const showBuet = cat === "masters";
+
   const subs = useMemo(() => {
     const inCat = materials.filter((m) => cat === "all" || m.category === cat);
-    return [...new Set(inCat.map((m) => m.subcategory).filter(Boolean))] as string[];
-  }, [materials, cat]);
+    const all = [...new Set(inCat.map((m) => m.subcategory).filter(Boolean))] as string[];
+    return showBuet ? all : all.filter((s) => !materials.some((m) => m.subcategory === s && isBuetOnlyMaterial(m)));
+  }, [materials, cat, showBuet]);
 
   const selectCat = (c: CatFilter) => {
     setCat(c);
@@ -75,11 +84,32 @@ export default function StudyPage() {
       (m) =>
         (cat === "all" || m.category === cat) &&
         (sub === "all" || m.subcategory === sub) &&
-        (!needle || `${m.title} ${m.description} ${m.subcategory ?? ""}`.toLowerCase().includes(needle))
+        (dept === "all" || (m.department ?? "general") === dept) &&
+        (subject === "all" || (m.subject ?? "") === subject) &&
+        (showBuet || !isBuetOnlyMaterial(m)) &&
+        (!needle || `${m.title} ${m.description} ${m.subcategory ?? ""} ${m.subject ?? ""}`.toLowerCase().includes(needle))
     );
-  }, [materials, cat, sub, q]);
+  }, [materials, cat, sub, dept, subject, showBuet, q]);
 
-  const featured = materials.find((m) => m.featured);
+  /** Count of BUET-only guides hidden by the Masters gate (for the hint). */
+  const hiddenBuetCount = useMemo(() => {
+    if (showBuet) return 0;
+    const needle = q.trim().toLowerCase();
+    return materials.filter(
+      (m) =>
+        isBuetOnlyMaterial(m) &&
+        (sub === "all" || m.subcategory === sub) &&
+        (dept === "all" || (m.department ?? "general") === dept) &&
+        (subject === "all" || (m.subject ?? "") === subject) &&
+        (!needle || `${m.title} ${m.description} ${m.subcategory ?? ""}`.toLowerCase().includes(needle))
+    ).length;
+  }, [materials, showBuet, sub, dept, subject, q]);
+
+  const featuredRail = useMemo(
+    () => materials.filter((m) => m.featured && (showBuet || !isBuetOnlyMaterial(m))),
+    [materials, showBuet]
+  );
+  const deptLabel = (id?: string) => STUDY_DEPARTMENTS.find((d) => d.id === (id ?? "general"))?.label ?? "General";
 
   const download = async (m: StudyMaterial) => {
     setDlError(null);
@@ -126,126 +156,183 @@ export default function StudyPage() {
   };
 
   const catMeta = (id: string) => STUDY_CATEGORIES.find((c) => c.id === id);
+  const filtersActive = cat !== "all" || sub !== "all" || dept !== "all" || subject !== "all" || q.trim() !== "";
+  const resetFilters = () => { setCat("all"); setSub("all"); setDept("all"); setSubject("all"); setQ(""); };
 
   return (
     <div>
-      <SectionTitle
-        kicker="Study Hub"
-        title="Study Hub — Notes, Guides & Practice"
-        desc="Preview every guide free. Login with Google to keep reading and download — paid guides unlock via bKash."
-      />
+      <FadeUp>
+        <SectionTitle
+          kicker="Study Hub"
+          title="Study Hub — Notes, Guides & Practice"
+          desc="Preview every guide free. Login with Google to keep reading and download — paid guides unlock via bKash."
+        />
+      </FadeUp>
 
-      {/* category tabs */}
-      <div className="glass mt-4 flex gap-1 overflow-x-auto rounded-2xl p-1.5" role="tablist" aria-label="Study categories">
-        <TabButton active={cat === "all"} onClick={() => selectCat("all")} label="All" />
-        {STUDY_CATEGORIES.map((c) => (
-          <TabButton key={c.id} active={cat === c.id} onClick={() => selectCat(c.id as CatFilter)} label={`${c.label}`} sub={c.bangla} />
-        ))}
-      </div>
-      <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">
-        {(cat === "all" ? "Everything — pick a category to focus." : `${catMeta(cat)?.label} (${catMeta(cat)?.bangla}) — ${catMeta(cat)?.desc}`)}
-      </p>
-
-      {/* search + subcategory */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <label className="glass flex min-w-[220px] flex-1 items-center gap-2 rounded-full px-4 py-2.5">
-          <Search size={15} className="shrink-0 text-slate-400" />
-          <input
-            value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guides, e.g. BUET, admission…"
-            aria-label="Search study materials" className="w-full bg-transparent text-sm outline-none"
-          />
-        </label>
-        {subs.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <SubChip active={sub === "all"} onClick={() => setSub("all")} label="All topics" />
-            {subs.map((s) => (
-              <SubChip key={s} active={sub === s} onClick={() => setSub(s)} label={s} />
+      {/* unified filter bar */}
+      <FadeUp delay={0.05}>
+        <div className="glass mt-4 rounded-2xl p-3">
+          <div className="flex items-center gap-2 px-1 pb-2 text-[12px] font-bold uppercase tracking-widest text-slate-400">
+            <SlidersHorizontal size={13} /> Filters
+            {filtersActive && (
+              <button onClick={resetFilters} className="ml-auto text-[12px] font-bold normal-case tracking-normal text-cyan-700 underline dark:text-cyan-300">
+                Reset all
+              </button>
+            )}
+          </div>
+          <label className="flex items-center gap-2 rounded-full bg-slate-900/[.04] px-4 py-2.5 dark:bg-white/5">
+            <Search size={15} className="shrink-0 text-slate-400" />
+            <input
+              value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guides by title, subject, department…"
+              aria-label="Search study materials" className="w-full bg-transparent text-sm outline-none"
+            />
+          </label>
+          <div className="mt-2 flex gap-1 overflow-x-auto p-1" role="tablist" aria-label="Study categories">
+            <TabButton active={cat === "all"} onClick={() => selectCat("all")} label="All" />
+            {STUDY_CATEGORIES.map((c) => (
+              <TabButton key={c.id} active={cat === c.id} onClick={() => selectCat(c.id as CatFilter)} label={`${c.label}`} sub={c.bangla} />
             ))}
           </div>
-        )}
-      </div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5 px-1" aria-label="Filter by department">
+            <SubChip active={dept === "all"} onClick={() => setDept("all")} label="All departments" />
+            {STUDY_DEPARTMENTS.map((d) => (
+              <SubChip key={d.id} active={dept === d.id} onClick={() => setDept(d.id)} label={`${d.label}`} />
+            ))}
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5 px-1" aria-label="Filter by subject">
+            <SubChip active={subject === "all"} onClick={() => setSubject("all")} label="All subjects" />
+            {STUDY_SUBJECTS.map((s) => (
+              <SubChip key={s} active={subject === s} onClick={() => setSubject(s)} label={s} />
+            ))}
+          </div>
+          {subs.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5 px-1">
+              <SubChip active={sub === "all"} onClick={() => setSub("all")} label="All topics" />
+              {subs.map((s) => (
+                <SubChip key={s} active={sub === s} onClick={() => setSub(s)} label={s} />
+              ))}
+            </div>
+          )}
+          <p className="px-1 pt-2 text-[12.5px] text-slate-500 dark:text-slate-400">
+            {(cat === "all" ? "Everything — pick a category to focus." : `${catMeta(cat)?.label} (${catMeta(cat)?.bangla}) — ${catMeta(cat)?.desc}`)}
+            {" "}• {list.length} result{list.length === 1 ? "" : "s"}
+          </p>
+        </div>
+      </FadeUp>
 
-      {/* featured */}
-      {featured && cat === "all" && !q && (
-        <Link href={`/study/${featured.id}`} className="mt-4 block">
-          <GlassCard className="border-cyan-500/30 p-5">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-700 dark:text-cyan-300">★ Featured • Masters • BUET Post Graduate Admission</p>
-            <h2 className="mt-1 text-lg font-black">{featured.title}</h2>
-            <p className="mt-1 line-clamp-2 text-[13px] text-slate-600 dark:text-slate-400">{featured.description}</p>
-            <span className="mt-2 inline-block text-[13px] font-bold text-cyan-700 dark:text-cyan-300">Open guide + practice →</span>
-          </GlassCard>
-        </Link>
+      {/* featured — generic rail (BUET-only guides appear here solely under Masters) */}
+      {featuredRail.length > 0 && dept === "all" && subject === "all" && sub === "all" && !q && (
+        <FadeUp>
+          <section aria-label="Featured study materials">
+            <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
+              <Sparkles size={19} /> Featured study materials
+              <span className="rounded-full bg-slate-900/5 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">{featuredRail.length}</span>
+            </h2>
+            <StaggerGrid className="grid gap-4 sm:grid-cols-2">
+              {featuredRail.map((f) => (
+                <StaggerItem key={f.id}>
+                  <Link href={`/study/${f.id}`} className="block">
+                    <GlassCard className="border-cyan-500/30 p-5 transition hover:border-cyan-500/60">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-700 dark:text-cyan-300">★ Featured • {deptLabel(f.department)}{f.subject ? ` • ${f.subject}` : ""}</p>
+                      <h3 className="mt-1 text-lg font-black">{f.title}</h3>
+                      <p className="mt-1 line-clamp-2 text-[13px] text-slate-600 dark:text-slate-400">{f.description}</p>
+                      <span className="mt-2 inline-block text-[13px] font-bold text-cyan-700 dark:text-cyan-300">Open guide + practice →</span>
+                    </GlassCard>
+                  </Link>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </section>
+        </FadeUp>
       )}
 
-      {/* materials */}
-      <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
-        <BookOpen size={19} /> Reference materials
-        <span className="rounded-full bg-slate-900/5 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">{list.length}</span>
-      </h2>
+      {/* materials — animated card view */}
+      <FadeUp>
+        <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
+          <BookOpen size={19} /> Study materials
+          <span className="rounded-full bg-slate-900/5 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-white/10 dark:text-slate-400">{list.length}</span>
+        </h2>
+      </FadeUp>
       {list.length === 0 && (
         <GlassCard className="p-8 text-center text-sm text-slate-500">
-          No materials here yet — {cat === "masters" ? "the BUET guides live under “BUET Post Graduate Admission”." : "try another category or search."}
+          No materials match these filters — try another department, subject or search.
+          {hiddenBuetCount > 0 && (
+            <span className="mt-2 block">
+              {hiddenBuetCount} BUET PG guide{hiddenBuetCount === 1 ? "" : "s"} {hiddenBuetCount === 1 ? "is" : "are"} Masters-only —{" "}
+              <button onClick={() => selectCat("masters")} className="font-bold text-cyan-700 underline dark:text-cyan-300">open Masters</button> to view.
+            </span>
+          )}
         </GlassCard>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {list.map((m) => {
-          const interactive = m.fileType !== "pdf" && m.fileType !== "link";
-          const paid = m.access === "paid";
-          const FormatIcon = m.fileType === "link" ? Globe : interactive ? Sparkles : FileText;
-          const formatLabel = m.fileType === "link" ? "Resource link" : interactive ? "Interactive module" : "PDF guide";
-          return (
-          <GlassCard key={m.id} className="group flex flex-col p-5">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 text-white">
-                <FormatIcon size={18} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-extrabold leading-6">{m.title}</h3>
-                <p className="truncate text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
-                  {formatLabel} • {catMeta(m.category)?.label ?? m.category}{m.subcategory ? ` • ${m.subcategory}` : ""}
-                </p>
+      <motion.div layout className="grid gap-4 sm:grid-cols-2">
+        <AnimatePresence mode="popLayout">
+          {list.map((m) => {
+            const interactive = m.fileType !== "pdf" && m.fileType !== "link";
+            const paid = m.access === "paid";
+            const FormatIcon = m.fileType === "link" ? Globe : interactive ? Sparkles : FileText;
+            const formatLabel = m.fileType === "link" ? "Resource link" : interactive ? "Interactive module" : "PDF guide";
+            return (
+            <motion.div
+              key={m.id} layout
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+            <GlassCard className="group flex h-full flex-col p-5 transition hover:border-cyan-500/40">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 text-white">
+                  <FormatIcon size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-extrabold leading-6">{m.title}</h3>
+                  <p className="truncate text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
+                    {formatLabel} • {deptLabel(m.department)}{m.subject ? ` • ${m.subject}` : ""} • {catMeta(m.category)?.label ?? m.category}{m.subcategory ? ` • ${m.subcategory}` : ""}
+                  </p>
+                </div>
+                <span className={paid ? "shrink-0 rounded-full bg-amber-400/20 px-2.5 py-1 text-[10.5px] font-black text-amber-700 dark:text-amber-300" : "shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-black text-emerald-600 dark:text-emerald-300"}>
+                  {paid ? `৳${m.priceBDT ?? 0}` : "FREE"}
+                </span>
               </div>
-              <span className={paid ? "shrink-0 rounded-full bg-amber-400/20 px-2.5 py-1 text-[10.5px] font-black text-amber-700 dark:text-amber-300" : "shrink-0 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10.5px] font-black text-emerald-600 dark:text-emerald-300"}>
-                {paid ? `৳${m.priceBDT ?? 0}` : "FREE"}
-              </span>
-            </div>
-            <p className="mt-2.5 line-clamp-2 flex-1 text-[13px] leading-6 text-slate-600 dark:text-slate-400">{m.description}</p>
-            {(m.topics?.length ?? 0) > 0 && (
-              <p className="mt-2 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300">
-                Flashcards & exam mode included
-              </p>
-            )}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Link
-                href={`/study/${m.id}`}
-                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2 text-[13px] font-bold text-white hover:brightness-110"
-              >
-                <FormatIcon size={14} /> {paid ? "Preview" : interactive ? "Start" : m.fileType === "link" ? "Open" : "Read"}
-              </Link>
-              {!paid && m.fileType === "pdf" && (
-                <button
-                  onClick={() => download(m)}
-                  disabled={dlBusy === m.id}
-                  title={loggedIn === false ? "Login required to download" : "Download PDF"}
-                  className="glass hover-glow flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold"
-                >
-                  {loggedIn === false ? <Lock size={14} /> : <Download size={14} />}
-                  {dlBusy === m.id ? "Preparing…" : loggedIn === false ? "Login to download" : "Download"}
-                </button>
+              <p className="mt-2.5 line-clamp-2 flex-1 text-[13px] leading-6 text-slate-600 dark:text-slate-400">{m.description}</p>
+              {(m.topics?.length ?? 0) > 0 && (
+                <p className="mt-2 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300">
+                  Flashcards & exam mode included
+                </p>
               )}
-              <button
-                onClick={() => share(m)}
-                title="Copy shareable link"
-                aria-label={`Share ${m.title}`}
-                className="glass hover-glow grid h-9 w-9 place-items-center rounded-full"
-              >
-                {copied === m.id ? <Check size={15} className="text-emerald-500" /> : <Share2 size={15} />}
-              </button>
-            </div>
-          </GlassCard>
-          );
-        })}
-      </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/study/${m.id}`}
+                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2 text-[13px] font-bold text-white hover:brightness-110"
+                >
+                  <FormatIcon size={14} /> {paid ? "Preview" : interactive ? "Start" : m.fileType === "link" ? "Open" : "Read"}
+                </Link>
+                {!paid && m.fileType === "pdf" && (
+                  <button
+                    onClick={() => download(m)}
+                    disabled={dlBusy === m.id}
+                    title={loggedIn === false ? "Login required to download" : "Download PDF"}
+                    className="glass hover-glow flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold"
+                  >
+                    {loggedIn === false ? <Lock size={14} /> : <Download size={14} />}
+                    {dlBusy === m.id ? "Preparing…" : loggedIn === false ? "Login to download" : "Download"}
+                  </button>
+                )}
+                <button
+                  onClick={() => share(m)}
+                  title="Copy shareable link"
+                  aria-label={`Share ${m.title}`}
+                  className="glass hover-glow grid h-9 w-9 place-items-center rounded-full"
+                >
+                  {copied === m.id ? <Check size={15} className="text-emerald-500" /> : <Share2 size={15} />}
+                </button>
+              </div>
+            </GlassCard>
+            </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </motion.div>
       {dlError && <p role="alert" className="mt-3 text-[13px] font-semibold text-rose-500">{dlError}</p>}
       {loggedIn === false && (
         <p className="mt-3 text-[12.5px] text-slate-500 dark:text-slate-400">
@@ -253,33 +340,66 @@ export default function StudyPage() {
         </p>
       )}
 
+      {/* question bank solutions — entry to the subject-wise module */}
+      <FadeUp>
+        <h2 className="mb-3 mt-10 flex items-center gap-1.5 text-lg font-black">
+          <FileText size={19} /> Question Bank Solutions
+        </h2>
+      </FadeUp>
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="list" ariaLabel="Question bank departments">
+        {QB_DEPARTMENTS.map((d) => (
+          <StaggerItem key={d.id} role="listitem">
+            <Link href={`/study/question-bank/${d.slug}`}>
+              <GlassCard className="group flex h-full items-center gap-3 p-4 transition hover:border-amber-500/40">
+                <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white", d.grad)}>
+                  <FileText size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-extrabold leading-6">{d.title.bn}</span>
+                  <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{d.title.en} • {d.subjects.length} subjects</span>
+                </span>
+              </GlassCard>
+            </Link>
+          </StaggerItem>
+        ))}
+      </StaggerGrid>
+      <Link href="/study/question-bank" className="mt-3 inline-block text-[13px] font-bold text-cyan-700 underline dark:text-cyan-300">
+        Browse all question-bank solutions →
+      </Link>
+
       {/* practice */}
       <AdUnits slot="inFeed" className="mt-8" />
-      <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
-        <GraduationCap size={19} /> IT Job Preparation — নতুন প্ল্যাটফর্ম
-      </h2>
+      <FadeUp>
+        <h2 className="mb-3 mt-6 flex items-center gap-1.5 text-lg font-black">
+          <GraduationCap size={19} /> IT Job Preparation — নতুন প্ল্যাটফর্ম
+        </h2>
+      </FadeUp>
       {/* preparation modules — card view */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Preparation modules">
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="list" ariaLabel="Preparation modules">
         {PREP_MODULES.map((m) => (
-          <Link key={m.href + m.bn} href={m.href} role="listitem">
-            <GlassCard className="group flex h-full items-center gap-3 p-4 transition hover:border-cyan-500/40">
-              <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white", m.grad)}>
-                <m.icon size={20} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-extrabold leading-6">{m.bn} <span className="font-semibold text-slate-500">({m.en})</span></span>
-                <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{m.desc}</span>
-              </span>
-              <span className="shrink-0 rounded-full bg-slate-900/[.06] px-2.5 py-1 text-[10.5px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">{m.stat}</span>
-            </GlassCard>
-          </Link>
+          <StaggerItem key={m.href + m.bn} role="listitem">
+            <Link href={m.href}>
+              <GlassCard className="group flex h-full items-center gap-3 p-4 transition hover:border-cyan-500/40">
+                <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white", m.grad)}>
+                  <m.icon size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold leading-6">{m.bn} <span className="font-semibold text-slate-500">({m.en})</span></span>
+                  <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{m.desc}</span>
+                </span>
+                <span className="shrink-0 rounded-full bg-slate-900/[.06] px-2.5 py-1 text-[10.5px] font-black text-slate-600 dark:bg-white/10 dark:text-slate-300">{m.stat}</span>
+              </GlassCard>
+            </Link>
+          </StaggerItem>
         ))}
         <ProgressRail />
-      </div>
+      </StaggerGrid>
       {/* subject rail — browse notes by subject */}
-      <h3 className="mb-2 mt-5 flex items-center gap-1.5 text-[15px] font-black">
-        <BookOpen size={16} /> বিষয়ভিত্তিক নোট
-      </h3>
+      <FadeUp>
+        <h3 className="mb-2 mt-5 flex items-center gap-1.5 text-[15px] font-black">
+          <BookOpen size={16} /> বিষয়ভিত্তিক নোট
+        </h3>
+      </FadeUp>
       <div className="flex gap-2 overflow-x-auto pb-2" role="list" aria-label="Subjects">
         {PLATFORM_SUBJECTS.map((s) => {
           const n = getChapters().filter((c) => c.subjectId === s.id).length;
@@ -298,11 +418,13 @@ export default function StudyPage() {
       <p className="mt-2 text-[12.5px] text-slate-500 dark:text-slate-400">
         দ্বিভাষিক (বাংলা/English) অধ্যায়, প্রশ্ন-ব্যাংক ও টাইমড পরীক্ষা — পুরোনো গাইড ও ডাউনলোড নিচে আগের মতোই আছে।
       </p>
-      <h2 id="practice" className="mb-3 mt-10 flex scroll-mt-24 items-center gap-1.5 text-lg font-black">
-        <GraduationCap size={19} /> Step-by-step practice
-      </h2>
+      <FadeUp>
+        <h2 id="practice" className="mb-3 mt-10 flex scroll-mt-24 items-center gap-1.5 text-lg font-black">
+          <GraduationCap size={19} /> Step-by-step practice
+        </h2>
+      </FadeUp>
       <p className="-mt-1 mb-3 text-[13px] text-slate-600 dark:text-slate-400">
-        Built from the BUET M.Sc. CSE Group-1 prep guide: follow the 3-day plan, flip the flashcards, then test yourself in exam mode.
+        Pick a department and subject above, follow the 3-day plan, flip the flashcards, then test yourself in exam mode.
       </p>
       <StudyPractice />
     </div>
@@ -311,7 +433,8 @@ export default function StudyPage() {
 
 function TabButton({ active, onClick, label, sub }: { active: boolean; onClick: () => void; label: string; sub?: string }) {
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.96 }}
       role="tab" aria-selected={active} onClick={onClick}
       className={cn(
         "whitespace-nowrap rounded-xl px-4 py-2 text-[13px] font-bold transition",
@@ -319,20 +442,21 @@ function TabButton({ active, onClick, label, sub }: { active: boolean; onClick: 
       )}
     >
       {label}{sub ? <span className={cn("ml-1.5 text-[11px] font-semibold", active ? "text-white/80" : "text-slate-400")}>{sub}</span> : null}
-    </button>
+    </motion.button>
   );
 }
 
 function SubChip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
-    <button
+    <motion.button
+      whileTap={{ scale: 0.94 }}
       onClick={onClick}
       className={cn(
-        "rounded-full px-3 py-1.5 text-[12px] font-bold",
+        "rounded-full px-3 py-1.5 text-[12px] font-bold transition",
         active ? "bg-amber-500 text-white" : "glass"
       )}
     >
       {label}
-    </button>
+    </motion.button>
   );
 }

@@ -5,11 +5,12 @@ import { useRef, useState } from "react";
 import {
   Moon, Sun, Languages, Type, Sparkles, MonitorDown, Home, Globe, ShieldCheck, Unlock, Pencil,
   FileText, Scissors, Combine, Minimize2, Image as ImageIcon, LayoutGrid, ChevronDown,
-  GraduationCap, ShoppingCart,
+  GraduationCap, ShoppingCart, Printer,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "./theme";
 import { UserMenu } from "./user-menu";
+import { usePrintingEnabled } from "./printing/use-printing";
 import { useSiteConfig } from "./site-widgets";
 import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/cn";
@@ -21,6 +22,7 @@ const LINKS: { href: string; label: string; icon: typeof Home; tool?: ToolKey }[
   { href: "/fonts", label: "Fonts", icon: Type, tool: "fonts" },
   { href: "/styler", label: "Styler", icon: Sparkles, tool: "styler" },
   { href: "/study", label: "Study", icon: GraduationCap, tool: "study" },
+  { href: "/printing", label: "Printing", icon: Printer },
   { href: "/software", label: "Software", icon: MonitorDown, tool: "software" },
 ];
 
@@ -58,7 +60,8 @@ export function Navbar() {
     closeTimer.current = setTimeout(() => setPdfOpen(false), 180);
   };
 
-  const visibleLinks = LINKS.filter((l) => !l.tool || config.tools[l.tool]);
+  const printingEnabled = usePrintingEnabled();
+  const visibleLinks = LINKS.filter((l) => l.href === "/printing" ? printingEnabled : !l.tool || config.tools[l.tool]);
   const visiblePdfTools = PDF_TOOLS.filter(
     (t) => (!t.tool || config.tools[t.tool]) && (!t.pdfTool || pdfCaps(config, t.pdfTool).enabled)
   );
@@ -79,9 +82,9 @@ export function Navbar() {
             <span className="block text-[11px] text-slate-500 dark:text-slate-400">বাংলা Font & Document Suite</span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary">
           {visibleLinks.slice(0, 4).map(({ href, label, icon: Icon }) => {
-            const active = path === href;
+            const active = path === href || (href === "/printing" && path.startsWith("/printing/"));
             return (
               <Link key={href} href={href} className={cn(pill, active ? "text-white" : idle)}>
                 {active && (
@@ -154,7 +157,7 @@ export function Navbar() {
             </div>
           )}
           {visibleLinks.slice(4).map(({ href, label, icon: Icon }) => {
-            const active = path === href;
+            const active = path === href || (href === "/printing" && path.startsWith("/printing/"));
             return (
               <Link key={href} href={href} className={cn(pill, active ? "text-white" : idle)}>
                 {active && (
@@ -196,14 +199,14 @@ export function Navbar() {
           </button>
         </div>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-4 pb-2.5 lg:hidden" aria-label="Mobile">
+      <nav className="flex gap-1 overflow-x-auto px-4 pb-2.5 xl:hidden" aria-label="Mobile">
         {visibleLinks.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
             className={cn(
               "whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-medium",
-              path === href ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white" : "glass text-slate-700 dark:text-slate-300"
+              path === href || (href === "/printing" && path.startsWith("/printing/")) ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white" : "glass text-slate-700 dark:text-slate-300"
             )}
           >
             {label}

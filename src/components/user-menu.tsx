@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogIn, LogOut, User as UserIcon } from "lucide-react";
+import {usePrintingEnabled} from "./printing/use-printing";
+import {PrintNotificationMenu} from "./printing/notification-menu";
 
 interface Me {
   id: string; email: string; name: string; avatar?: string;
@@ -9,6 +11,7 @@ interface Me {
 
 /** Navbar account control: Login link when logged out, avatar menu when in. */
 export function UserMenu() {
+  const printingEnabled=usePrintingEnabled();
   const [user, setUser] = useState<Me | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
@@ -29,7 +32,8 @@ export function UserMenu() {
 
   const initial = (user.name || user.email).trim().charAt(0).toUpperCase() || "•";
   return (
-    <div className="relative">
+    <div className="relative flex items-center gap-2">
+      {printingEnabled&&<PrintNotificationMenu/>}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
@@ -48,8 +52,10 @@ export function UserMenu() {
       {open && (
         <div role="menu" className="glass absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl p-2 shadow-2xl">
           <p className="truncate px-3 py-2 text-[12px] font-semibold text-slate-500">{user.email}</p>
+          {printingEnabled&&<Link href="/printing/orders" role="menuitem" onClick={() => setOpen(false)} className="flex rounded-xl px-3 py-2.5 text-[13px] font-bold hover:bg-cyan-500/10">My Print Orders</Link>}
+          {printingEnabled&&<Link href="/printing/quote" role="menuitem" onClick={() => setOpen(false)} className="flex rounded-xl px-3 py-2.5 text-[13px] font-bold hover:bg-cyan-500/10">Printing quotes</Link>}
           <button
-            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); setOpen(false); }}
+            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); setOpen(false); if(window.location.pathname.startsWith("/printing")||window.location.pathname==="/print-orders")window.location.reload(); }}
             className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-bold text-red-500 hover:bg-red-500/10"
           >
             <LogOut size={15} /> Logout

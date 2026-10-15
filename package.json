@@ -8,11 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "db:migrate:printing": "node scripts/migrate-printing.mjs",
     "vercel:preview": "vercel",
     "vercel:deploy": "vercel --prod",
     "vercel:env": "vercel env pull .env.local"
   },
   "dependencies": {
+    "@next/env": "16.3.5",
     "@next/third-parties": "^16.3.5",
     "@types/file-saver": "^2.0.7",
     "clsx": "^2.1.1",

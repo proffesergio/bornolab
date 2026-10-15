@@ -112,12 +112,12 @@ function typeIcon(type: AdminNotification["type"]) {
   return <Info size={15} className="shrink-0 text-cyan-500" />;
 }
 
-export function NotificationBell({ unread, onOpen }: { unread: number; onOpen: () => void }) {
+export function NotificationBell({ unread, onOpen,className }: { unread: number; onOpen: () => void;className?:string }) {
   return (
     <button
       onClick={onOpen}
       aria-label={unread > 0 ? `${unread} unread notifications — open feed` : "Notifications — none unread"}
-      className="relative ml-auto rounded-xl bg-white/5 p-2 text-slate-200 transition hover:bg-white/10"
+      className={cn("relative ml-auto rounded-xl bg-white/5 p-2 text-slate-200 transition hover:bg-white/10",className)}
     >
       <Bell size={17} />
       {unread > 0 && (
@@ -129,7 +129,7 @@ export function NotificationBell({ unread, onOpen }: { unread: number; onOpen: (
   );
 }
 
-export function NotificationFeed({ items, unread, muted, onToggleMute, onMarkAll, onMarkOne, onJump, className }: {
+export function NotificationFeed({ items, unread, muted, onToggleMute, onMarkAll, onMarkOne, onJump, className, soundControls=true,emptyMessage="No activity yet — new member registrations and orders will appear here live.",feedId="ntf-feed" }: {
   items: AdminNotification[];
   unread: number;
   muted: boolean;
@@ -138,15 +138,18 @@ export function NotificationFeed({ items, unread, muted, onToggleMute, onMarkAll
   onMarkOne: (id: string) => void;
   onJump: (n: AdminNotification) => void;
   className?: string;
+  soundControls?:boolean;
+  emptyMessage?:string;
+  feedId?:string;
 }) {
   return (
     <GlassCard className={className} >
-      <div id="ntf-feed" className="flex scroll-mt-24 flex-wrap items-center gap-2">
+      <div id={feedId} className="flex scroll-mt-24 flex-wrap items-center gap-2">
         <h3 className="text-sm font-bold">Notifications {unread > 0 && <span className="ml-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-black text-red-500">{unread} new</span>}</h3>
         <span className="ml-auto flex gap-1.5">
-          <button onClick={onToggleMute} aria-label={muted ? "Unmute new-registration sound" : "Mute new-registration sound"} aria-pressed={muted} className="rounded-full p-1.5 text-slate-500 hover:bg-white/10">
+          {soundControls&&<button onClick={onToggleMute} aria-label={muted ? "Unmute new-registration sound" : "Mute new-registration sound"} aria-pressed={muted} className="rounded-full p-1.5 text-slate-500 hover:bg-white/10">
             {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-          </button>
+          </button>}
           <button onClick={onMarkAll} disabled={unread === 0} className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-white/10 disabled:opacity-40">
             <CheckCheck size={13} /> Mark all read
           </button>
@@ -170,7 +173,7 @@ export function NotificationFeed({ items, unread, muted, onToggleMute, onMarkAll
             </button>
           </li>
         ))}
-        {items.length === 0 && <li className="p-2 text-[13px] text-slate-500">No activity yet — new member registrations and orders will appear here live.</li>}
+        {items.length === 0 && <li className="p-2 text-[13px] text-slate-500">{emptyMessage}</li>}
       </ul>
     </GlassCard>
   );

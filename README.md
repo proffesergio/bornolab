@@ -1,220 +1,221 @@
 <div align="center">
 
-# <span style="display:inline-grid;place-items:center;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#22d3ee,#a855f7);color:white;font-size:32px;font-weight:900;">ব</span>
+<img src="./public/logo.png" alt="BornoLab" width="88" />
 
-# BornoLab — বাংলা Font & Document Suite
+# BornoLab · বর্ণল্যাব
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-animated-FF0080?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
-[![Privacy](https://img.shields.io/badge/Files-stay_in_browser-10b981?style=for-the-badge&logo=shield&logoColor=white)](#-private-by-design)
+**Create documents. Explore typography. Study smarter. Bring ideas to print.**
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=18&duration=2200&pause=800&color=22D3EE&center=true&vCenter=true&width=640&lines=%E0%A6%86%E0%A6%AE%E0%A6%BE%E0%A6%B0+%E0%A6%B8%E0%A7%8B%E0%A6%A8%E0%A6%BE%E0%A6%B0+%E0%A6%AC%E0%A6%BE%E0%A6%82%E0%A6%B2%E0%A6%BE+%E2%9C%A8;Unicode+%E2%87%86+Bijoy+in+one+click;15%2B+Bangla+%26+Latin+fonts%2C+live+preview;Fancy+text%2C+PDF%E2%87%86DOCX%2C+PDF+splitter;Fast%2C+free%2C+works+in+your+browser)](https://git.io/typing-svg)
+A Bangladesh-first workspace for students, creators, publishers and businesses.
 
-**The all-in-one Bangla toolkit for creators, authors, students & DTP studios.**
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-000000?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
-_Convert • Fonts • Styler • PDF⇆DOCX • Splitter • Software — fast, free, private._
-
-<p>
-  <a href="#-tools-at-a-glance"><img src="https://img.shields.io/badge/🚀_Try_the_tools-cyan?style=for-the-badge" alt="Try the tools" /></a>
-  <a href="https://github.com/proffesergio/bornolab"><img src="https://img.shields.io/github/stars/proffesergio/bornolab?style=for-the-badge&logo=github&label=Star&color=yellow" alt="Star this repo" /></a>
-</p>
-
-> ⭐ **Love BornoLab?** Star the repo — it helps Bangladeshi creators discover free Bangla tools.
+[Live project](https://bornolab.vercel.app) · [Modules](#modules) · [Design patterns](#design-patterns) · [Quick start](#quick-start) · [Deployment](#deployment)
 
 </div>
 
 ---
 
-## ✨ Why you'll love it
+## Modules
 
-| | |
-|---|---|
-| ⚡ **Instant, client-first** | Converting, splitting & translating run **100% in your browser**. No uploads, no waiting. |
-| 🔒 **Private by design** | Your documents never leave your device for core tools. |
-| 📰 **Newsroom-grade Bijoy engine** | Correct pre-kar, reph, ya-fala & juktoborno handling — `কার, য-ফলা, রেফ নির্ভুল`. |
-| 🎨 **Dark-first glassmorphism** | Gorgeous light/dark UI with neon glows, smooth Framer Motion transitions. |
-| 📚 **Built for Bangladesh** | Newspapers, authors, creators, students, offices — real workflows, not demos. |
-| 💳 **Local payments** | Premium fonts & software with **bKash, Nagad, Bank & Binance**. |
+| Workspace | What it supports | Entry point |
+| --- | --- | --- |
+| **Office Suite** | PDF tools, document conversion, formatting and Unicode/Bijoy conversion | `/pdf-tools`, `/bijoy-unicode-converter` |
+| **Fonts & typography** | Bangla/Latin font browsing, previews, downloads and text styling | `/fonts`, `/styler` |
+| **Study Hub** | Study resources, lessons, practice, exams, spaced review and progress | `/study` |
+| **Question Bank Solutions** | Department → subject → chapter browsing, bilingual labels and managed solution documents | `/study/question-bank` |
+| **Printing Services** | Managed catalog, artwork, quotes, proof approval and demo fulfillment | `/printing` |
+| **Software** | Free resources and configured premium digital products | `/software` |
+| **Account & admin** | Existing member accounts, digital orders and module administration | `/login`, `/cart`, `/admin` |
 
----
+All modules share BornoLab's navigation, authentication and visual language. Printing extends the existing admin panel.
 
-## 🧰 Tools at a glance
+## Design language
 
-<div align="center">
+- Shared light/dark themes, glass surfaces and cyan-to-purple accents.
+- Locally hosted Latin and Bangla fonts, including Inter, Noto Sans Bengali and SolaimanLipi, with consistent spacing and hierarchy.
+- Reusable cards, section titles, navigation, forms and notification components.
+- Responsive grids, compact mobile ordering controls and visible keyboard focus.
 
-| Tool | What you get | Perfect for |
-|---|---|---|
-| 🔄 **Unicode ⇆ Bijoy** `/convert` | Newsroom-grade encoding engine with live Bangla ghost preview, one-click copy | DTP, newspapers, Bijoy archives |
-| 🔤 **Font Directory** `/fonts` | 15+ Bangla & Latin faces, live preview, size slider, filters | Designers, publishers, creators |
-| ✨ **Decorator & Styler** `/styler` | Neon, outline, gradient, glitch + frames & symbol wings | Facebook, YouTube, TikTok captions |
-| 📄 **PDF ⇆ DOCX** `/translate` | Editable docs with tables & flow preserved — no text-box soup | Students, offices, authors |
-| ✂️ **PDF Splitter** `/split` | Thumbnails + ranges like `1-3, 5, 7-12` → PDF / JPG-PNG zip / DOCX | Admissions, circulars, homework |
-| 💽 **Software Store** `/software` | Free OCR, font manager, templates + pro tools with license | DTP pros & studios |
+Printing uses lightweight local SVG product illustrations. Seed records are fictional and explicitly marked as demo; there are no invented reviews or sales figures.
 
-</div>
+## Design patterns
 
----
+The interface follows a shared workspace pattern: discover a module, complete a focused task, then preview/export or review its status. These are the existing implementation patterns to reuse when extending the project.
 
-## 🎬 See it in action
+| Pattern | Project example | Source of truth |
+| --- | --- | --- |
+| **Shared visual primitives** | Frosted cards, compact section headings, rounded controls and cyan/purple emphasis across tools | [`ui.tsx`](src/components/ui.tsx), [`globals.css`](src/app/globals.css), [`cn.ts`](src/lib/cn.ts) |
+| **Progressive disclosure** | Printing splits configuration, artwork, address and review into steps | [`configurator.tsx`](src/components/printing/configurator.tsx) |
+| **Browse → filter → detail** | Font/software catalogs, Study resources and department/subject/chapter question banks | [`study/page.tsx`](src/app/study/page.tsx), [`question-bank`](src/app/study/question-bank/page.tsx) |
+| **Reusable motion** | Fade-up sections and staggered Study cards use shared Framer Motion wrappers | [`study-motion.tsx`](src/components/study-motion.tsx) |
+| **Client-first processing** | Browser document operations provide preview/export; configured n8n integrations use server proxies | [`src/app`](src/app), [`api/n8n`](src/app/api/n8n) |
+| **Layered domain and repository** | Printing UI calls guarded APIs; domain rules calculate prices and transitions; the repository persists transactions | [`src/lib/printing`](src/lib/printing) |
+| **Provider boundaries** | Demo payment, shipping and file scanning have explicit adapters for future integration | [`providers.ts`](src/lib/printing/providers.ts), [`scanning.ts`](src/lib/printing/scanning.ts) |
+| **Immutable snapshots and state gates** | Submitted prices remain stable; current proof approval and payment/COD confirmation control production | [`domain.ts`](src/lib/printing/domain.ts) |
+| **Configuration-driven modules** | Existing admin settings control tool visibility, catalogs, SEO and Study behavior | [`site-config-shared.ts`](src/lib/site-config-shared.ts), [`admin/page.tsx`](src/app/admin/page.tsx) |
 
-<details open>
-<summary><b>🔄 Unicode ⇆ Bijoy — the painkiller</b></summary>
-
-<br />
-
-**Why does Bijoy look like English letters?** Bijoy (ANSI) fonts reuse Latin slots for Bangla glyphs. Without SutonnyMJ installed, browsers show raw Latin codes. BornoLab detects this and shows a live auto-converted Bangla preview.
-
-```text
-Unicode input:   আমার সোনার বাংলা, আমি তোমায় ভালোবাসি
-Bijoy output:    Avgvmo †mvvovi evsjv, Avwg †Zvgv‡K fv‡jvevwm (SutonnyMJ rendering)
-Ghost preview:   👁 auto-converted readable Bangla, one-click copy for Word
+```mermaid
+flowchart TD
+    UI[Shared shell and module screens] --> API[Session-guarded route handlers]
+    UI --> Browser[Local document processing and export]
+    API --> Rules[Domain rules and ownership checks]
+    Rules --> Store[Repository and storage]
+    Store --> PG[(PostgreSQL on Vercel)]
+    Store --> Local[Private JSON for local development]
+    Rules --> Providers[Configured integrations or explicit demo providers]
 ```
 
-- ✅ Pre-kar / reph / ya-fala correct
-- ✅ One-click convert + copy
-- ✅ Works offline in your browser
+The storage policies differ intentionally: the legacy JSON store can fall back to local files/memory, while printing fails closed when its configured database is unavailable. Printing uses one locked JSONB aggregate, so it is a small demo architecture rather than a high-volume commerce backend.
 
-</details>
+## Quick start
 
-<details>
-<summary><b>✨ Styler — Facebook-ready fancy text</b></summary>
+Use **Node.js 22** and npm, matching the CI runtime.
 
-<br />
-
-```text
-Neon      →  █▓▒░ 𝓑𝓸𝓻𝓷𝓸𝓛𝓪𝓫 ░▒▓█
-Outline   →  𝔹𝕠𝕣𝕟𝕠𝕃𝕒𝕓
-Gradient  →  🅱🅾🆁🅽🅾🅻🅰🅱
-Glitch    →  B̶o̶r̶n̶o̶L̶a̶b̶
-Frames    →  ╔═❖ বর্ণল্যাব ❖═╗
+```bash
+npm ci
 ```
 
-One-click copy per style. Bracket frames, symbol wings, math transforms included.
+Copy `.env.example` to `.env.local`, configure the services you need, then start:
 
-</details>
+```bash
+npm run dev
+```
 
-<details>
-<summary><b>📄 PDF ⇆ DOCX — layout stays intact</b></summary>
+Open [localhost:3000](http://localhost:3000). Local printing can use private `data/printing.json` without a database. Durable storage and configured authentication are required for production.
 
-<br />
+| Variable | Purpose |
+| --- | --- |
+| `POSTGRES_URL` or `DATABASE_URL` | Existing pooled PostgreSQL connection; printing requires its migration |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Existing configured admin account |
+| `ADMIN_JWT_SECRET`, `USER_JWT_SECRET` | Strong session/signing secrets; configure production authentication as described in the admin guide |
+| `PRINTING_LOCAL_STORAGE` | Optional persistent single-process self-host override; leave disabled on Vercel |
+| Existing auth, SMTP and integration variables | See `.env.example` and the admin/deployment guides |
 
-- 📥 **PDF → DOCX** — clean paragraphs via smart text extraction
-- 📤 **DOCX → PDF** — print-flow export
-- 🧾 Tables & flow preserved, scanned PDFs routed to OCR pipeline
+Keep credentials in environment variables or ignored `.env.local` files. Never commit them.
 
-</details>
+## Printing Services
 
-<details>
-<summary><b>✂️ Splitter — slice PDFs visually</b></summary>
-
-<br />
-
-1. Drop a PDF → see **thumbnails + checkboxes**
-2. Type ranges like `1-3, 5, 7-12`
-3. Export as **PDF**, **JPG/PNG zip**, or **DOCX**
-
-</details>
-
----
-
-## 🔤 Font showcase
-
-> Type anything. Slide the size. Filter by **Bangla / English / Premium**, **Unicode / ANSI / Dual**, **Serif / Sans / Display**.
-
-- 🆓 **Free workhorses** — Hind Siliguri, Tiro Bangla, Baloo Da 2, Noto Sans Bengali, Inter, Playfair Display…
-- 👑 **Premium display faces** — buy once with bKash / Nagad / Bank / Binance, get download + license
-- ⬇️ **One-click download** — `.ttf` straight to your device
-
----
-
-## 🪜 How it works
-
-<div align="center">
+> **Managed demo release:** payment completion is simulated, shipments use demo references, and no money is collected or physical products fulfilled. Live payment, courier, SMS, email and payout integrations are disabled.
 
 ```mermaid
 flowchart LR
-    A[📋 Paste or drop] --> B[⚡ Convert & preview]
-    B --> C[⬇️ Export or order]
-    style A fill:#22d3ee,stroke:#0e7490,color:#fff
-    style B fill:#a855f7,stroke:#7e22ce,color:#fff
-    style C fill:#10b981,stroke:#047857,color:#fff
+    A[Browse a service] --> B[Choose options]
+    B --> C[Artwork or design help]
+    C --> D[Address and price review]
+    D --> E[Submit demo order]
+    E --> F[Payment or COD confirmation]
+    F --> G[Approve required proof]
+    G --> H[Production and QC]
+    H --> I[Demo shipment timeline]
 ```
 
-**1. Paste or drop** — text, fonts, PDFs. Nothing uploads.
-**2. Convert & preview** — instant results with live Bangla previews.
-**3. Export or order** — download free assets or pay locally for premium.
+### Available now
 
-</div>
+- **Catalog:** 16 categories, 20 services, configurable materials/options, quantity tiers, Bangla/English content and integer-paisa pricing.
+- **Ordering:** saved drafts, private artwork, Bangladesh-friendly addresses, transparent totals, design help and reorder templates.
+- **Operations:** versioned quotes, customer proof approval, production gates, QC records, mock shipping and separate COD confirmation/collection states.
+- **Account:** print history, proof previews, support, return review and owner-scoped in-app notifications.
+- **Admin:** catalog/settings, orders, partners/designers, quotes, production, financial adjustments, metrics, audit history and exports.
 
----
+| Route | Screen |
+| --- | --- |
+| `/printing` | Catalog, search and categories |
+| `/printing/[slug]` | Service details and ordering |
+| `/printing/orders` | Authenticated orders, proofs, payments and support |
+| `/print-orders` | Alias for the print order workspace |
+| `/printing/quote` | Authenticated quote requests and offers |
+| `/printing/quote/[id]` | Accepted quote checkout |
+| `/printing/help` | File preparation and ordering help |
+| `/admin` → **Printing Services** | Existing admin's printing operations |
 
-## 💖 Made for how Bangladesh works
+### Database setup
 
-| 📰 Newspapers & DTP | 📖 Authors & Publishers |
-|---|---|
-| Convert decades of Bijoy archives to searchable Unicode in batches — then format print-ready pages. | Manuscript → formatted Journal/Book with proper headings, tables & page sizes. |
+Printing adds a single isolated `bornolab_printing` JSONB table. Existing users, digital orders, Study data and `bornolab_kv` are preserved.
 
-| 🖌️ Creators & Marketers | 🎓 Students & Offices |
-|---|---|
-| Stylish Bangla captions, thumbnails & posters with premium display fonts in seconds. | Govt Nikosh templates, PDF↔Word homework, split admission circulars — free, in-browser. |
+With the intended database URL available in the process environment or `.env.local`:
 
----
+```bash
+npm run db:migrate:printing
+npm run db:migrate:printing -- --check
+```
 
-## ❓ FAQ
+The command applies [001-printing.sql](docs/migrations/001-printing.sql) transactionally and verifies the resulting table. `--check` verifies without changing the schema. It does not insert demo financial records or migrate local orders into production.
 
-<details>
-<summary><b>Is my document uploaded to a server?</b></summary>
+For Vercel, run the migration from a trusted machine with access to the project's **production** database environment before deploying. Do not add a public migration endpoint or run schema changes in every request. Backup, restore and admin procedures are in the [printing runbook](docs/printing-services-runbook.md).
 
-No. Converting, splitting and translating run 100% in your browser. Only premium-order checkout touches the server.
-</details>
+## Privacy and operational boundaries
 
-<details>
-<summary><b>How do I buy a premium font or software?</b></summary>
+Browser-based tools process documents locally where supported. Features using configured server integrations can upload data; printing artwork is intentionally uploaded to private server storage. See `/privacy` for the product disclosure.
 
-Hit **Buy** → pick **bKash / Nagad / Bank / Binance** → send the amount to the merchant account shown → submit sender number + transaction ID. You get your download + license after verification.
-</details>
+Printing enforces ownership, MIME/signature/size checks, expiring session-bound download links and audited operational changes. Submitted price snapshots are immutable; financial corrections use append-only adjustments. Required proof approval and payment/COD confirmation gate production.
 
-<details>
-<summary><b>Which browsers are supported?</b></summary>
+Before real commerce, replace the demo file aggregate with private object storage and scanning, implement approved live providers and reconciliation, complete staging database verification, and run browser/mobile/accessibility checks. Creator publishing, supplier logins, royalties and full Bangla interface translation remain deferred.
 
-Any modern Chrome, Edge, Firefox or Safari — desktop or mobile. Dark/light mode included.
-</details>
+## Development checks
 
-<details>
-<summary><b>Is it free?</b></summary>
+```bash
+npm run typecheck
+npm run lint
+node --test tests/*.test.mjs
+npm run build
+```
 
-Yes — converter, styler, translator, splitter and all free fonts are free forever. Only premium fonts/software are paid, with local payment methods.
-</details>
+Printing tests cover pricing, permissions, private files, state transitions, quote conversion, proof rules, failed mock payment retries, QC/shipping, COD/refund adjustments and offline-cache privacy. Route tests use mocked authentication/storage; they do not replace browser E2E or real PostgreSQL tests. Validation details are recorded in the [runbook](docs/printing-services-runbook.md#validation-and-remaining-launch-work).
 
----
+GitHub Actions runs lint, type checking and a production build for pushes and pull requests to `main`.
 
-## 🛠️ Built with
+## Project map
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
-  <img src="https://img.shields.io/badge/Framer_Motion-FF0080?style=flat-square&logo=framer&logoColor=white" />
-  <img src="https://img.shields.io/badge/pdf-lib-FF6B6B?style=flat-square&logo=adobeacrobatreader&logoColor=white" />
-  <img src="https://img.shields.io/badge/docx-2B579A?style=flat-square&logo=microsoftword&logoColor=white" />
-  <img src="https://img.shields.io/badge/lucide_icons-000000?style=flat-square&logo=lucide&logoColor=white" />
-</p>
+```text
+src/app/                     Existing routes and API handlers
+  printing/                  Printing storefront and member screens
+  api/printing/              Customer printing APIs
+  api/admin/printing/        Protected admin operations
+src/components/printing/     Printing UI using shared BornoLab components
+src/components/admin-printing.tsx
+src/lib/printing/            Domain, pricing, state machines, storage and providers
+src/lib/study-platform/      Practice, exams, scoring, spaced review and content
+src/lib/question-bank-data.ts Department/subject/chapter taxonomy and documents
+scripts/migrate-printing.mjs Explicit database migration command
+docs/migrations/             Reviewed SQL migrations
+public/printing/             Local illustrative catalog artwork
+tests/                       Node test suite
+```
+
+This project uses Next.js 16.3. Read `AGENTS.md` and the installed `node_modules/next/dist/docs/` guides before changing framework APIs.
+
+## Deployment
+
+1. Install from the lockfile and configure the existing database, authentication and site settings.
+2. Apply and verify the printing migration against the intended database.
+3. Run the development checks above, then use the existing Vercel deployment workflow.
+4. Keep printing in demo mode; review flags and catalog in **Admin → Printing Services**.
+5. Verify member access, private files, proofs and the operational workflow on staging before live commerce.
+
+If Git integration is enabled, pushing `main` can trigger a production deployment. The application does not automatically apply this migration. Vercel requires durable PostgreSQL storage; local JSON files are unsuitable for its ephemeral, multi-instance runtime.
+
+## Documentation
+
+| Guide | Contents |
+| --- | --- |
+| [Printing implementation plan](docs/printing-services-implementation-plan.md) | Repository findings, reuse, architecture and compatibility |
+| [Printing runbook](docs/printing-services-runbook.md) | Routes, records, admin usage, deployment, security, validation and launch work |
+| [Printing migration](docs/migrations/001-printing.sql) | Additive database schema |
+| [Admin guide](docs/admin.md) | Existing administration and production setup |
+| [Vercel deployment](docs/deploy-vercel.md) | Hosting, environments and deployment commands |
+| [Study developer guide](docs/study-developer.md) | Existing Study architecture |
+| [Study runbook](docs/study-runbook.md) | Study operations and configuration |
+| [AI handoff](docs/ai-handoff.md) | Current state, constraints, validation and next work for any model |
+| [Agent instructions](AGENTS.md) | Repository rules and entry points shared by Codex, Claude and Gemini |
 
 ---
 
 <div align="center">
 
-### ⭐ Star us, share the বর্ণ-joy
-
-**If BornoLab saved you an hour of Bijoy pain, font hunting, or PDF wrestling —**
-
-<a href="https://github.com/proffesergio/bornolab"><img src="https://img.shields.io/github/stars/proffesergio/bornolab?style=social" alt="Star" /></a>
-<a href="https://github.com/proffesergio/bornolab/fork"><img src="https://img.shields.io/github/forks/proffesergio/bornolab?style=social" alt="Fork" /></a>
-
-_Made with 💜 for Bangladeshi creators, authors & DTP studios._
-
-**বর্ণল্যাব • BornoLab** — বাংলা Type & Document Suite
+**BornoLab — built for the way Bangladesh creates, learns and prints.**
 
 </div>

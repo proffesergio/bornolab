@@ -2,4 +2,7 @@
 graphify-out/
 .next/
 data/*.json
+data/*.tmp
+data/printing-backups/
+scripts-tmp/
 .env*.local

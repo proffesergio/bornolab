@@ -7,6 +7,7 @@ import {
 import type { BanglaFont } from "./fonts-data";
 import type { Software } from "./software-data";
 import type { StudyMaterial } from "./study-data";
+import type { QBDocument } from "./question-bank-data";
 
 export type { AdUnit, AuthProviderConfig };
 
@@ -47,6 +48,8 @@ export interface SeoPageOverride {
   title?: string;
   description?: string;
   noindex?: boolean;
+  ogImage?:string;
+  canonical?:string;
 }
 
 export type PaymentMethod = "bkash" | "nagad" | "bank" | "binance" | "card";
@@ -68,6 +71,9 @@ export interface SiteConfig {
   /** Admin-added study materials (Admin → Study). Stored + served like overrides. */
   customStudy: StudyMaterial[];
   studyOverrides: Record<string, { enabled?: boolean }>;
+  /** Admin-added question-bank documents (Admin → Study → Question Bank). */
+  customQuestionBank: QBDocument[];
+  qbOverrides: Record<string, { enabled?: boolean }>;
   /** New study platform (posts/chapters/practice/exams) — flag-gated, preserves old hub. */
   studyPlatform?: {
     enabled?: boolean;
@@ -110,6 +116,8 @@ export const DEFAULT_CONFIG: SiteConfig = {  brand: { name: "BornoLab", tagline:
   customSoftware: [],
   customStudy: [],
   studyOverrides: {},
+  customQuestionBank: [],
+  qbOverrides: {},
   ads: {
     enabled: true,
     header: { enabled: false, network: "AdSense", code: "", fallbackCode: "" },

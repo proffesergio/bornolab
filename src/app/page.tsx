@@ -3,15 +3,17 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Languages, Type, Sparkles, FileText, Scissors, MonitorDown, Zap,
-  ShieldCheck, Newspaper, BookOpen, PenLine, GraduationCap, Check, HelpCircle,
+  ShieldCheck, Newspaper, BookOpen, PenLine, GraduationCap, Check, HelpCircle, Printer,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui";
 import { HeroRotator } from "@/components/hero-rotator";
 import { AdSlot, useSiteConfig } from "@/components/site-widgets";
 import { AdUnits } from "@/components/ads";
 import type { ToolKey } from "@/lib/site-config-shared";
+import {usePrintingEnabled} from "@/components/printing/use-printing";
 
-const CARDS: { key: ToolKey | "styler"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
+const CARDS: { key: ToolKey | "styler" | "printing"; href: string; icon: typeof Languages; title: string; desc: string; points: string[]; grad: string }[] = [
+  {key:"printing",href:"/printing",icon:Printer,title:"Printing Services",desc:"Your ideas, beautifully printed.",points:["Cards, academic printing, gifts & packaging","Artwork review and customer proof approval","Clear prices, quotes and order progress"],grad:"from-cyan-500 to-purple-600"},
   { key: "convert", href: "/bijoy-unicode-converter", icon: Languages, title: "Bijoy <> Unicode", desc: "Newsroom-grade encoding engine.", points: ["কার, য-ফলা, রেফ ও যুক্তবর্ণ নির্ভুল", "One-click convert + copy buttons", "Bijoy preview fix with live Bangla ghost view"], grad: "from-cyan-500 to-sky-600" },
   { key: "fonts", href: "/fonts", icon: Type, title: "Font Directory", desc: "Free + premium Bangla faces.", points: ["Live preview with size slider", "Bangla / English / Premium filters", "Buy with bKash, Nagad, Bank, Binance"], grad: "from-violet-500 to-purple-600" },
   { key: "styler", href: "/styler", icon: Sparkles, title: "Decorator & Styler", desc: "Facebook-ready fancy text.", points: ["Neon, outline, gradient, glitch", "Bracket frames & symbol wings", "One-click copy per style"], grad: "from-fuchsia-500 to-pink-600" },
@@ -30,14 +32,15 @@ const AUDIENCES = [
 
 const FAQS = [
   { q: "Why does Bijoy text look like English letters?", a: "Bijoy (ANSI) fonts reuse Latin character slots for Bangla glyphs. Without SutonnyMJ installed your browser shows the raw Latin codes. BornoLab detects this and shows a live auto-converted Bangla preview, plus one-click copy for Word." },
-  { q: "Is my document uploaded to a server?", a: "No. Converting, splitting and translating run 100% in your browser. Only manual-payment orders touch the server." },
+  { q: "Is my document uploaded to a server?", a: "No. Converting, splitting and translating run 100% in your browser. Printing artwork and delivery details are stored privately for review; digital purchase orders also use the server." },
   { q: "How do I buy a premium font or software?", a: "Hit Buy, pick bKash / Nagad / Bank / Binance, send the amount to the merchant account shown, and submit your sender number + transaction ID. Admin verifies and delivers your download + license." },
   { q: "Which tools are free?", a: "All 10 PDF tools, the Bijoy converter, font previews and the text styler are free and run in your browser. Premium fonts and pro software are paid via bKash, Nagad, bank or Binance." },
 ];
 
 export default function Home() {
   const { config } = useSiteConfig();
-  const visible = CARDS.filter((c) => (c.key === "styler" ? config.tools.styler : config.tools[c.key as ToolKey]));
+  const printingEnabled=usePrintingEnabled();
+  const visible = CARDS.filter((c) => c.key === "printing" ? printingEnabled : (c.key === "styler" ? config.tools.styler : config.tools[c.key as ToolKey]));
 
   return (
     <div>
@@ -60,6 +63,7 @@ export default function Home() {
           <Link href="/bijoy-unicode-converter" className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_rgba(34,211,238,.35)] hover:brightness-110">Start Converting</Link>
           <Link href="/fonts" className="glass hover-glow rounded-full px-6 py-3 text-sm font-bold text-slate-800 dark:text-slate-100">Browse Fonts</Link>
           <Link href="/software" className="glass hover-glow rounded-full px-6 py-3 text-sm font-bold text-slate-800 dark:text-slate-100">Software Store</Link>
+          {printingEnabled&&<Link href="/printing" className="glass hover-glow rounded-full px-6 py-3 text-sm font-bold text-slate-800 dark:text-slate-100">Printing Services</Link>}
         </div>
         <div className="relative mt-6 flex flex-wrap justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
           <span className="glass rounded-full px-3 py-1.5"><Zap size={12} className="mr-1 inline" />Client-first, instant</span>
