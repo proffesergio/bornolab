@@ -89,6 +89,8 @@ Back up the printing table together with existing users/session data so ownershi
 
 ## Validation and remaining launch work
 
+Production deployment on 2026-10-15: application revision `f1d3051` is Ready at <https://bornolab.vercel.app> ([immutable deployment](https://bornolab-kd5xcvus7-newellx.vercel.app)). The maintainer requested skipping local database migration work. Production database URLs are sensitive and were not available to the local migration command, which exited before making changes. Live `/printing` shows its preparation screen, `/api/printing` returns 503 and printing flags report disabled. Member orders/notifications and admin printing APIs return 401 without authentication. Homepage, Study, question-bank pages/API and printing help return 200. See [the shared handoff](ai-handoff.md) for the full release record; deployment does not establish printing storage readiness.
+
 Automated coverage includes integer/tier/option/delivery/COD/VAT pricing, stale checkout totals, failed mock payments/retry, state gates, proof ownership/version/approval, production-job order, file validation, signed-link tampering/session/expiry, local transaction concurrency/failure, auth/CSRF rejection, catalog publication, artwork/order/payment/proof/QC/mock shipment, quote questions/expiry/versioning/conversion/idempotency, COD collection, refund/reversal limits, templates/support/notification ownership and offline-cache privacy/migration. Route integration tests use mocked auth/storage; local persistence tests use real isolated temporary files. They are not browser E2E or live Postgres tests.
 
 Validation on 2026-10-15:

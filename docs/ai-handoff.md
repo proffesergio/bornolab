@@ -43,7 +43,12 @@ The warnings are an unused `deptMeta` and `aria-pressed` on a `listitem` in the 
 - Workspace linked using the existing signed-in CLI account; `.vercel/` and generated local environment files stay ignored.
 - Production database variables are present but marked `sensitive`; both `env pull` and `env run` returned empty database values. The authenticated metadata API confirmed the sensitive type. The migration exited with "No database configured" and made no changes. Do not try to downgrade the variables or expose a migration endpoint; the maintainer must run `docs/migrations/001-printing.sql` through the trusted production database console, or provide a connection via a local secret manager.
 - The maintainer explicitly requested skipping local migration work and proceeding with the live deployment. Do not treat the deployment as evidence that the printing migration ran.
-- Production deployment is in progress for this release. Replace this line with confirmed evidence after completion; do not infer a deployment from this document. Printing remains fail-closed if its table is absent.
+- Application revision: `f1d30518e3c3ce83ac1a3674c54be05fb929ba5a`, pushed to `origin/main`.
+- Vercel confirmed **Ready** and promoted the production alias on 2026-10-15. Immutable deployment: <https://bornolab-kd5xcvus7-newellx.vercel.app>; ID: `dpl_FoosSq8KZdEkZZe6dL4dNXjSQZzA`. [Build/deployment inspection](https://vercel.com/newellx/bornolab/FoosSq8KZdEkZZe6dL4dNXjSQZzA).
+- Live HTTP checks: `/`, `/study`, `/study/question-bank`, `/study/question-bank/petrobangla`, `/printing/help` and `/api/question-bank` returned 200. Study includes the new Question Bank entry; `/sw.js` serves `bornolab-sw-v2`.
+- Printing is deployed but storage is unavailable: `/printing` returns 200 with the preparation screen; `/api/printing` returns 503; `/api/printing/flags` reports `enabled: false`. The required table was not created or verified by this session. Do not advertise printing as accepting live orders.
+- Unauthenticated `/api/printing/orders`, `/api/printing/notifications` and `/api/admin/printing` each returned 401. No authenticated order or database restore flow was exercised against production.
+- A documentation-only follow-up records this deployment evidence; it does not change the deployed application behavior.
 
 ## Next work
 

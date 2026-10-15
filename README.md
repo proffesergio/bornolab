@@ -101,6 +101,8 @@ Keep credentials in environment variables or ignored `.env.local` files. Never c
 
 > **Managed demo release:** payment completion is simulated, shipments use demo references, and no money is collected or physical products fulfilled. Live payment, courier, SMS, email and payout integrations are disabled.
 
+**Live status — 2026-10-15:** the application release is deployed on Vercel. Printing currently shows its preparation screen because production storage is unavailable; the database migration remains an explicit setup step. Study and the other public modules are available.
+
 ```mermaid
 flowchart LR
     A[Browse a service] --> B[Choose options]
