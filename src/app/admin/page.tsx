@@ -12,6 +12,8 @@ import { NotificationBell, NotificationFeed, NotificationToasts, useNotification
 import type { AdminNotification } from "@/lib/notifications";
 import { AdminStudy } from "@/components/admin-study";
 import { AdminPrinting } from "@/components/admin-printing";
+import { MediaLibrary } from "@/components/admin/media-library";
+import { useAdminQuery, navigateAdmin } from "@/components/admin/workspace";
 import { DEFAULT_CONFIG, pdfCaps, type PdfOp, type PdfToolKey, type SiteConfig, type ToolKey } from "@/lib/site-config-shared";
 import { PERMISSIONS, type AdUnit, type AuditEntry, type MemberUser, type PlanDef, type RoleDef } from "@/lib/members-shared";
 import { FONTS, type BanglaFont, type FontCategory, type FontType } from "@/lib/fonts-data";
@@ -27,46 +29,14 @@ type Section =
   | "orders" | "ads" | "payments" | "seo" | "aiseo"
   | "roles" | "plans" | "audit" | "access" | "settings";
 
-const GROUPS: { title: string; items: { id: Section; label: string; icon: typeof LayoutDashboard }[] }[] = [
-  {
-    title: "Manage",
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { id: "users", label: "Customers", icon: Users },
-      { id: "subscriptions", label: "Subscriptions", icon: CreditCard },
-    ],
-  },
-  {
-    title: "Tools",
-    items: [
-      { id: "tools", label: "Site Tools", icon: Wrench },
-      { id: "pdftools", label: "PDF Tools", icon: FileText },
-      { id: "catalog", label: "Catalog", icon: Layers },
-      { id: "study", label: "Study", icon: GraduationCap },
-      { id: "printing", label: "Printing Services", icon: Receipt },
-      { id: "media", label: "Media", icon: HardDrive },
-    ],
-  },
-  {
-    title: "Grow",
-    items: [
-      { id: "orders", label: "Orders", icon: Receipt },
-      { id: "ads", label: "Ads", icon: Megaphone },
-      { id: "payments", label: "Payments", icon: Wallet },
-      { id: "seo", label: "SEO", icon: Search },
-      { id: "aiseo", label: "AI SEO", icon: Sparkles },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      { id: "roles", label: "Roles", icon: ShieldCheck },
-      { id: "plans", label: "Plans", icon: ClipboardList },
-      { id: "audit", label: "Audit Log", icon: Building2 },
-      { id: "access", label: "Access", icon: KeyRound },
-      { id: "settings", label: "Settings", icon: SettingsIcon },
-    ],
-  },
+const GROUPS: { title:string;items:{id:Section;label:string;icon:typeof LayoutDashboard;view?:string}[] }[] = [
+ {title:"Workspace",items:[{id:"dashboard",label:"Overview",icon:LayoutDashboard}]},
+ {title:"Services & catalog",items:[{id:"printing",label:"Printing catalog",icon:Layers,view:"Catalog"},{id:"printing",label:"Mockups & designs",icon:HardDrive,view:"Mockups"},{id:"catalog",label:"Fonts & software",icon:Layers},{id:"tools",label:"Document tools",icon:Wrench},{id:"pdftools",label:"PDF tools & limits",icon:FileText}]},
+ {title:"Orders & operations",items:[{id:"printing",label:"Print orders & proofs",icon:Receipt,view:"Orders & proofs"},{id:"printing",label:"Quotes",icon:FileText,view:"Quotes"},{id:"printing",label:"Partners & production",icon:Building2,view:"Partners & designers"},{id:"printing",label:"Print support",icon:Users,view:"Support"},{id:"orders",label:"Digital orders",icon:Receipt}]},
+ {title:"Learning",items:[{id:"study",label:"Goals & organization",icon:GraduationCap,view:"organization"},{id:"study",label:"Study resources",icon:FileText,view:"resources"},{id:"study",label:"Question bank",icon:Layers,view:"questions"},{id:"study",label:"Review & imports",icon:ClipboardList,view:"review"}]},
+ {title:"Media & customers",items:[{id:"media",label:"Media library",icon:HardDrive},{id:"users",label:"Customers",icon:Users},{id:"subscriptions",label:"Memberships",icon:CreditCard}]},
+ {title:"Site & marketing",items:[{id:"seo",label:"Search & SEO",icon:Search},{id:"aiseo",label:"Content analysis",icon:Sparkles},{id:"ads",label:"Ads",icon:Megaphone},{id:"settings",label:"Brand & announcements",icon:SettingsIcon}]},
+ {title:"System",items:[{id:"printing",label:"Printing settings",icon:SettingsIcon,view:"Settings"},{id:"payments",label:"Payment settings",icon:Wallet},{id:"access",label:"Login methods",icon:KeyRound},{id:"roles",label:"Roles",icon:ShieldCheck},{id:"plans",label:"Plans",icon:ClipboardList},{id:"audit",label:"Audit log",icon:Building2}]},
 ];
 
 const SECTION_TITLE: Record<Section, { title: string; desc: string }> = {
@@ -180,7 +150,10 @@ function CapsNumber({ value, min, max, label, className, onCommit }: {
 export default function AdminPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [section, setSection] = useState<Section>("dashboard");
+  const adminQuery=useAdminQuery();
+  const requestedSection=adminQuery.get("section")??"dashboard";
+  const section:Section=GROUPS.some(g=>g.items.some(i=>i.id===requestedSection))?requestedSection as Section:"dashboard";
+  const setSection=(value:Section)=>navigateAdmin(value);
   const [navOpen, setNavOpen] = useState(false);
   const [navQuery, setNavQuery] = useState("");
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
@@ -206,6 +179,7 @@ export default function AdminPage() {
   };
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
+  const [saveError,setSaveError]=useState("");
   const [userQuery, setUserQuery] = useState("");
   const [orderQuery, setOrderQuery] = useState("");
 
@@ -318,14 +292,15 @@ export default function AdminPage() {
   }, [router]);
 
   const save = async (patch: Partial<SiteConfig>) => {
-    setSaving(true);
+    setSaving(true);setSaveError("");
     try {
       const res = await fetch("/api/admin/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
       const next = await res.json();
+      if(!res.ok)throw new Error(next.error||"Could not save configuration.");
       setConfig({ ...DEFAULT_CONFIG, ...next });
       setSavedTick(true);
       setTimeout(() => setSavedTick(false), 1500);
-    } finally {
+    } catch(error){setSaveError(error instanceof Error?error.message:"Could not save.");throw error;} finally {
       setSaving(false);
     }
   };
@@ -544,6 +519,7 @@ export default function AdminPage() {
       setNavOpen(false);
       setNavQuery("");
     };
+    for(const group of GROUPS)for(const item of group.items){if(hits.length<8&&item.label.toLowerCase().includes(q))hits.push({kind:"Workspace",label:item.label,sub:group.title,go:()=>{navigateAdmin(item.id,item.view);setNavOpen(false);setNavQuery("");}});}
     if ("printing services print orders quotes proofs artwork".includes(q)) hits.push({ kind: "Module", label: "Printing Services", sub: "Catalog, print orders, quotes and proofs", go: jump("printing") });
     for (const u of users) {
       if (hits.length >= 12) break;
@@ -639,12 +615,12 @@ export default function AdminPage() {
           return (
             <div key={g.title} className="mt-2">
               <p className="px-3 pb-1 text-[10.5px] font-bold uppercase tracking-widest text-slate-500">{g.title}</p>
-              {items.map(({ id, label, icon: Icon }) => (
+              {items.map(({ id, label, icon: Icon, view }) => (
                 <button
-                  key={id} onClick={() => { setSection(id); setNavOpen(false); }}
-                  aria-current={section === id ? "page" : undefined}
+                  key={id+(view??"")} onClick={() => { navigateAdmin(id,view); setNavOpen(false); }}
+                  aria-current={section === id && (adminQuery.get("view")??"")===(view??"") ? "page" : undefined}
                   className={cn("flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] font-semibold transition",
-                    section === id ? "bg-gradient-to-r from-cyan-500/25 to-purple-600/25 text-white" : "text-slate-400 hover:bg-white/5 hover:text-slate-100")}
+                    section === id && (adminQuery.get("view")??"")===(view??"") ? "bg-gradient-to-r from-cyan-500/25 to-purple-600/25 text-white" : "text-slate-400 hover:bg-white/5 hover:text-slate-100")}
                 >
                   <Icon size={15} className={section === id ? "text-cyan-300" : ""} />
                   <span className="flex-1 text-left">{label}</span>
@@ -694,9 +670,12 @@ export default function AdminPage() {
         {/* Content */}
         <div className="min-w-0 flex-1 px-4 py-5 sm:px-6">
           <div className="mb-5">
-            <SectionTitle kicker="Backend" title={head.title} desc={email ? `${head.desc} Signed in as ${email}.` : "Loading…"} />
+            <p className="mb-2 text-xs text-slate-500">Admin / {GROUPS.find(g=>g.items.some(i=>i.id===section))?.title} / {head.title}</p>
+            <SectionTitle kicker="Workspace" title={head.title} desc={email ? `${head.desc} Signed in as ${email}.` : "Loading…"} />
           </div>
 
+          {saveError&&<p role="alert" className="mb-4 rounded-xl bg-red-500/10 p-3 text-sm text-red-600">{saveError}</p>}
+          {section==="dashboard"&&<div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[{label:"Manage printing",section:"printing",view:"Catalog",desc:"Services, prices & galleries"},{label:"Upload mockups",section:"media",view:"",desc:"Reusable covers & designs"},{label:"Organize Study",section:"study",view:"organization",desc:"Goals, subjects & learning paths"},{label:"Review print orders",section:"printing",view:"Orders & proofs",desc:"Artwork, proofs & production"}].map(item=><button key={item.label} onClick={()=>navigateAdmin(item.section,item.view)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left hover:border-cyan-600 dark:border-slate-700 dark:bg-slate-900"><span className="block text-sm font-bold">{item.label} →</span><span className="mt-1 block text-xs text-slate-500">{item.desc}</span></button>)}</div>}
           {section === "dashboard" && (
             <div className="grid gap-4 lg:grid-cols-3">
               <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total views</p><p className="mt-1 text-3xl font-black">{analytics?.totalViews ?? "…"}</p></GlassCard>
@@ -866,7 +845,8 @@ export default function AdminPage() {
             <AdminStudy config={config} save={save} />
           )}
 
-          {section === "media" && (
+          {section === "media" && <MediaLibrary/>}
+          {section === "media" && adminQuery.get("view")==="legacy" && (
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <GlassCard><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Files</p><p className="mt-1 text-3xl font-black">{media?.count ?? "…"}</p></GlassCard>

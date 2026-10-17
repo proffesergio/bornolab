@@ -1,6 +1,20 @@
 # BornoLab shared AI handoff
 
-Last updated: 2026-10-15. This tracked file is the shared memory for Codex, Claude, Gemini and other agents. Read `AGENTS.md` first. Source files and fresh command output take precedence over historical plans.
+Last updated: 2026-10-17. This tracked file is the shared memory for Codex, Claude, Gemini and other agents. Read `AGENTS.md` first. Source files and fresh command output take precedence over historical plans.
+
+## Latest state: admin and Study redesign implementation
+
+The maintainer reports completing the printing migration. Live verification on 2026-10-17 confirmed `/api/printing` returns 200 with 20 services, 16 categories and `demo: true`; `/api/printing/flags` returns `enabled: true`. This supersedes the printing-unavailable result in the historical deployment record below. No new schema migration, authenticated write or restore check was run by this session.
+
+The maintainer approved the redesign proposal and requested implementation on 2026-10-17. Implemented the recommended core: unified admin navigation, form-based Printing controls, durable public mockups with selectable starting references, and goal → subject → chapter Study discovery. Editable-template sales and new delegated staff/supplier logins remain outside this release. Read [admin-workspaces.md](admin-workspaces.md) for the operator guide and exact direct links.
+
+The former JSON-only printing catalog is replaced with category/service/details/media/pricing/options/policies forms, duplication, status/category/search filters, bulk publication, draft preview and record deep links. Partner/designer and design-fee/settings workflows also use forms. Public mockup cover/gallery selection and category images are connected to the storefront. A selected gallery design is server-validated and snapshotted in the order; artwork, price, payment/COD and proof/production rules remain unchanged.
+
+New shared code lives in `src/components/admin/`. `workspace.tsx` owns query-based navigation and unsaved-change guards. Showcase metadata/bytes use isolated public-media KV rows via `media-repository.ts`, not the legacy upload endpoint or printing aggregate. Images are decoded with explicitly declared `sharp@0.35.4` (already used transitively by Next), re-encoded WebP and bounded to 2 MB uploads / 250 assets / 128 MB stored bytes. Draft bytes require admin; published references and historical order references prevent unpublishing; archive is non-destructive. Production storage fails closed. No additional schema migration, provider credential or paid storage account was added.
+
+Study now has Explore learning / Resource library / My learning. `study-navigation.ts` defines validated goal/subject/chapter discovery settings; the separate `study:navigation` record uses transactional version checks and a primary audit. Existing lesson/resource/exam URLs and progress remain intact; older flashcards are at `/study/guided-practice`. Resource editing preserves existing IDs/topics and supports department/subject fields. The original binary Study/font/software upload endpoint still uses local disk; use durable external URLs for those production files.
+
+Validation for this release: typecheck and production build passed; all 200 automated tests passed; lint has 0 errors and the same 3 existing question-bank/site-widget warnings. An authenticated local HTTP run passed login → image upload → draft denial → publication → service cover/gallery assignment → public reads, learning organization save/read, stale-version rejection and affected page routes. Original local catalog/navigation/media metadata was restored afterward. Production deployment is pending; update this record when verified. Browser surfaces were unavailable, so browser/mobile visual and accessibility checks were not performed. HTTP checks do not establish client interaction or layout correctness.
 
 ## Product and architecture
 

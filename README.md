@@ -101,7 +101,7 @@ Keep credentials in environment variables or ignored `.env.local` files. Never c
 
 > **Managed demo release:** payment completion is simulated, shipments use demo references, and no money is collected or physical products fulfilled. Live payment, courier, SMS, email and payout integrations are disabled.
 
-**Live status — 2026-10-15:** the application release is deployed on Vercel. Printing currently shows its preparation screen because production storage is unavailable; the database migration remains an explicit setup step. Study and the other public modules are available.
+**Release — 2026-10-17:** printing is enabled in demo mode. The new admin includes form-based service/category/pricing/options editors, durable mockup uploads, cover/gallery management, design references, partner records and printing settings. See the [workspace guide](docs/admin-workspaces.md) for direct links and instructions.
 
 ```mermaid
 flowchart LR
@@ -212,6 +212,7 @@ If Git integration is enabled, pushing `main` can trigger a production deploymen
 | [Study developer guide](docs/study-developer.md) | Existing Study architecture |
 | [Study runbook](docs/study-runbook.md) | Study operations and configuration |
 | [AI handoff](docs/ai-handoff.md) | Current state, constraints, validation and next work for any model |
+| [Admin workspaces](docs/admin-workspaces.md) | Catalog editors, durable mockup uploads, learning controls and direct links |
 | [Agent instructions](AGENTS.md) | Repository rules and entry points shared by Codex, Claude and Gemini |
 
 ---

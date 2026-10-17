@@ -119,7 +119,7 @@ test("learner routes exist and old study files untouched in contract", () => {
     "src/app/study/results/[attemptId]/page.tsx",
     "src/app/study/progress/page.tsx",
   ]) assert.ok(existsSync(join(root, p)), `${p} must exist`);
-  const hub = read("src/app/study/page.tsx");
+  const hub = read("src/components/study-hub.tsx") + read("src/components/study-resource-library.tsx");
   assert.ok(hub.includes("useLogin") && hub.includes("await refresh()"), "hub must keep tri-state login recheck");
   const data = read("src/lib/study-data.ts");
   assert.ok(!data.includes("(HTML)") && !data.includes("(PDF)"), "no file-type jargon regression");

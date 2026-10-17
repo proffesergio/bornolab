@@ -45,7 +45,7 @@ test("login state is tri-state — no login CTA while checking", () => {
   assert.ok(reader.includes("loggedIn === false") || reader.includes('gate === "login"'), "reader must only show the login CTA when definitively logged out.");
   const detail = read("src/app/study/[id]/page.tsx");
   assert.ok(detail.includes("StudyReader"), "detail page must render through the gated reader.");
-  const hub = read("src/app/study/page.tsx");
+  const hub = read("src/components/study-hub.tsx") + read("src/components/study-resource-library.tsx");
   assert.ok(hub.includes("useLogin"), "hub must use the tri-state hook.");
   assert.ok(hub.includes("await refresh()"), "hub must recheck auth at click time.");
 });

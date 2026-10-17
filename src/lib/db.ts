@@ -81,3 +81,17 @@ export async function kvSet(key: string, value: unknown): Promise<void> {
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
   `;
 }
+
+/** Locked mutation for managed admin records; database failures are never silently swallowed. */
+export async function kvMutate<T,R>(key:string, fallback:T, change:(value:T)=>R):Promise<R> {
+  await ensureSchema();
+  const result=await getClient().begin(async tx=>{
+    await tx`INSERT INTO bornolab_kv (key,value) VALUES (${key},${JSON.stringify(fallback)}::jsonb) ON CONFLICT DO NOTHING`;
+    const rows=await tx`SELECT value FROM bornolab_kv WHERE key=${key} FOR UPDATE`;
+    const value=(typeof rows[0].value==="string"?JSON.parse(rows[0].value):rows[0].value) as T;
+    const output=change(value);
+    await tx`UPDATE bornolab_kv SET value=${JSON.stringify(value)}::jsonb,updated_at=now() WHERE key=${key}`;
+    return {output};
+  });
+  return result.output;
+}

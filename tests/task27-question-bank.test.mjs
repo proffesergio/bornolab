@@ -49,22 +49,6 @@ test("admin can upload a PDF to a specific QB section", () => {
   assert.ok(panel.includes("AdminQuestionBank"), "AdminStudy must embed the QB manager");
 });
 
-test("study hub is generic (departments x subjects, featured rail, QB entry)", () => {
-  const hub = read("src/app/study/page.tsx");
-  // Old contracts preserved.
-  assert.ok(hub.includes("PREP_MODULES"), "prep modules preserved");
-  assert.ok(hub.includes("PLATFORM_SUBJECTS"), "subject rail preserved");
-  assert.ok(hub.includes("ProgressRail"), "progress rail preserved");
-  assert.ok(hub.includes("StudyPractice"), "practice preserved");
-  assert.ok(hub.includes("await refresh()"), "login recheck preserved");
-  // New generic contracts.
-  assert.ok(hub.includes("STUDY_DEPARTMENTS"), "hub must filter by generic departments");
-  assert.ok(hub.includes("Featured study materials"), "featured must be a generic rail");
-  assert.ok(!hub.includes("BUET Post Graduate Admission</p>"), "hub must not hardcode the BUET-only featured label");
-  assert.ok(hub.includes("/study/question-bank"), "hub must link the Question Bank module");
-  assert.ok(hub.includes("Question Bank Solutions"), "hub must have a QB section");
-});
-
 test("site-config persists question-bank docs with overrides", () => {
   const shared = read("src/lib/site-config-shared.ts");
   assert.ok(shared.includes("customQuestionBank"), "SiteConfig must carry customQuestionBank");

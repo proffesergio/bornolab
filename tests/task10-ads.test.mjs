@@ -44,7 +44,7 @@ test("AdSense loader is admin-driven in layout", () => {
 });
 
 test("tool pages carry inFeed ad placements", () => {
-  for (const p of ["src/app/convert/page.tsx", "src/app/fonts/page.tsx", "src/app/translate/page.tsx", "src/app/study/page.tsx", "src/app/page.tsx"]) {
+  for (const p of ["src/app/convert/page.tsx", "src/app/fonts/page.tsx", "src/app/translate/page.tsx", "src/components/study-hub.tsx", "src/app/page.tsx"]) {
     const src = read(p);
     assert.ok(
       src.includes("AdUnits") || src.includes("AdSlot"),

@@ -6,6 +6,9 @@ import { AdminQuestionBank } from "@/components/admin-question-bank";
 import { BUILT_IN_STUDY_MATERIALS, STUDY_CATEGORIES, type StudyCategory, type StudyMaterial } from "@/lib/study-data";
 import { CsvBulkTools, duplicateCustom } from "@/components/admin-bulk";
 import type { SiteConfig } from "@/lib/site-config-shared";
+import {StudyOrganization} from "./admin/study-organization";
+import {useAdminQuery,navigateAdmin,WorkspaceTabs} from "./admin/workspace";
+import {STUDY_DEPARTMENTS,STUDY_SUBJECTS} from "@/lib/study-data";
 import { cn } from "@/lib/cn";
 
 /**
@@ -17,6 +20,8 @@ export function AdminStudy({ config, save }: {
   config: SiteConfig;
   save: (patch: Partial<SiteConfig>) => void | Promise<void>;
 }) {
+  const query=useAdminQuery();const view=query.get("view")??"organization";
+  const [editingId,setEditingId]=useState("");const [department,setDepartment]=useState("general");const [subject,setSubject]=useState("");const [publishing,setPublishing]=useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<StudyCategory>("masters");
   const [subcategory, setSubcategory] = useState("BUET Post Graduate Admission");
@@ -50,7 +55,7 @@ export function AdminStudy({ config, save }: {
     }
   };
 
-  const publish = () => {
+  const publish = async () => {
     if (!title.trim()) { setError("Title is required."); return; }
     const fileUrl = uploadedUrl || link.trim();
     if (!fileUrl) { setError("Attach an uploaded file or paste a https:// link."); return; }
@@ -59,22 +64,22 @@ export function AdminStudy({ config, save }: {
       return;
     }
     const item: StudyMaterial = {
-      id: `study-${Date.now().toString(36)}${Math.floor(Math.random() * 0xffffff).toString(36)}`,
+      id: editingId || `study-${Date.now().toString(36)}${Math.floor(Math.random() * 0xffffff).toString(36)}`,
       title: title.trim().slice(0, 160),
-      category,
+      category,department,subject,
       subcategory: subcategory.trim().slice(0, 120) || undefined,
       description: description.trim().slice(0, 2000),
       fileUrl,
       fileType: /\.pdf($|\?)/i.test(fileUrl) ? "pdf" : /\.html?($|\?)/i.test(fileUrl) ? "html" : "link",
-      topics: [],
+      topics: editingId?(config.customStudy??[]).find(m=>m.id===editingId)?.topics??[]:[],
       featured,
-      enabled: true,
-      createdAt: Date.now(),
+      enabled: editingId?(config.customStudy??[]).find(m=>m.id===editingId)?.enabled??true:true,
+      createdAt: editingId?(config.customStudy??[]).find(m=>m.id===editingId)?.createdAt??Date.now():Date.now(),
       access,
       priceBDT: access === "paid" ? Number(price) || 0 : 0,
       previewPages: Math.max(1, Math.min(20, Number(previewPages) || 3)),
     };
-    void save({ customStudy: [...(config.customStudy ?? []), item] });
+    setPublishing(true);try{await save({ customStudy: editingId?(config.customStudy??[]).map(m=>m.id===editingId?item:m):[...(config.customStudy ?? []), item] });}catch(e){setError(e instanceof Error?e.message:"Could not save material.");setPublishing(false);return;}setPublishing(false);setEditingId("");
     setTitle(""); setDescription(""); setLink(""); setUploadedUrl(""); setFeatured(false); setError("");
     setAccess("free"); setPrice("0"); setPreviewPages("3");
   };
@@ -103,12 +108,15 @@ export function AdminStudy({ config, save }: {
 
   return (
     <div className="grid gap-4">
-      <AdminStudyPlatform />
-      <AdminQuestionBank config={config} save={save} />
+      <WorkspaceTabs label="Learning administration" current={view} onChange={v=>navigateAdmin("study",v)} items={[{id:"organization",label:"Goals & organization"},{id:"resources",label:"Study resources"},{id:"questions",label:"Question bank"},{id:"review",label:"Review & imports"}]}/>
+      {view==="organization"&&<StudyOrganization/>}
+      {view==="review"&&<AdminStudyPlatform/>}
+      {view==="questions"&&<AdminQuestionBank config={config} save={save}/>}
+      {view==="resources"&&<>
       <GlassCard>
-        <h3 className="text-sm font-bold">Publish a study file — upload or link</h3>
+        <h3 className="text-sm font-bold">{editingId?"Edit study resource":"Publish a study resource"}</h3>
         <p className="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400">
-          Upload a PDF / HTML page (.pdf/.html/.zip, max 100 MB) <b>or</b> paste an https:// link.
+          Paste a durable https:// file link for production. Local/self-hosted uploads accept PDF, HTML or ZIP.
           It appears instantly under its category. Reading & sharing are public; downloads require login.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -118,6 +126,8 @@ export function AdminStudy({ config, save }: {
               <option key={c.id} value={c.id}>{c.label} ({c.bangla})</option>
             ))}
           </select>
+          <select aria-label="Material department" value={department} onChange={e=>setDepartment(e.target.value)} className={field}>{STUDY_DEPARTMENTS.map(d=><option key={d.id} value={d.id}>{d.label}</option>)}</select>
+          <select aria-label="Material subject" value={subject} onChange={e=>setSubject(e.target.value)} className={field}><option value="">General / no subject</option>{STUDY_SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
           <input aria-label="Material subcategory" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} placeholder="Subcategory e.g. BUET Post Graduate Admission" className={field} />
           <textarea aria-label="Material description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description — what is inside, who is it for?" rows={2} className={cn(field, "sm:col-span-2")} />
           <input aria-label="External file link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https:// direct file link (or upload below)" className={cn(field, "font-mono sm:col-span-2")} />
@@ -147,11 +157,11 @@ export function AdminStudy({ config, save }: {
           </label>
           {uploadedUrl && <span className="max-w-full truncate font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{uploadedUrl}</span>}
           <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900/[.04] px-3 py-2 font-semibold dark:bg-white/5">
-            <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="h-4 w-4 accent-amber-500" /> Featured on hub
+            <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="h-4 w-4 accent-amber-500" /> Featured in resource library
           </label>
         </div>
         {error && <p role="alert" className="mt-2 text-[12.5px] font-semibold text-rose-500">{error}</p>}
-        <button onClick={publish} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">+ Publish material</button>
+        <button disabled={publishing} onClick={()=>void publish()} className="mt-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2.5 text-[13px] font-bold text-white">{publishing?"Saving…":editingId?"Save resource":"Publish material"}</button>
       </GlassCard>
 
       {customs.length > 0 && (
@@ -175,6 +185,7 @@ export function AdminStudy({ config, save }: {
                     {paid ? `৳${m.priceBDT ?? 0}` : "FREE"}
                   </span>
                   <label className="flex items-center gap-1.5">Visible <input type="checkbox" checked={enabled} onChange={() => toggle(m.id, !enabled)} className="h-4 w-4 accent-cyan-500" /></label>
+                  <button onClick={()=>{setEditingId(m.id);setTitle(m.title);setCategory(m.category);setSubcategory(m.subcategory??"");setDescription(m.description);setLink(m.fileUrl);setUploadedUrl("");setAccess(m.access??"free");setPrice(String(m.priceBDT??0));setPreviewPages(String(m.previewPages??3));setFeatured(m.featured??false);setDepartment(m.department??"general");setSubject(m.subject??"");window.scrollTo({top:0,behavior:"smooth"});}} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-700">Edit</button>
                   <button onClick={() => void save({ customStudy: [...customs, duplicateCustom("study", m)] })} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-300">Duplicate</button>
                   <button onClick={() => remove(m.id)} className="rounded-full px-3 py-1.5 text-[12px] font-bold text-red-500 hover:bg-red-500/10">Delete</button>
                 </div>
@@ -199,6 +210,7 @@ export function AdminStudy({ config, save }: {
           })}
         </div>
       </GlassCard>
+      </>}
     </div>
   );
 }

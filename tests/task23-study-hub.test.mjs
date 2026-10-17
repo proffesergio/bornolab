@@ -8,23 +8,9 @@ import { join } from "node:path";
 const root = process.cwd();
 const read = (p) => readFileSync(join(root, p), "utf8");
 
-test("hub has preparation-module cards (posts/notes/practice/exams/progress)", () => {
-  const hub = read("src/app/study/page.tsx");
-  assert.ok(hub.includes("PREP_MODULES"), "hub must define preparation modules");
-  for (const href of ["/study/posts", "/study/chapters", "/study/practice", "/study/exams/demo-20q-15min-v1", "/study/progress"]) {
-    assert.ok(hub.includes(href), `hub must link ${href}`);
-  }
-  assert.ok(hub.includes('role="list"') && hub.includes("Preparation modules"), "modules must be a labeled card list");
-  // Old contracts preserved.
-  assert.ok(hub.includes("useLogin") && hub.includes("await refresh()"), "tri-state login recheck preserved");
-  assert.ok(hub.includes("StudyPractice"), "legacy practice section preserved");
-});
-
-test("hub has subject rail with chapter counts linking to notes index", () => {
-  const hub = read("src/app/study/page.tsx");
-  assert.ok(hub.includes("PLATFORM_SUBJECTS"), "hub must use the subject taxonomy");
-  assert.ok(hub.includes("/study/chapters?subject="), "subject cards must deep-link to the notes index");
-  assert.ok(hub.includes("ProgressRail"), "hub must include the progress rail");
+test("preparation and legacy study routes remain available after hub reorganization", () => {
+  for(const route of ["posts","chapters","practice","review","progress","guided-practice"]){assert.ok(existsSync(join(root,"src/app/study",route,"page.tsx")),route+" route must remain accessible");}
+  assert.ok(existsSync(join(root,"src/app/study/exams/[slug]/page.tsx")),"timed exam route remains accessible");
 });
 
 test("chapters index exists with BN/EN search + subject filter", () => {

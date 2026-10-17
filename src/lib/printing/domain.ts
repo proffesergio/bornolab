@@ -1,5 +1,5 @@
 export type Localized = { en: string; bn: string };
-export type PrintCategory = { id: string; name: Localized; position: number; hidden: boolean; archived: boolean };
+export type PrintCategory = { id: string; name: Localized; position: number; hidden: boolean; archived: boolean; image?:string; imageAlt?:string };
 export type PrintOption = { id: string; type:"select"|"radio"|"swatch";label: Localized; required: boolean; help: Localized; values: { id: string; label: Localized; price: number; days: number; available: boolean;color?:string }[] };
 export type PrintService = {
   id: string; categoryId: string; name: Localized; description: Localized; published: boolean; featured: boolean;
@@ -7,6 +7,7 @@ export type PrintService = {
   tiers: { minimum: number; unitPrice: number }[]; options: PrintOption[]; proofRequired: boolean;
   keywords: string; fileTypes: string[]; maxBytes: number; image: string; policy: Localized;
   gallery?:string[];faq?:{question:Localized;answer:Localized}[];
+  imageAlt?:string; galleryAlt?:Record<string,string>; designSelection?:boolean;
 };
 export const STATES = ["draft", "submitted", "artwork_review", "proof_ready", "changes_requested", "proof_approved", "queued", "production", "quality_check", "qc_failed", "ready_dispatch", "dispatched", "in_transit", "delivered", "completed", "delayed", "out_of_stock", "delivery_failed", "return_to_sender", "cancelled", "return_requested", "refund_pending", "refunded", "replacement", "disputed"] as const;
 export type OrderState = typeof STATES[number];
@@ -25,6 +26,7 @@ export function moveJob(job:ProductionJob,next:ProductionJob["state"],actor:stri
   job.history.push({from:job.state,to:next,actor,at:Date.now(),reason});job.state=next;
 }
 export type PrintOrder = {
+  selectedDesign?:{image:string;label:string};
   id: string; userId: string; service: PrintService; quantity: number; selections: Record<string, string>;
   designHelp: string; notes: string; uploadId: string; address: Address; state: OrderState;
   payment: PrintPaymentState;
@@ -60,7 +62,7 @@ export type PrintConfig = {
   delivery: number; codFee: number; codMaximum: number; taxBps: number; support: string; retentionDays:number;metrics:MetricKey[];deliveryMinDays:number;deliveryMaxDays:number;
   designServices: { id: string; name: Localized; price: number; days: number; revisions: number }[];
 };
-export type PrintData = { config: PrintConfig; categories: PrintCategory[]; services: PrintService[]; orders: PrintOrder[]; quotes: QuoteRequest[]; uploads: DesignUpload[]; partners: ProductionPartner[]; designers: DesignerProfile[]; tickets:SupportTicket[]; templates:PrintTemplate[]; audit: { actor: string; action: string; at: number; recordId: string }[]; notifications: { id: string; recipient: string; channel: "in_app"; template: string; status: "delivered"; retries: number; providerReference: string; failureReason: string; at: number; orderId: string;read?:boolean }[] };
+export type PrintData = { catalogVersion?:number; config: PrintConfig; categories: PrintCategory[]; services: PrintService[]; orders: PrintOrder[]; quotes: QuoteRequest[]; uploads: DesignUpload[]; partners: ProductionPartner[]; designers: DesignerProfile[]; tickets:SupportTicket[]; templates:PrintTemplate[]; audit: { actor: string; action: string; at: number; recordId: string }[]; notifications: { id: string; recipient: string; channel: "in_app"; template: string; status: "delivered"; retries: number; providerReference: string; failureReason: string; at: number; orderId: string;read?:boolean }[] };
 
 export function refundAvailable(order: PrintOrder): number { const adjustments=order.adjustments??[];return Math.max(0,order.financial.total-adjustments.filter(a=>a.kind==="refund"&&!adjustments.some(r=>r.kind==="reversal"&&r.reversalOf===a.id)).reduce((sum,a)=>sum+a.amount,0)); }
 export function contribution(order: PrintOrder): number { return order.financial.total - (order.adjustments??[]).reduce((sum,a)=>sum+(a.kind==="reversal"?-a.amount:a.amount),0); }
@@ -159,4 +161,11 @@ export function validateArtwork(name: string, mime: string, bytes: Uint8Array, s
     }
     if(!found)throw new Error("JPEG dimensions could not be verified. Export a fresh JPEG or PDF.");
   }
+}
+
+/** Resolve a current public design; callers snapshot this label/image in the order. */
+export function selectPrintDesign(service: PrintService, image: string): {image:string;label:string}|undefined {
+  if (!image) return undefined;
+  if (!service.designSelection || !service.gallery?.includes(image)) throw new Error("This design is no longer available. Choose another reference.");
+  return {image,label:service.galleryAlt?.[image] || service.name.en + " design " + (service.gallery.indexOf(image)+1)};
 }

@@ -28,7 +28,7 @@ test("schedule API + Due-Review page + grade wiring exist", () => {
   assert.ok(existsSync(join(root, "src/app/study/review/page.tsx")), "review page required");
   const r = read("src/app/study/review/page.tsx");
   assert.ok(r.includes("Again") && r.includes("Easy"), "grade buttons required");
-  const hub = read("src/app/study/page.tsx");
+  const hub = read("src/components/study-hub.tsx") + read("src/components/study-resource-library.tsx");
   assert.ok(hub.includes("/study/review"), "hub due-review card required");
   const pb = read("src/components/study-platform/practice-builder.tsx");
   assert.ok(pb.includes("/api/study-platform/schedule"), "practice grade wiring required");

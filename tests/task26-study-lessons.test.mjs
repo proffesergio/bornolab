@@ -40,8 +40,8 @@ test("lesson ids/slugs are unique and wired into catalog, search and practice", 
   assert.ok(search.includes("getChapters"), "search must cover lessons");
   const practice = read("src/app/api/study-platform/practice/route.ts");
   assert.ok(practice.includes("getChapters"), "practice filter must cover lessons");
-  const hub = read("src/app/study/page.tsx");
-  assert.ok(hub.includes("১২৫টি অধ্যায়"), "hub count must reflect 125 chapters");
+  const hub = read("src/components/study-hub.tsx") + read("src/components/study-resource-library.tsx");
+  assert.ok(hub.includes("getChapters()"), "hub chapter counts must use the actual catalog");
 });
 
 test("lesson seed questions are original, traced, bilingual with reviewed keys", () => {

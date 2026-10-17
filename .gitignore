@@ -38,6 +38,7 @@ yarn-error.log*
 data/*.json
 data/*.tmp
 data/printing-backups/
+data/showcase-media/
 
 # admin-uploaded catalog files — local/self-host content, never commit
 /public/uploads/*

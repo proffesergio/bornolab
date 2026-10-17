@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember } from "@/lib/guards";
 import { mutatePrinting, readPrinting } from "@/lib/printing/repository";
-import { approveProof, price, quoteService, refundAvailable,isBangladeshPhone,normalizePhone,leadDays,transition, type Address, type PrintOrder } from "@/lib/printing/domain";
+import { approveProof, selectPrintDesign, price, quoteService, refundAvailable,isBangladeshPhone,normalizePhone,leadDays,transition, type Address, type PrintOrder } from "@/lib/printing/domain";
 import { failure, number, text, writeGuard,PrintingPriceConflict } from "@/lib/printing/http";
 import { mockPayment } from "@/lib/printing/providers";
 import {notifyPrintingAdmin} from "@/lib/printing/side-effects";
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     const addressInput = body.address as Record<string, unknown> | undefined;
     const address = Object.fromEntries(["name", "phone", "division", "district", "thana", "area", "details", "instruction"].map(key => [key, text(addressInput?.[key] ?? "", 500)])) as Address;
     address.phone=normalizePhone(address.phone);
+    const designImage = text(body.designImage ?? "",500);
     const designHelp = text(body.designHelp ?? "", 100); const uploadId = text(body.uploadId ?? "", 100); const notes = text(body.notes ?? "");
     if(body.method!==undefined&&body.method!=="cod"&&body.method!=="mock")throw new Error("Choose an available payment method.");
     const method = body.method === "cod" ? "cod" : "mock"; const submit = body.submit === true;
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
       if (id && (!existing || existing.state !== "draft")) throw new Error("This draft cannot be edited.");
       const now = Date.now();
       const record: PrintOrder = { id: existing?.id ?? `PR-${crypto.randomUUID()}`, userId: user.id, service: structuredClone(service), quantity, selections, designHelp, notes, uploadId, address, state: "draft", payment: method === "cod" ? "cod_confirmation" : "pending", method, financial, createdAt: existing?.createdAt ?? now, updatedAt: now, history: existing?.history ?? [], proofs: [], demo: true };
+      record.selectedDesign=selectPrintDesign(service,designImage);
       if (submit) transition(record, "submitted", user.id, "Customer submitted demo order");
       if(method==="cod")record.paymentHistory=[{from:"pending",to:"cod_confirmation",actor:user.id,at:now,reason:"Customer selected COD; eligibility and collection remain pending"}];
       if (quote) { record.quoteId=quote.id; if(submit)quote.orderId=record.id; }

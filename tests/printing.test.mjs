@@ -241,3 +241,14 @@ test("checkout rejects stale totals; failed demo payment blocks production and c
   await h.routes.admin.PATCH(h.request({action:"settings",config:{...h.data.config,mockPaymentFailure:false}},"PATCH"));const retry=await h.routes.orders.PATCH(h.request({id:o.id,action:"pay"},"PATCH"));assert.equal((await retry.json()).order.payment,"demo_paid");assert.equal(h.data.orders[0].paymentHistory.at(-1).from,"payment_failed");
   assert.equal((await h.routes.admin.PATCH(h.request({action:"settings",config:{...h.data.config,liveNotifications:true}},"PATCH"))).status,400);assert.equal(h.data.config.liveNotifications,false);
 });
+
+
+test("catalog editing rejects stale versions and snapshots selected designs without changing earlier orders",async()=>{
+  const h=harness();h.setAdmin(true);const categories=structuredClone(h.data.categories),services=structuredClone(h.data.services);
+  services[0].designSelection=true;services[0].gallery=["/printing-sample.svg"];services[0].galleryAlt={"/printing-sample.svg":"Blue card layout"};
+  const update=()=>h.routes.admin.PATCH(h.request({action:"catalog",categories,services,expectedCatalogVersion:0},"PATCH"));
+  assert.equal((await update()).status,200);assert.equal(h.data.catalogVersion,1);services[0].name.en="Overwrite from stale editor";assert.equal((await update()).status,400);assert.notEqual(h.data.services[0].name.en,"Overwrite from stale editor");
+  const draft=await h.routes.orders.POST(h.request({serviceId:services[0].id,quantity:50,selections,designImage:"/printing-sample.svg",address:{},method:"mock",submit:false}));assert.equal(draft.status,200);const record=(await draft.json()).order;assert.equal(record.selectedDesign.label,"Blue card layout");
+  assert.equal((await h.routes.orders.POST(h.request({serviceId:services[0].id,quantity:50,selections,designImage:"/unknown.svg",address:{},method:"mock",submit:false}))).status,400);
+  assert.equal(h.data.orders.length,1);
+});

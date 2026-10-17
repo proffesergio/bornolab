@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSiteConfig } from "@/lib/site-config";
 import { buildStudyCatalog, type StudyCategory, type StudyFileType } from "@/lib/study-data";
 
+import {readStudyNavigation} from "@/lib/study-navigation-store";
+
 /** GET /api/study — public catalog of enabled study materials (read/share). */
 export async function GET() {
   const config = await getSiteConfig();
   const catalog = buildStudyCatalog(config.studyOverrides ?? {}, config.customStudy ?? []);
+  const learning=await readStudyNavigation().catch(()=>null);
+  if(!learning)return NextResponse.json({error:"Learning organization is temporarily unavailable."},{status:503});
   return NextResponse.json({
+    navigation:learning.navigation,
     materials: catalog.filter((m) => m.enabled),
     categories: ["admission", "ssc", "hsc", "bachelor", "masters"],
   });

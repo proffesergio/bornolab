@@ -4,6 +4,7 @@ import { readPrinting, mutatePrinting } from "@/lib/printing/repository";
 import { refundAvailable, transition, moveJob, JOB_STATES, STATES, METRICS, type MetricKey, type OrderState, type PrintCategory, type PrintService, type ProductionJob } from "@/lib/printing/domain";
 import { failure, number, text, writeGuard } from "@/lib/printing/http";
 import {mirrorPrintingAudit} from "@/lib/printing/side-effects";
+import {readMediaIndex} from "@/lib/media-repository";
 import {mockShipping} from "@/lib/printing/providers";
 export async function GET(req: NextRequest) {
   const actor = await requireAdmin(req); if (actor instanceof NextResponse) return actor;
@@ -22,13 +23,21 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json() as Record<string, unknown>; const action = text(body.action, 100); const id = text(body.id ?? "", 100);
     const shipment=action==="state"&&body.state==="dispatched"?await mockShipping.createShipment({orderId:id}):null;
+    if(action==="catalog") {
+      const records=[...(Array.isArray(body.categories)?body.categories:[]),...(Array.isArray(body.services)?body.services:[])];
+      const paths=records.flatMap(record=>[record.image,...(Array.isArray(record.gallery)?record.gallery:[])]).filter((v):v is string=>typeof v==="string"&&v.startsWith("/api/media/"));
+      if(paths.length){const assets=(await readMediaIndex()).assets;if(paths.some(url=>!assets.some(asset=>asset.url===url&&asset.published)))throw new Error("Publish each chosen image in the media library before saving the catalog.");}
+    }
     await mutatePrinting(data => {
       if (action === "catalog") {
+        if(body.expectedCatalogVersion!==undefined&&body.expectedCatalogVersion!==(data.catalogVersion??0))throw new Error("The catalog changed in another session. Reload before saving to avoid overwriting it.");
         if (!Array.isArray(body.services) || !Array.isArray(body.categories) || body.services.length > 200 || body.categories.length > 100) throw new Error("Invalid catalog.");
         const categories = body.categories as PrintCategory[]; const services = body.services as PrintService[];
         const ids = new Set<string>();
         for (const category of categories) {
           if (!/^[a-z0-9-]+$/.test(text(category.id, 100)) || ids.has(category.id)) throw new Error("Category IDs must be unique slugs."); ids.add(category.id);
+          if(category.image&&(!/^\/[a-zA-Z0-9/_\-.]+$/.test(text(category.image,500))||category.image.startsWith("//")))throw new Error("Choose a local or managed category image.");
+          if(category.imageAlt!==undefined)text(category.imageAlt,300);
           localized(category.name); number(category.position, 1000); if (typeof category.hidden !== "boolean" || typeof category.archived !== "boolean") throw new Error("Invalid category visibility.");
         }
         ids.clear();
@@ -49,11 +58,14 @@ export async function PATCH(req: NextRequest) {
             for (const value of option.values) { text(value.id, 100);if(!value.id||valueIds.has(value.id))throw new Error("Option value IDs must be unique.");valueIds.add(value.id); localized(value.label); number(value.price); number(value.days, 365); if (typeof value.available !== "boolean") throw new Error("Invalid option availability.");if(value.color&&!/^#[a-f0-9]{6}$/i.test(value.color))throw new Error("Use a six-digit hex colour."); }
             if(option.required&&!option.values.some(v=>v.available))throw new Error("Required options need an available value.");
           }
+          if(service.imageAlt!==undefined)text(service.imageAlt,300);
+          if(service.designSelection!==undefined&&typeof service.designSelection!=="boolean")throw new Error("Invalid design selection setting.");
+          if(service.galleryAlt!==undefined){if(!service.galleryAlt||typeof service.galleryAlt!=="object"||Array.isArray(service.galleryAlt)||Object.keys(service.galleryAlt).length>100)throw new Error("Invalid gallery descriptions.");Object.values(service.galleryAlt).forEach(value=>text(value,300));}
           text(service.keywords, 2000); if (!/^\/[a-zA-Z0-9/_\-.]+$/.test(text(service.image, 500))||service.image.startsWith("//")) throw new Error("Use a local image path.");
           if(service.gallery){if(!Array.isArray(service.gallery)||service.gallery.length>8)throw new Error("Use up to eight gallery images.");for(const image of service.gallery)if(!/^\/[a-zA-Z0-9/_\-.]+$/.test(text(image,500))||image.startsWith("//"))throw new Error("Use local gallery image paths.");}
           if(service.faq){if(!Array.isArray(service.faq)||service.faq.length>20)throw new Error("Use up to twenty service FAQs.");for(const item of service.faq){localized(item.question);localized(item.answer);}}
         }
-        data.categories = categories; data.services = services;
+        data.categories = categories; data.services = services; data.catalogVersion=(data.catalogVersion??0)+1;
       } else if (action === "partners") {
         if(!Array.isArray(body.partners)||!Array.isArray(body.designers)||body.partners.length>100||body.designers.length>100)throw new Error("Invalid partners or designers.");
         for(const partner of body.partners){text(partner.id,100);text(partner.name,200);text(partner.contact,200);text(partner.phone,30);text(partner.email,200);text(partner.address,1000);text(partner.notes);number(partner.capacity,1000000);number(partner.days,365);if(!["under_review","approved","active","suspended","archived"].includes(partner.state)||typeof partner.express!=="boolean"||partner.demo!==true)throw new Error("Invalid partner state.");for(const key of ["areas","capabilities","materials","sizes"]){if(!Array.isArray(partner[key])||partner[key].length>50)throw new Error("Invalid partner capabilities.");partner[key].forEach((value:unknown)=>text(value,200));}}
